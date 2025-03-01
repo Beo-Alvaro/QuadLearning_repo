@@ -24,6 +24,7 @@
     "express": "^4.21.1",
     "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
     "mongoose": "^8.7.3",
     "pdfkit": "^0.15.1",
     "react-bootstrap": "^2.10.5",

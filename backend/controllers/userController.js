@@ -4,6 +4,21 @@ import generateToken from '../utils/generateToken.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+
+const getAdminId = async (req, res) => {
+    try {
+        const admin = await User.findOne({ role: 'admin' });
+        if (!admin) {
+            return res.status(404).json({ message: 'Admin user not found' });
+        }
+        res.json({ adminId: admin._id });
+    } catch (error) {
+        console.error('Error fetching admin ID:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+
 // @desc    Auth user/set token
 // route    POST /api/users/auth
 // @access  Public
@@ -17,8 +32,6 @@ const authUser = asyncHandler(async (req, res) => {
     // Check if user exists by username
     const user = await User.findOne({ username });
     if (!user) {
-
-        //console.log('Invalid credentials attempt for:', username);
 
         return res.status(401).json({ message: "Invalid username" });
     }
@@ -67,5 +80,6 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 export {
     logoutUser,
-    authUser
+    authUser,
+    getAdminId
 };

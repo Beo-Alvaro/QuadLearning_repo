@@ -4,28 +4,35 @@ import User from '../models/userModel.js'
 
 const protect = async (req, res, next) => {
     let token;
- const authHeader = req.headers.authorization; // Get the Authorization header
-    console.log('Authorization Header:', authHeader); // Log the header for debugging
-    // Check if token is in headers
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    const authHeader = req.headers.authorization;
+    console.log('Authorization Header:', authHeader); // Debugging log
+
+    if (authHeader && authHeader.startsWith('Bearer')) {
         try {
-            token = req.headers.authorization.split(' ')[1];
+            token = authHeader.split(' ')[1];
 
             // Decode token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Find user by ID
-            req.user = await User.findById(decoded.id).select('-password'); // Exclude password
+            // Find user by ID and attach to request
+            req.user = await User.findById(decoded.id).select('-password');
 
-            next(); // Proceed to the next middleware or route handler
+            console.log('Authenticated User:', req.user); // Debugging log
+
+            if (!req.user) {
+                return res.status(401).json({ message: 'User not found' });
+            }
+
+            next();
         } catch (error) {
-            console.error(error);
+            console.error('Token verification error:', error);
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
     } else {
         res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
+
 
 const authorizeRoles = (...roles) => (req, res, next) => {
     if (req.user.role === 'superadmin' || roles.includes(req.user.role)) {

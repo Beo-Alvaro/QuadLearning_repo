@@ -208,6 +208,38 @@ const StudentHomeScreen = () => {
                                         </Card>
                                     </Link>
                                 </Col>
+                                <Col xs={12}>
+                                    <Link 
+                                        to="/login/StudentScreens/StudentMessages" 
+                                        className="text-decoration-none"
+                                    >
+                                        <Card 
+                                            className="quick-action-card h-100 d-flex align-items-center justify-content-center text-center p-3 border-success"
+                                            style={{
+                                                backgroundColor: '#f0fff4',
+                                                borderRadius: '10px',
+                                                transition: 'transform 0.3s ease'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.currentTarget.style.transform = 'scale(1.05)';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.style.transform = 'scale(1)';
+                                            }}
+                                        >
+                                            <div>
+                                                <FaChartBar 
+                                                    size={50} 
+                                                    className="text-success mb-3" 
+                                                />
+                                                <h5 className="text-success">Send a Message</h5>
+                                                <p className="text-muted small">
+                                                    Tell your concerns to the admin
+                                                </p>
+                                            </div>
+                                        </Card>
+                                    </Link>
+                                </Col>
                             </Row>
                         </Card.Body>
                     </Card>

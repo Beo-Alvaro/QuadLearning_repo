@@ -4,15 +4,15 @@ import { Link } from 'react-router-dom';
 import './AdminSidebar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { useAuth } from '../context/authContext'; 
 
 const AdminSidebar = () => {
     const [loading, setLoading] = useState(false); // Define loading state
     const [error, setError] = useState('');
     const navigate = useNavigate(); // Define navigate
-
+    const { user } = useAuth();
   
     const handleLogOut = async (e) => {
         e.preventDefault(); // Prevent the default behavior of the event
@@ -93,10 +93,22 @@ const AdminSidebar = () => {
                 Add Student Account
             </Nav.Link>
         </LinkContainer>
+        <LinkContainer to="/admin/AdminPendingStudents">
+            <Nav.Link>
+                <i className="bi bi-person-badge-fill"></i>
+                Pending Students
+            </Nav.Link>
+        </LinkContainer>
         <LinkContainer to="/admin/AdminCreateTeacherAccount">
             <Nav.Link>
                 <i className="bi bi-person-badge-fill"></i>
                 Add Teacher Account
+            </Nav.Link>
+        </LinkContainer>
+        <LinkContainer to="/admin/AdminMessages">
+            <Nav.Link>
+                <i className="bi bi-person-badge-fill"></i>
+                Messages
             </Nav.Link>
         </LinkContainer>
     </div>

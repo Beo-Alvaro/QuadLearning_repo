@@ -5,9 +5,6 @@ import Subject from '../models/subjectModel.js'; // Import Subject model
 import Section from '../models/sectionModel.js';
 import Strand from '../models/strandModel.js';
 
-
-
-
 // @desc    Get logged-in student's profile
 // @route   GET /api/student/profile
 // @access  Private/Student

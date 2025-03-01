@@ -1,36 +1,48 @@
-import { useState, useEffect } from 'react';
-import { Container, Card, Form, Button, Table, InputGroup } from 'react-bootstrap';
+import { useContext, useEffect, useState } from 'react';
+import { Container, Card, Form, Button } from 'react-bootstrap';
 import AdminSidebar from "../AdminComponents/AdminSidebar";
 import { useNavigate } from 'react-router-dom';
-import './AdminCreateStrand.css';
-import { FaSearch } from 'react-icons/fa';
-import Modal from 'react-bootstrap/Modal';
+import StrandModal from '../AdminComponents/CreateStrandsComponents/StrandModal';
 import Header from '../components/Header';
+import StrandTable from '../AdminComponents/CreateStrandsComponents/StrandTable';
+import { useStrandsDataContext } from '../hooks/useStrandsDataContext';
+
 const AdminCreateStrand = () => {
     const navigate = useNavigate();
-    const [studStrands, setStudStrands] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const {
+        studStrands,
+        loading,
+        error,
+        addStrand,
+        updateStrand,
+        deleteStrand,
+        fetchStrands
+    } = useStrandsDataContext();
+
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [entriesPerPage, setEntriesPerPage] = useState(10);
-    const [currentPage, setCurrentPage] = useState(1);
     const [selectedStrandId, setSelectedStrandId] = useState(null);
     const [show, setShow] = useState(false);
     const [editModalShow, setEditModalShow] = useState(false);
 
-    const handleClose = () => {
-        setShow(false);
-        setSelectedStrandId(null);  // Reset selectedUserId when modal closes
+    const handleReset = () => {
+        setName('');
+        setDescription('');
     };
 
-    const handleShow = (strandId) => {
-        setSelectedStrandId(strandId);  // Set the userId when showing modal
-        setShow(true);
+    const handleDeleteShow = (strandId) => {
+        setSelectedStrandId(strandId);
+        setShow(true); // Show the delete confirmation modal
     };
 
-      
+    const handleDelete = () => {
+        if (selectedStrandId) {
+            deleteStrand(selectedStrandId);
+            setShow(false);
+            setSelectedStrandId(null); // Clear the selection after deletion
+        }
+    };
+
     const handleEditShow = (strandId) => {
         const strand = studStrands.find((strand) => strand._id === strandId);
         if (strand) {
@@ -38,174 +50,37 @@ const AdminCreateStrand = () => {
             setName(strand.name);
             setDescription(strand.description);
             setEditModalShow(true);
-        } else {
-            console.error('Strand not found');
         }
     };
-    
+
     const handleCloseModal = () => {
-    setEditModalShow(false);
-    setSelectedStrandId(null);
-    setName('');
-    setDescription('');
-};
-
-    const handleSaveChanges = async () => {
-        const updatedStrand = {
-            name,
-            description,
-        };
-    
-        const token = localStorage.getItem('token');
-    
-        try {
-            const response = await fetch(`/api/admin/strands/${selectedStrandId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(updatedStrand),
-            });
-    
-            const result = await response.json();
-    
-            if (response.ok) {
-                // Successfully updated the strand
-                setStudStrands((prevStrands) =>
-                    prevStrands.map((strand) =>
-                        strand._id === selectedStrandId ? result : strand
-                    )
-                );
-                handleCloseModal(); // Close modal after saving
-            } else {
-                console.error('Error updating strand:', result.message);
-            }
-        } catch (error) {
-            console.error('Failed to update strand:', error);
-        }
-        fetchData(); // Refresh the data
-    };
-    
-    const deleteHandler = async (strandId) => {
-        const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-        console.log("Deleting strand with ID:", strandId);
-        try {
-            const response = await fetch(`/api/admin/strands/${strandId}`, { // Corrected endpoint
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`, // Ensure token is included
-                }
-            });
-    
-            console.log("Response status:", response.status);
-            if (response.ok) {
-                setStudStrands(prevStrands => prevStrands.filter(strand => strand._id !== strandId));
-                handleClose(); // Close the modal after deletion
-            } else {
-                const json = await response.json();
-                console.error('Error response:', json);
-                setError(json.message);
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            setError('Failed to delete user');
-        }
+        setEditModalShow(false);
+        setSelectedStrandId(null);
+        handleReset();
     };
 
-    const fetchData = async () => {
-        const token = localStorage.getItem('token');
-    
-        try {
-            const [strandsResponse] = await Promise.all([
-                fetch('/api/admin/getStrands', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                }),
-            ]);
-    
-            if (strandsResponse.ok) {
-                const [strandsJson] = await Promise.all([
-                    strandsResponse.json(),
-                ]);
-                setStudStrands(strandsJson);
-            } else {
-                console.error('Failed to fetch data');
-            }
-        } catch (error) {
-            console.error('Error fetching data:', error.message);
-        }
+    const handleSaveChanges = () => {
+        const updatedStrand = { name, description };
+        updateStrand(selectedStrandId, updatedStrand);
+        handleCloseModal();
     };
-    
-    useEffect(() => {
-        fetchData();
-    }, []);
 
-    const handleSubmit = async (e) => {
-        const token = localStorage.getItem('token'); // Retrieve the token from localStorage
+    const handleSubmit = (e) => {
         e.preventDefault();
-        setLoading(true);
-        setError('');
-
-        const strandData = {
-            name,
-            description,
-        };
-
-        try {
-            const response = await fetch('/api/admin/addStrands', {
-                method: 'POST',
-                body: JSON.stringify(strandData),
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const json = await response.json();
-
-            if (!response.ok) {
-                setError(json.message || 'Failed to create strand');
-            } else {
-                setName('');
-                setDescription('');
-                console.log('Strand created successfully');
-                // Re-fetch strands to update the table
-                fetchData();
-            }
-        } catch (error) {
-            setError('An error occurred while creating the strand');
-            console.error('Error:', error);
-        } finally {
-            setLoading(false);
-        }
+        const newStrand = { name, description };
+        addStrand(newStrand);
+        handleReset();
     };
 
-    // Filtering and Pagination
-    const filteredStrands = studStrands.filter((strand) =>
-        strand.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const indexOfLastEntry = currentPage * entriesPerPage;
-    const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-    const currentEntries = filteredStrands.slice(indexOfFirstEntry, indexOfLastEntry);
-
-    const totalPages = Math.ceil(filteredStrands.length / entriesPerPage);
-
-    const handlePageChange = (direction) => {
-        if (direction === 'prev' && currentPage > 1) setCurrentPage(currentPage - 1);
-        if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
+    useEffect(() => {
+        fetchStrands();
+    }, []);
 
     return (
         <>
-        <Header/>
+            <Header />
             <AdminSidebar />
-            <div className='d-flex'>
+            <div className="d-flex">
                 <main className="main-content flex-grow-1">
                     <Container>
                         <Card className="mt-4">
@@ -213,20 +88,16 @@ const AdminCreateStrand = () => {
                                 <h4 className="mb-0">Create New Strand</h4>
                             </Card.Header>
                             <Card.Body>
-                                {error && (
-                                    <div className="alert alert-danger" role="alert">
-                                        {error}
-                                    </div>
-                                )}
+                                {error && <div className="alert alert-danger">{error}</div>}
 
                                 <Form onSubmit={handleSubmit}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Strand Name</Form.Label>
                                         <Form.Control
                                             type="text"
-                                            placeholder="Enter strand name"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
+                                            placeholder='e.g STEM'
                                             required
                                         />
                                     </Form.Group>
@@ -236,192 +107,40 @@ const AdminCreateStrand = () => {
                                         <Form.Control
                                             as="textarea"
                                             rows={3}
-                                            placeholder="Enter strand description"
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
+                                            placeholder='e.g Science, Technology, Engineering, and Mathematics'
                                             required
                                         />
                                     </Form.Group>
 
-                                    <div className="d-flex gap-2">
-                                        <Button 
-                                            variant="outline-secondary" 
-                                            onClick={() => navigate('/admin/strands')}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button 
-                                            variant="outline-success" 
-                                            type="submit"
-                                            disabled={loading}
-                                        >
-                                            {loading ? 'Creating...' : 'Create Strand'}
-                                        </Button>
-                                    </div>
+                                    <Button variant="outline-success" type="submit" disabled={loading}>
+                                        {loading ? 'Creating...' : 'Create Strand'}
+                                    </Button>
                                 </Form>
-                                
-                                <h2 className="my-4">Strands List</h2>
 
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div className="d-flex align-items-center">
-                                        <span>Show</span>
-                                        <Form.Select 
-                                            size="sm"
-                                            className="mx-2"
-                                            style={{ width: 'auto' }}
-                                            value={entriesPerPage}
-                                            onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-                                        >
-                                            <option value={10}>10</option>
-                                            <option value={25}>25</option>
-                                            <option value={50}>50</option>
-                                            <option value={100}>100</option>
-                                        </Form.Select>
-                                        <span>entries</span>
-                                    </div>
+                                <StrandTable
+    studStrands={studStrands}
+    handleEditShow={handleEditShow}
+    handleDeleteShow={handleDeleteShow}
+/>
 
-                                    <InputGroup style={{ width: '300px' }}>
-                                        <InputGroup.Text>
-                                            <FaSearch />
-                                        </InputGroup.Text>
-                                        <Form.Control
-                                            placeholder="Search..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                        />
-                                    </InputGroup>
-                                </div>
-
-                                <Card className="shadow-sm">
-                    <Card.Body className="p-0">
-                    <Table responsive hover className='custom-table text-center align-middle'>
-                            <thead className="bg-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Description</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className='text-center'>
-                                            {currentEntries.length > 0 ? (
-                                                currentEntries.map((strand) => (
-                                                    <tr key={strand._id}>
-                                                        <td>{strand.name}</td>
-                                                        <td>{strand.description}</td>
-                                                        <td>
-                                                    <div className="action-buttons">
-                                                        <Button 
-                                                            variant="outline-success" 
-                                                            size="sm" 
-                                                                className="btn-action"
-                                                                onClick={() => handleEditShow(strand._id)}
-                                                        >
-                                                            <i className="bi bi-pencil-square me-1"></i>
-                                                            Edit
-                                                        </Button>
-                                                        <Button 
-                                                            variant="outline-danger" 
-                                                            size="sm" 
-                                                            className="btn-action"
-                                                            onClick={() => handleShow(strand._id)}
-                                                        >
-                                                            <i className="bi bi-trash me-1"></i>
-                                                            Delete
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan="5" className="text-center">No results found</td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </Table>
-                                    </Card.Body>
-                                </Card>
-
-                                <div className="d-flex justify-content-between mt-3">
-                                    <Button 
-                                        variant="outline-primary" 
-                                        size="sm"
-                                        disabled={currentPage === 1}
-                                        onClick={() => handlePageChange('prev')}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <span>Page {currentPage} of {totalPages}</span>
-                                    <Button 
-                                        variant="outline-primary" 
-                                        size="sm"
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => handlePageChange('next')}
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
                             </Card.Body>
                         </Card>
                     </Container>
-                    <Modal show={show} onHide={handleClose} className='text-center'>
-        <Modal.Header closeButton className='text-center'>
-          <Modal.Title className='text-center w-100'>CONFIRMATION MESSAGE</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>The data will be erased and cannot be retrieved. Are you sure you want to continue?</Modal.Body>
-        <Modal.Footer className='justify-content-center'>
-        <Button variant="outline-secondary" className="px-4" onClick={() => setShow(false)}>
-            Cancel
-          </Button>
-      <Button 
-            variant="outline-danger" 
-            className="px-4" 
-            onClick={() => selectedStrandId && deleteHandler(selectedStrandId)}
-        >
-            Confirm
-        </Button>
-        </Modal.Footer>
-      </Modal>
 
-      <Modal show={editModalShow} onHide={handleCloseModal}>
-    <Modal.Header closeButton>
-        <Modal.Title>Edit Strand</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>
-        <Form>
-            {/* Strand Name */}
-            <Form.Group className="mb-3">
-                <Form.Label>Strand Name</Form.Label>
-                <Form.Control
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                />
-            </Form.Group>
-
-            {/* Strand Description */}
-            <Form.Group className="mb-3">
-                <Form.Label>Strand Description</Form.Label>
-                <Form.Control
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    required
-                />
-            </Form.Group>
-        </Form>
-    </Modal.Body>
-    <Modal.Footer>
-        <Button variant="outline-secondary" onClick={handleCloseModal}>
-            Cancel
-        </Button>
-        <Button variant="outline-success" onClick={handleSaveChanges}>
-            Save Changes
-        </Button>
-    </Modal.Footer>
-</Modal>
-
+                    <StrandModal
+                        show={show}
+                        setShow={setShow}
+                        editModalShow={editModalShow}
+                        handleCloseModal={handleCloseModal}
+                        name={name}
+                        description={description}
+                        setName={setName}
+                        setDescription={setDescription}
+                        handleSaveChanges={handleSaveChanges}
+                        handleDelete={handleDelete}
+                    />
                 </main>
             </div>
         </>

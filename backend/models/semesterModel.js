@@ -25,26 +25,14 @@ const semesterSchema = new mongoose.Schema({
       ref: 'Subject',
       required: false 
     }], 
-    yearLevel: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'YearLevel', // Reference to the YearLevel model
-      required: true, // Each section must have a year level assigned
-    }, // Link to the YearLevel mode
     endDate: {
         type: Date,
         required: true
     },
-    subjects: [{ 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Subject',
-        required: false 
-    }]
+    status: { type: String, enum: ['active', 'pending'], default: 'active' }
 }, { 
     timestamps: true 
 });
-
-// Add compound index to ensure unique combination of name, strand, and yearLevel
-semesterSchema.index({ name: 1, strand: 1, yearLevel: 1 }, { unique: true });
 
 const Semester = mongoose.model('Semester', semesterSchema);
 export default Semester;

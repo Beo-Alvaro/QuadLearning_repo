@@ -10,15 +10,17 @@ import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Header from '../components/Header';
 import '../AdminComponents/AdminTableList.css';
-import axios from 'axios';
+import AdminResetPasswordModal from '../AdminComponents/AdminResetPasswordModal';
+import { useUsersDataContext } from '../hooks/useUsersDataContext';
+
 const AdminViewAllUsersScreen = () => {
+    const { users, handleResetPassword, fetchUsers  } = useUsersDataContext();
     const [show, setShow] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [users, setUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,75 +44,10 @@ const getRoleBadgeColor = (role) => {
             return 'secondary';
     }
 };
-  
+
     useEffect(() => {
-        const fetchUsers = async () => {
-            const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-    
-            try {
-                const response = await fetch('/api/admin/getUsers', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`, // Add the Bearer token here
-                    },
-                });
-    
-                if (response.ok) {
-                    const json = await response.json();
-                    setUsers(json); // Set the users if the response is successful
-                } else {
-                    console.error('Failed to fetch users:', response.status);
-                }
-            } catch (error) {
-                console.error('Error fetching users:', error.message);
-            }
-        };
-    
         fetchUsers();
     }, []);
-    
-    const handleResetPassword = async (newPassword) => {
-        const token = localStorage.getItem('token');
-        
-        try {
-            setLoading(true);
-            const response = await fetch(`/api/admin/resetPassword/${selectedUserId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ newPassword })
-            });
-    
-            if (response.ok) {
-                alert('Password reset successful');
-                setNewPassword('');
-                setConfirmPassword('');
-                handleClose();
-            } else {
-                const data = await response.json();
-                setError(data.message || 'Failed to reset password');
-                alert('Failed to reset password');
-            }
-        } catch (error) {
-            setError('An error occurred while resetting the password');
-            alert('An error occurred while resetting the password');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    // Update the handleSubmit function to use handleResetPassword
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (newPassword === confirmPassword) {
-            handleResetPassword(newPassword);
-        } else {
-            alert("Passwords do not match!");
-        }
-    };
 
     const handleClose = () => {
         setShow(false);
@@ -120,6 +57,7 @@ const getRoleBadgeColor = (role) => {
     const handleShow = (userId) => {
         setSelectedUserId(userId);  // Set the userId when showing modal
         setShow(true);
+        console.log(userId)
     };
 
 
@@ -241,40 +179,12 @@ const getRoleBadgeColor = (role) => {
                 </Container>
             </main>
         </div>
-                                <Modal show={show} onHide={handleClose}>
-            <Modal.Header closeButton>
-                <Modal.Title>Reset Password</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form onSubmit={handleSubmit}>
-                    <Form.Group controlId="formNewPassword">
-                        <Form.Label className='mb-2'>New Password</Form.Label>
-                        <Form.Control
-                            className='mb-2'
-                            type="password"
-                            placeholder="Enter new password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                    <Form.Group controlId="formConfirmPassword">
-                        <Form.Label className='mb-2'>Confirm Password</Form.Label>
-                        <Form.Control
-                            className='mb-2'
-                            type="password"
-                            placeholder="Confirm new password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                    <Button variant="primary" type="submit"> 
-                        Reset Password
-                    </Button>
-                </Form>
-            </Modal.Body>
-        </Modal>
+
+        <AdminResetPasswordModal 
+      show={show} 
+      handleClose={handleClose} 
+      selectedUserId={selectedUserId} 
+    />
             </>
      );
 }

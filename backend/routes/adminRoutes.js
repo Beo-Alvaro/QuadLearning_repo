@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
-import { /* createAdmin, */ updateUserAccount, resetUserPassword, initializeYearLevels, getAllYearLevels, filterSubjects, getAvailableAdvisorySections, /* getUserList */ /* assignStudentToTeacher */ createStrand, getAllStrands, getAllUsers, createUserAccount, deleteUserAccount, getUserListByRole, createSubject, getAllSubjects, createSemester, deleteSemester, getAllSemesters, createSection, getAllSections, deleteSubject, updateSubject, deleteStrand, updateStrand, updateSection, deleteSection, updateSemester } from '../controllers/adminController.js';
+import { /* createAdmin, */ updateUserAccount, resetUserPassword, initializeYearLevels, getAllYearLevels, filterSubjects, getAvailableAdvisorySections, /* getUserList */ /* assignStudentToTeacher */ createStrand, getAllStrands, getAllUsers, createUserAccount, deleteUserAccount, getUserListByRole, createSubject, getAllSubjects, createSemester, deleteSemester, getAllSemesters, createSection, getAllSections, deleteSubject, updateSubject, deleteStrand, updateStrand, updateSection, deleteSection, updateSemester, getPendingStudents, enrollStudent } from '../controllers/adminController.js';
 
 
 const router = express.Router();
@@ -38,4 +38,6 @@ router.route('/advisorySections').get(protect, authorizeRoles('admin'), getAvail
 
 router.post('/yearLevels/init', protect, authorizeRoles('admin'), initializeYearLevels);
 router.route('/yearLevels').get(protect, authorizeRoles('admin'), getAllYearLevels);
+router.route('/pending-students').get(protect, authorizeRoles('admin'), getPendingStudents);
+router.route('/enroll-student').put(protect, authorizeRoles('admin'), enrollStudent);
 export default router;

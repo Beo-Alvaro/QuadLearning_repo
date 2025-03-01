@@ -1,16 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar';
 import { Table, Container, Alert, Form, Row, Col , Modal, Button, Badge, Card, OverlayTrigger, Tooltip} from 'react-bootstrap';
+import { useTeacherUserContext } from '../hooks/useTeacherUserContext';
 import UpdateStudentModal from '../TeacherComponents/UpdateStudentModal';
 import './TeacherViewStudent.css';
+import TeacherStudentTable from '../TeacherComponents/TeacherStudentTable';
 const TeacherViewStudents = () => {
-    const [sections, setSections] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    
-    // Filter states
-    const [strands, setStrands] = useState([]);
-    const [yearLevels, setYearLevels] = useState([]);
     const [availableSections, setAvailableSections] = useState([]);
     const [showAdvisoryOnly, setShowAdvisoryOnly] = useState(false);
     
@@ -20,145 +15,76 @@ const TeacherViewStudents = () => {
     const [selectedYearLevel, setSelectedYearLevel] = useState('');
     const [selectedSection, setSelectedSection] = useState('');
 
-    const [selectedStudent, setSelectedStudent] = useState('');
-
     const [showModal, setShowModal] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState(null);
-    const [teacherAdvisoryClassId, setTeacherAdvisoryClassId] = useState('');
-
-    
-
-// Update the fetchData function in useEffect
-useEffect(() => {
-    const fetchData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            // Fetch teacher's sections with populated student data
-            const sectionsResponse = await fetch('/api/teacher/sections', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!sectionsResponse.ok) {
-                throw new Error('Failed to fetch sections');
-            }
-
-         
-            const sectionsData = await sectionsResponse.json();
-            console.log('Fetched sections data:', sectionsData);
-
-            // Find the section where advisoryClass exists
-            const advisorySection = sectionsData.find(section => {
-                console.log('Checking section:', section.name, 'Advisory:', section.advisoryClass);
-                return section.advisoryClass; // Since we know this is the advisory section
-            });
-            
-            console.log('Found advisory section:', advisorySection);
-            
-            if (advisorySection && advisorySection.advisoryClass) {
-                setTeacherAdvisoryClassId(advisorySection.advisoryClass.trim());
-            }
-            
-            
-            
-            setSections(sectionsData);
-
-            // Extract unique strands and year levels from sections
-            const uniqueStrands = [...new Set(sectionsData.map(section => 
-                section.strand?.name))].filter(Boolean);
-            const uniqueYearLevels = [...new Set(sectionsData.map(section => 
-                section.yearLevel?.name))].filter(Boolean);
-
-            setStrands(uniqueStrands);
-            setYearLevels(uniqueYearLevels);
-
-        } catch (error) {
-            console.error('Error:', error);
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    fetchData();
-}, []); // Empty dependency array for initial load
 
 
+    const { sections, strands, yearLevels, loading, error, fetchData } = useTeacherUserContext();
 
-
-const handleViewStudent = (student) => {
-    setSelectedStudentId(student._id);
-    
-    // Pass the student's section, strand, and year level details directly
-    setShowModal(true);
-};
-
-    // Update available sections when strand or year level changes
     useEffect(() => {
-        const filteredSections = sections.filter(section => {
-            const matchesStrand = !selectedStrand || section.strand?.name === selectedStrand;
-            const matchesYearLevel = !selectedYearLevel || section.yearLevel?.name === selectedYearLevel;
+        fetchData()
+    }, [])
+
+    const handleViewStudent = (student) => {
+        setSelectedStudentId(student._id);
+        setShowModal(true);
+    };
+    
+    // Function to filter sections based on strand and year level
+    const filteredSections = useMemo(() => {
+        return sections.filter(({ strand, yearLevel }) => {
+            const matchesStrand = !selectedStrand || strand?.name === selectedStrand;
+            const matchesYearLevel = !selectedYearLevel || yearLevel?.name === selectedYearLevel;
             return matchesStrand && matchesYearLevel;
         });
-
+    }, [sections, selectedStrand, selectedYearLevel]);
+    
+    
+    useEffect(() => {
         setAvailableSections(filteredSections);
-        setSelectedSection(''); // Reset selected section when filters change
-    }, [selectedStrand, selectedYearLevel, sections]);
-
+    
+        // Reset the selected section if it's no longer valid
+        if (selectedSection && !filteredSections.some(section => section._id === selectedSection)) {
+            setSelectedSection('');
+        }
+    }, [filteredSections, selectedSection]);
+    
     const filteredStudents = useMemo(() => {
-        return sections.flatMap(section => {
-            // If advisory-only is selected, filter for advisory students
-            if (showAdvisoryOnly) {
-                return (section.students || []).filter(student => student.isAdvisory).map(student => ({
-                    ...student,
-                    sectionName: section.name,
-                    strandName: section.strand?.name || 'Not Set',
-                    yearLevelName: section.yearLevel?.name || 'Not Set',
-                }));
-            }
-    
-            // Filter based on selected Strand, Year Level, and Section
+        return sections.flatMap(({ students, name, strand, yearLevel, _id }) => {
             const matchesFilters =
-                (!selectedStrand || section.strand?.name === selectedStrand) &&
-                (!selectedYearLevel || section.yearLevel?.name === selectedYearLevel) &&
-                (!selectedSection || section._id === selectedSection);
+                (!selectedStrand || strand?.name === selectedStrand) &&
+                (!selectedYearLevel || yearLevel?.name === selectedYearLevel) &&
+                (!selectedSection || _id === selectedSection);
     
-            if (matchesFilters) {
-                return (section.students || []).map(student => ({
-                    ...student,
-                    _id: student._id,
-                    username: student.username,
-                    sectionName: section.name,
-                    strandName: section.strand?.name || 'Not Set',
-                    yearLevelName: section.yearLevel?.name || 'Not Set',
-                    isAdvisory: student.isAdvisory,
-                }));
-            }
+            if (!matchesFilters) return [];
     
-            return [];
+            return (students || []).filter(student => 
+                !showAdvisoryOnly || student.isAdvisory
+            ).map(student => ({
+                ...student,
+                sectionName: name,
+                strandName: strand?.name || 'Not Set',
+                yearLevelName: yearLevel?.name || 'Not Set',
+            }));
         });
-    }, [sections, showAdvisoryOnly, selectedStrand, selectedYearLevel, selectedSection]);
-
-
+    }, [sections, selectedStrand, selectedYearLevel, selectedSection, showAdvisoryOnly]);
     
-useEffect(() => {
-    console.log('State Updated:', {
-        sections,
-        teacherAdvisoryClassId,
-        selectedStrand,
-        selectedYearLevel,
-        showAdvisoryOnly
-    });
-}, [sections, teacherAdvisoryClassId, selectedStrand, selectedYearLevel, showAdvisoryOnly]);
+    
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
+
+    const handleToggleAdvisoryView = (e) => {
+        setShowAdvisoryOnly(e.target.checked); // Directly use the checkbox's value
+        if (e.target.checked) {
+            // Clear the selected filters when enabling advisory-only mode
+            setSelectedStrand('');
+            setSelectedYearLevel('');
+            setSelectedSection('');
+        }
+    };
+    
+    
 
    return (
     <>
@@ -245,14 +171,7 @@ useEffect(() => {
                         id="advisory-switch"
                         label={<span className="fw-bold">Show Only Advisory Class</span>}
                         checked={showAdvisoryOnly}
-                        onChange={(e) => {
-                            setShowAdvisoryOnly(e.target.checked);
-                            if (e.target.checked) {
-                                setSelectedStrand('');
-                                setSelectedYearLevel('');
-                                setSelectedSection('');
-                            }
-                        }}
+                        onChange={handleToggleAdvisoryView}
                         className="mb-0"
                     />
                     {!showAdvisoryOnly && (
@@ -335,59 +254,11 @@ useEffect(() => {
         </Card>
 
         {/* Students Table Section */}
-        <Card className="shadow-sm">
-            <Card.Body className="p-0">
-                {filteredStudents.length === 0 ? (
-                    <Alert variant="info" className="m-4">
-                        <i className="bi bi-info-circle me-2"></i>
-                        {showAdvisoryOnly 
-                            ? "No advisory students found."
-                            : "No students found for the selected filters."}
-                    </Alert>
-                ) : (
-                    <Table responsive hover className='custom-table text-center align-middle'>
-                        <thead className="bg-light">
-                            <tr>
-                                <th className="px-4 py-3">Student Name</th>
-                                <th className="px-4 py-3">Section</th>
-                                <th className="px-4 py-3">Strand</th>
-                                <th className="px-4 py-3">Year Level</th>
-                                {!showAdvisoryOnly && <th className="px-4 py-3">Advisory Student</th>}
-                                <th className="px-4 py-3 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredStudents.map((student) => (
-                                <tr key={student._id}>
-                                    <td className="px-4 py-3 fw-medium">{student.username}</td>
-                                    <td className="px-4 py-3">{student.sectionName}</td>
-                                    <td className="px-4 py-3">{student.strandName}</td>
-                                    <td className="px-4 py-3">{student.yearLevelName}</td>
-                                    {!showAdvisoryOnly && (
-                                        <td className="px-4 py-3">
-                                            <Badge bg={student.isAdvisory ? 'success' : 'secondary'}>
-                                                {student.isAdvisory ? 'Yes' : 'No'}
-                                            </Badge>
-                                        </td>
-                                    )}
-                                    <td className="px-4 py-3 text-center">
-                                        <Button 
-                                            variant="outline-primary" 
-                                            size="sm"
-                                            onClick={() => handleViewStudent(student)}
-                                            className="action-button"
-                                        >
-                                            <i className="bi bi-eye me-1"></i>
-                                            View Details
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                )}
-            </Card.Body>
-        </Card>
+        <TeacherStudentTable 
+    filteredStudents={filteredStudents}
+    showAdvisoryOnly={showAdvisoryOnly}
+    handleViewStudent={handleViewStudent}
+/>
 
         <UpdateStudentModal
             show={showModal}

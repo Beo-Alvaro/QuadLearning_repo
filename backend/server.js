@@ -5,21 +5,11 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import connectDB from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import superadminRoutes from './routes/superadminRoutes.js';
-import { createPredefinedSuperAdmin } from './createSAdmin.js';
 import adminRoutes from './routes/adminRoutes.js';
 import teacherRoutes from './routes/teacherRoutes.js';
 import semesterRoutes from './routes/semesterRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
-
-import { createPredefinedStudents } from './createStudent.js';
-import { createPredefinedSemester } from './createSemester.js'; 
-import { createPredefinedTeachers } from './createTeacher.js'; 
-import { createPredefinedSubjects } from './createSubject.js';
-import { createPredefinedSection } from './createSection.js';
-import { createPredefinedAdmin } from './createAdmin.js';
-import { createPredefinedRStudent } from './createRStudent.js';
-
-
+import messageRoutes from './routes/messageRoutes.js';
 dotenv.config(); // Load environment variables
 const port = process.env.PORT || 5000;
 
@@ -34,19 +24,6 @@ app.use(cookieParser()); // Middleware for parsing cookies
 connectDB()
     .then(() => {
         console.log('Connected to MongoDB');
-
-
-
-        // Create the predefined accounts (uncomment if needed)
-        // createPredefinedSuperAdmin();
-        // createPredefinedStudents();
-        // createPredefinedSemester();
-        // createPredefinedTeachers();
-        // createPredefinedSubjects();
-        // createPredefinedSection();
-        // createPredefinedAdmin();
-        // createPredefinedRStudent();
-
 
         // Start the server
         app.listen(port, () => {
@@ -63,9 +40,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
-app.use('/api/semesters', semesterRoutes);
+app.use('/api/admin', semesterRoutes);
 app.use('/api/student', studentRoutes);
-
+app.use('/api/messages', messageRoutes);
 // Basic route
 app.get('/', (req, res) => res.send('Server is ready'));
 

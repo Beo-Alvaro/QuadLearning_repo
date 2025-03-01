@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const userSchema = mongoose.Schema({
     username: {
@@ -55,6 +54,8 @@ const userSchema = mongoose.Schema({
         ref: 'Section',
         // This will only be populated for teachers
     },
+    status: { type: String, enum: ['active', 'pending'], default: 'active' }
+    ,
 
 
 

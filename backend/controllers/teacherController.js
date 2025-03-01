@@ -4,8 +4,8 @@ import Section from '../models/sectionModel.js';
 import Student from '../models/studentModel.js';
 import Subject from '../models/subjectModel.js';
 import Semester from '../models/semesterModel.js';
+import Grade from '../models/gradeModel.js';
 import PDFDocument from 'pdfkit';
-import blobStream from 'blob-stream';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -249,89 +249,214 @@ const importStudents = asyncHandler(async (req, res) => {
 
 
 const addGrade = asyncHandler(async (req, res) => {
-  const { studentId, subjectId, gradeType, gradeValue, semesterId } = req.body;
+    const { studentId, subjectId, semesterId, midterm, finals } = req.body;
 
-  // Validate input
-  if (!studentId || !subjectId || !gradeType || !semesterId) {
+    // Validate required fields
+    if (!studentId || !subjectId || !semesterId) {
     res.status(400);
-    throw new Error("All fields are required");
-  }
-
-  if (gradeValue < 0 || gradeValue > 100) {
-    res.status(400);
-    throw new Error("Grade must be between 0 and 100");
+        throw new Error('Student ID, Subject ID, and Semester ID are required');
   }
 
   try {
-    // Step 1: Find the student
-    const student = await Student.findOne({ user: studentId });
-    if (!student) {
-      res.status(404);
-      throw new Error("Student not found");
-    }
+        // Convert IDs to ObjectId
+        const objectIdStudent = new mongoose.Types.ObjectId(studentId);
+        const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
+        const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
 
-    // Step 2: Find or create the semester
-    let semester = student.grades.find((g) => g.semester.toString() === semesterId);
-    if (!semester) {
-      // Add a new semester if it doesn't exist
-      semester = { semester: semesterId, subjects: [] };
-      student.grades.push(semester);
-    }
+        // Calculate final rating (40% midterm, 60% finals)
+        const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
+        const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
+        const finalRating = (midtermValue * 0.4 + finalsValue * 0.6).toFixed(2);
+        
+        // Determine if passed or failed (75 is passing)
+        const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
 
-    // Step 3: Find or create the subject
-    let subject = semester.subjects.find((s) => s.subject.toString() === subjectId);
-    if (!subject) {
-      // Add a new subject if it doesn't exist
-      subject = {
-        subject: subjectId,
-        midterm: null,
-        finals: null,
-        finalRating: null,
-        action: null,
-      };
-      semester.subjects.push(subject);
-    }
+        // Find existing grade for this student, semester, and subject
+    let grade = await Grade.findOne({
+            student: objectIdStudent,
+            semester: objectIdSemester,
+            'subjects.subject': objectIdSubject
+        });
 
-    // Step 4: Update the grade
-    if (gradeType === "midterm") subject.midterm = gradeValue;
-    if (gradeType === "finals") subject.finals = gradeValue;
+        let result;
 
-    // Step 5: Calculate final rating and action if both grades exist
-    if (subject.midterm !== null && subject.finals !== null) {
-      subject.finalRating = (subject.midterm + subject.finals) / 2;
-      subject.action = subject.finalRating >= 75 ? "PASSED" : "FAILED";
-    }
+        if (grade) {
+            // Update existing grade
+            const subjectIndex = grade.subjects.findIndex(
+                s => s.subject.toString() === subjectId
+            );
 
-    // Step 6: Save the updated student record
-    const updatedStudent = await Student.findOneAndUpdate(
-      { user: studentId }, // filter to find the student
-      { $set: { "grades": student.grades } }, // update grades array
-      { new: true, runValidators: true }
-    );
+            if (subjectIndex !== -1) {
+                // Update existing subject
+                if (midterm !== undefined) grade.subjects[subjectIndex].midterm = midtermValue;
+                if (finals !== undefined) grade.subjects[subjectIndex].finals = finalsValue;
+                grade.subjects[subjectIndex].finalRating = parseFloat(finalRating);
+                grade.subjects[subjectIndex].action = action;
+            } else {
+                // Add new subject
+                grade.subjects.push({
+                    subject: objectIdSubject,
+                    midterm: midtermValue,
+                    finals: finalsValue,
+                    finalRating: parseFloat(finalRating),
+                    action
+                });
+            }
 
-    if (!updatedStudent) {
-      res.status(404);
-      throw new Error("Failed to update student grades");
-    }
+            result = await grade.save();
+        } else {
+            // Create new grade
+            grade = new Grade({
+                student: objectIdStudent,
+                semester: objectIdSemester,
+                subjects: [{
+                    subject: objectIdSubject,
+                    midterm: midtermValue,
+                    finals: finalsValue,
+                    finalRating: parseFloat(finalRating),
+                    action
+                }]
+            });
+
+            result = await grade.save();
+        }
+
+        // Log the saved grade for debugging
+        console.log('Saved grade:', {
+            id: result._id,
+            student: result.student.toString(),
+            semester: result.semester.toString(),
+            subjectCount: result.subjects.length
+        });
 
     res.status(200).json({
       success: true,
+            message: 'Grade added successfully',
       data: {
-        studentId,
-        subjectId,
-        gradeType,
-        gradeValue,
-        finalRating: subject.finalRating,
-        action: subject.action,
-      },
+                midterm: midtermValue,
+                finals: finalsValue,
+                finalRating,
+                action
+      }
     });
   } catch (error) {
-    console.error("Error saving grade:", error);
+        console.error('Error adding grade:', error);
     res.status(500);
-    throw new Error("Error saving grade: " + error.message);
+        throw new Error('Error adding grade: ' + error.message);
   }
 });
-    
+
+
+const bulkAddGrades = asyncHandler(async (req, res) => {
+    try {
+        const updates = req.body.updates;
+        console.log('Received bulk updates:', updates);
+
+        if (!updates || !Array.isArray(updates) || updates.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid updates provided'
+            });
+        }
+
+        let updatedGrades = [];
+
+        for (const update of updates) {
+            const { studentId, subjectId, semesterId, midterm, finals } = update;
+            
+            if (!studentId || !subjectId || !semesterId) {
+                console.warn('Skipping update with missing required fields:', update);
+                continue;
+            }
+
+            // Convert IDs to ObjectId
+            const objectIdStudent = new mongoose.Types.ObjectId(studentId);
+            const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
+            const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
+
+            // Calculate final rating
+            const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
+            const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
+            const finalRating = (midtermValue * 0.4 + finalsValue * 0.6).toFixed(2);
+            const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
+
+            // Find existing grade for this student, semester, and subject
+            let grade = await Grade.findOne({
+                student: objectIdStudent,
+                semester: objectIdSemester,
+                'subjects.subject': objectIdSubject
+            });
+
+            if (!grade) {
+                // Create new grade document
+                grade = new Grade({
+                    student: objectIdStudent,
+                    semester: objectIdSemester,
+                    subjects: [{
+                        subject: objectIdSubject,
+                        midterm: midtermValue,
+                        finals: finalsValue,
+                        finalRating: parseFloat(finalRating),
+                        action
+                    }]
+                });
+            } else {
+                // Find the subject in the subjects array
+                const subjectIndex = grade.subjects.findIndex(
+                    s => s.subject.toString() === subjectId
+                );
+
+                if (subjectIndex !== -1) {
+                    // Update existing subject
+                    if (midterm !== undefined) grade.subjects[subjectIndex].midterm = midtermValue;
+                    if (finals !== undefined) grade.subjects[subjectIndex].finals = finalsValue;
+                    grade.subjects[subjectIndex].finalRating = parseFloat(finalRating);
+                    grade.subjects[subjectIndex].action = action;
+                } else {
+                    // Add new subject
+                    grade.subjects.push({
+                        subject: objectIdSubject,
+                        midterm: midtermValue,
+                        finals: finalsValue,
+                        finalRating: parseFloat(finalRating),
+                        action
+                    });
+                }
+            }
+
+            // Save the grade
+            await grade.save();
+            
+            // Add to updated grades
+            updatedGrades.push({
+                studentId,
+                subjectId,
+                midterm: midtermValue,
+                finals: finalsValue,
+                finalRating,
+                action
+            });
+        }
+
+        console.log(`Successfully updated ${updatedGrades.length} grades`);
+
+        // Send response
+        res.status(200).json({
+            success: true,
+            message: `Successfully updated ${updatedGrades.length} grades`,
+            updatedGrades
+        });
+
+    } catch (error) {
+        console.error('Error in bulkAddGrades:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to add grades',
+            error: error.message
+        });
+    }
+});
+  
 // @desc    Update grade for a student
 // @route   PUT /api/grades/:id
 // @access  Private (teacher role)
@@ -428,6 +553,10 @@ const deleteGrade = asyncHandler(async (req, res) => {
 // @route   GET /api/grades/form137/:studentId
 // @access  Private (teacher role)
 
+// @desc    Generate Form 137 for a student
+// @route   GET /api/grades/form137/:studentId
+// @access  Private (teacher role)
+
 const generateForm137 = asyncHandler(async (req, res, next) => {
     try {
         const { studentId } = req.params;
@@ -516,9 +645,7 @@ const generateForm137 = asyncHandler(async (req, res, next) => {
         drawField('LRN', student.user.username || 'N/A', 30, startY);
         drawField('Name', fullName || 'N/A', 305, startY);
         drawField('Strand', student.strand?.name || 'N/A', 30, startY + 20);
-
         drawField('Year Level', student.yearLevel?.name || 'N/A', 305, startY + 20);
-
         drawField('Section', student.section?.name || 'N/A', 30, startY + 40);
         drawField('Address', student.address || 'N/A', 305, startY + 40);
 
@@ -876,42 +1003,53 @@ const getSubjectGrades = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Find all students who have grades for this subject and semester
-        const students = await Student.find({
-            'grades.semester': semesterId,
-            'grades.subjects.subject': subjectId
+        console.log(`Finding grades for subject: ${subjectId}, semester: ${semesterId}`);
+        
+        // Convert both IDs to ObjectId to ensure proper matching
+        const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
+        const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
+        
+        // Find all grades for the given semester that contain the subject
+        const grades = await Grade.find({
+            semester: objectIdSemester,
+            "subjects.subject": objectIdSubject
         });
 
-        // Format the grades data
-        const gradesData = {};
+        console.log(`Found ${grades.length} grade records`);
         
-        students.forEach(student => {
-            // Find the semester grades
-            const semesterGrades = student.grades.find(
-                g => g.semester.toString() === semesterId
+        // Format the response
+        const formattedGrades = {};
+        
+        for (const grade of grades) {
+            // Find the subject entry in the subjects array
+                const subjectGrade = grade.subjects.find(
+                s => s.subject && s.subject.toString() === subjectId
             );
             
-            if (semesterGrades) {
-                // Find the subject grades within the semester
-                const subjectGrades = semesterGrades.subjects.find(
-                    s => s.subject.toString() === subjectId
-                );
-
-                if (subjectGrades) {
-                    gradesData[student.user] = {
-                        [subjectId]: {
-                            midterm: subjectGrades.midterm,
-                            finals: subjectGrades.finals,
-                            finalRating: subjectGrades.finalRating,
-                            action: subjectGrades.action
-                        }
-                    };
-                }
+            if (!subjectGrade) {
+                console.log(`No matching subject found in grade ${grade._id}`);
+                continue;
             }
-        });
+            
+            // Use student ID directly from the grade document
+            const studentId = grade.student.toString();
+            
+            // Initialize student entry if it doesn't exist
+            if (!formattedGrades[studentId]) {
+                formattedGrades[studentId] = {};
+            }
+            
+            // Add the subject grades
+            formattedGrades[studentId][subjectId] = {
+                midterm: subjectGrade.midterm,
+                finals: subjectGrade.finals,
+                finalRating: subjectGrade.finalRating,
+                action: subjectGrade.action
+            };
+        }
 
-        res.json(gradesData);
-        
+        console.log('Sending formatted grades:', Object.keys(formattedGrades).length);
+        res.json(formattedGrades);
     } catch (error) {
         console.error('Error in getSubjectGrades:', error);
         res.status(500);
@@ -1035,6 +1173,56 @@ const getTeacherDashboard = asyncHandler(async (req, res) => {
 });
   
 
+// Add this new controller function
+const getStudentGrades = asyncHandler(async (req, res) => {
+    const { studentId } = req.params;
+    
+    if (!studentId) {
+        res.status(400);
+        throw new Error('Student ID is required');
+    }
+    
+    try {
+        // Convert studentId to ObjectId
+        const objectIdStudent = new mongoose.Types.ObjectId(studentId);
+        
+        // Find all grades for this student
+        const grades = await Grade.find({ student: objectIdStudent })
+            .populate('semester')
+            .populate({
+                path: 'subjects.subject',
+                model: 'Subject',
+                select: 'name'
+            })
+            .lean();
+        
+        console.log(`Found ${grades.length} grade records for student ${studentId}`);
+        
+        // Format the grades for easier consumption by the frontend
+        const formattedGrades = grades.map(grade => {
+            return {
+                _id: grade._id,
+                semester: grade.semester?.name || 'Unknown Semester',
+                semesterId: grade.semester?._id || null,
+                subjects: grade.subjects.map(subject => ({
+                    subjectId: subject.subject?._id || null,
+                    subjectName: subject.subject?.name || 'Unknown Subject',
+                    midterm: subject.midterm,
+                    finals: subject.finals,
+                    finalRating: subject.finalRating,
+                    action: subject.action
+                }))
+            };
+        });
+        
+        res.json(formattedGrades);
+    } catch (error) {
+        console.error('Error fetching student grades:', error);
+        res.status(500);
+        throw new Error('Error fetching student grades: ' + error.message);
+    }
+});
+
 export { 
     getGradesByStudent, 
     addGrade, 
@@ -1049,5 +1237,7 @@ export {
     getTeacherSubjects,
     getSubjectStudents,
     getSubjectGrades,
-    getTeacherAdvisoryClass
+    getTeacherAdvisoryClass,
+    bulkAddGrades, 
+    getStudentGrades,
 };

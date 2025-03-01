@@ -81,46 +81,6 @@ const studentSchema = mongoose.Schema(
                 // required: true removed
             }
         },
-
-        // Grades structure with linked Semester
-        grades: [
-            {
-                semester: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: 'Semester',
-                    required: true,
-                },
-                subjects: [
-                    {
-                        subject: { // Reference to Subject model
-                            type: mongoose.Schema.Types.ObjectId,
-                            ref: 'Subject',
-                            required: true,
-                        },
-                        midterm: {
-                            type: Number,
-                            min: 0,
-                            max: 100
-                        },
-                        finals: {
-                            type: Number,
-                            min: 0,
-                            max: 100
-                        },
-                        finalRating: {
-                            type: Number,
-                            min: 0,
-                            max: 100
-                        },
-                        action: {
-                            type: String, // Pass/Fail
-                            enum: ['PASSED', 'FAILED'],
-                        },
-                    },
-                ],
-            },
-        ],
-
         // Additional metadata
         contactNumber: {
             type: String,
@@ -128,6 +88,14 @@ const studentSchema = mongoose.Schema(
     },
     { timestamps: true } // Add createdAt and updatedAt fields
 );
+
+// Add virtual for grades
+studentSchema.virtual('grades', {
+    ref: 'Grade',
+    localField: '_id',
+    foreignField: 'student',
+    justOne: false // This is a one-to-many relationship
+});
 
 // Add virtual population for user data
 studentSchema.virtual('userData', {
@@ -140,6 +108,7 @@ studentSchema.virtual('userData', {
 // Ensure virtuals are included when converting document to JSON
 studentSchema.set('toJSON', { virtuals: true });
 studentSchema.set('toObject', { virtuals: true });
+studentSchema.index({ 'user': 1, 'grades.semester': 1, 'grades.subjects.subject': 1 });
 // Compound unique index to prevent duplicates
 
 // Create the Student model

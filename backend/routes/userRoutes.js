@@ -4,11 +4,13 @@ const router = express.Router();
 import {
     authUser,
     logoutUser,
+    getAdminId
 } from '../controllers/userController.js';
 
 
 
 router.post('/auth', authUser);
 router.post('/logout', logoutUser);
+router.get('/adminId', protect, getAdminId);
 
 export default router;

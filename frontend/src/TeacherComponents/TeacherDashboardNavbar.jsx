@@ -76,6 +76,7 @@ function TeacherDashboardNavbar() {
         <Nav.Link className="mx-3 text-white" href="/login/TeacherScreens/TeacherHomeScreen">Home</Nav.Link>
         <Nav.Link className="mx-3 text-white" href="/login/TeacherScreens/TeacherViewStudents">View Students</Nav.Link>
         <Nav.Link className="mx-3 text-white" href="/login/TeacherScreens/TeacherEncodeGrade">Encode Grades</Nav.Link>
+        <Nav.Link className="mx-3 text-white" href="/login/TeacherScreens/TeacherAttendance">Attendance</Nav.Link>
         <Nav.Link className="mx-3 text-white" href="/login/TeacherScreens/TeacherGenerateForm">Generate Form</Nav.Link>
       </Nav>
       <Nav>
