@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-
+import mongoose from 'mongoose';
 
 const yearLevelSchema = new mongoose.Schema(
   {
@@ -19,4 +18,4 @@ const yearLevelSchema = new mongoose.Schema(
 
 const YearLevel = mongoose.model('YearLevel', yearLevelSchema);
 
-module.exports = YearLevel; 
+export default YearLevel;
