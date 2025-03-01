@@ -957,6 +957,68 @@ const getTeacherDashboard = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Get excel template for teacher with student data
+// @route   wala pa
+// @access  Private (teacher only)
+const getSectionAttendance = asyncHandler(async (req, res) => {
+    try {
+        // Find the teacher's advisory class
+        const teacher = await Teacher.findOne({ user: req.user._id }).populate("advisoryClass");
+
+        if (!teacher || !teacher.advisoryClass) {
+            return res.status(404).json({
+                success: false,
+                message: 'No advisory class found for this teacher'
+            });
+        }
+
+        const advisoryClassId = teacher.advisoryClass._id;
+
+        // Fetch only students belonging to the teacher's advisory class
+        const maleStudents = await Student.find({ section: advisoryClassId, gender: 'Male' }).select('firstName lastName');
+        const femaleStudents = await Student.find({ section: advisoryClassId, gender: 'Female' }).select('firstName lastName');
+
+        if (!maleStudents.length && !femaleStudents.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'No students found in this advisory class'
+            });
+        }
+
+         // Load the Excel template file
+        const templatePath = path.join(__dirname, '../uploads/SHS_Forms.xlsx');
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(templatePath);
+
+        // Get the attendance sheet
+        const worksheet = workbook.getWorksheet(2);
+
+        // Inject Male students starting at C12
+        let maleRow = 12;  
+        maleStudents.forEach(student => {
+            worksheet.getCell(`C${maleRow}`).value = `${student.lastName}, ${student.firstName}`;
+            maleRow++;
+        });
+
+        // Inject Female students starting at C30
+        let femaleRow = 30;  
+        femaleStudents.forEach(student => {
+            worksheet.getCell(`C${femaleRow}`).value = `${student.lastName}, ${student.firstName}`;
+            femaleRow++;
+        });
+
+        // Write modified file to buffer and send to frontend
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Disposition', 'attachment; filename="advisory_class_grades.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+    } catch (error) {
+        console.error("Error generating Excel file:", error);
+        res.status(500);
+        throw new Error('Error generating Excel file');
+    }
+}); 
+
 module.exports = { 
     getGradesByStudent, 
     addGrade, 
@@ -971,5 +1033,6 @@ module.exports = {
     getTeacherSubjects,
     getSubjectStudents,
     getSubjectGrades,
-    getTeacherAdvisoryClass
+    getTeacherAdvisoryClass,
+    getSectionAttendance
 };

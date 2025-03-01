@@ -1,5 +1,5 @@
 const express = require('express');
-const { addGrade, updateGrade, generateForm137, getTeacherSections, fillOutStudentForm, getTeacherDashboard, getStudentData, getTeacherSubjects, getSubjectGrades, getSubjectStudents, getTeacherAdvisoryClass } = require('../controllers/teacherController.js');
+const { addGrade, updateGrade, generateForm137, getTeacherSections, fillOutStudentForm, getTeacherDashboard, getStudentData, getTeacherSubjects, getSubjectGrades, getSubjectStudents, getTeacherAdvisoryClass, getSectionAttendance } = require('../controllers/teacherController.js');
 const { protect, authorizeRoles, teacher } = require('../middleware/authMiddleware.js');
 
 const router = express.Router();
@@ -18,5 +18,7 @@ router.get('/subject-grades/:subjectId', protect, teacher, getSubjectGrades); //
 router.get('/subject-students', protect, teacher, getSubjectStudents); // GET route for fetching subject students
 router.get('/advisorySections', protect, teacher, getTeacherAdvisoryClass); // GET route for fetching teacher advisory class
 router.get('/dashboard', protect, teacher, getTeacherDashboard); // GET route for fetching teacher dashboard
+
+router.get('/SectionAttendance', protect, teacher, getSectionAttendance); // GET route for fetching student attendance excel template
 
 module.exports = router;
