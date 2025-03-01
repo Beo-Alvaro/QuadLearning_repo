@@ -70,7 +70,7 @@ const AdminSidebar = () => {
             <Nav className="flex-column flex-grow-1">
                 <LinkContainer to="/admin">
                     <Nav.Link className="sidebar-link">
-                        <i className="bi bi-house-door"></i> Home
+                        <i className="bi bi-house-door icon"></i> Home
                     </Nav.Link>
                 </LinkContainer>
 
@@ -143,7 +143,7 @@ const AdminSidebar = () => {
                      <div className="sidebar-footer">
                     <div className="logout-link">
                         <Nav.Link onClick={handleLogOut} className="sidebar-link">
-                            <i className="bi bi-box-arrow-right"></i>
+                            <i className="bi bi-box-arrow-right icon"></i>
                             <span>Logout</span>
                         </Nav.Link>
                     </div>

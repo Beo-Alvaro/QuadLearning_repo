@@ -170,6 +170,9 @@ const StudModals = ({
         <option value="">Select Semester</option>
         {semesters
             .filter(semester => {
+                // Filter for active semesters only
+                const isActive = semester.status === 'active';
+                
                 // More comprehensive filtering
                 const hasValidStrand = semester.strand && 
                     (typeof semester.strand === 'object' 
@@ -181,7 +184,7 @@ const StudModals = ({
                         ? semester.yearLevel._id === newUser.yearLevel 
                         : semester.yearLevel === newUser.yearLevel);
                 
-                return hasValidStrand && hasValidYearLevel;
+                return isActive && hasValidStrand && hasValidYearLevel;
             })
             .map(semester => {
                 // Safely extract strand and year level names
@@ -370,6 +373,9 @@ const StudModals = ({
         <option value="">Select Semester</option>
         {semesters
             .filter(semester => {
+                // Filter for active semesters only
+                const isActive = semester.status === 'active';
+                
                 // Ensure semester has valid strand and year level
                 const hasValidStrand = semester.strand && 
                     (typeof semester.strand === 'object' 
@@ -381,7 +387,7 @@ const StudModals = ({
                         ? semester.yearLevel._id === editUser.yearLevel 
                         : semester.yearLevel === editUser.yearLevel);
                 
-                return hasValidStrand && hasValidYearLevel;
+                return isActive && hasValidStrand && hasValidYearLevel;
             })
             .map(semester => {
                 // Safely extract strand and year level names

@@ -82,40 +82,89 @@ const TeacherModal = ({
                 <h4 className="mb-0 text-muted">Academic Performance</h4>
             </div>
         
-            <Card className="border shadow-sm">
-                <Table responsive hover className='mb-0 text-center'>
-                    <thead className="table-light">
-                        <tr>
-                            <th>Subject</th>
-                            <th>Midterm</th>
-                            <th>Finals</th>
-                            <th>Final Rating</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {selectedStudent.grades.map((grade, index) => (
-                            grade.subjects.map((subject, idx) => (
-                                <tr key={`${index}-${idx}`} 
-                                    className={subject.finalRating < 75 ? 'table-warning' : ''}>
-                                    <td>{subject.subjectName}</td>
-                                    <td>{subject.midterm}</td>
-                                    <td>{subject.finals}</td>
-                                    <td>{subject.finalRating}</td>
-                                    <td>
-                                        <Badge 
-                                            bg={subject.finalRating >= 75 ? 'success' : 'danger'}
-                                            className="px-2 py-1"
-                                        >
-                                            {subject.finalRating >= 75 ? 'Passed' : 'Failed'}
-                                        </Badge>
-                                    </td>
-                                </tr>
-                            ))
-                        ))}
-                    </tbody>
-                </Table>
-            </Card>
+            {selectedStudent.grades && selectedStudent.grades.length > 0 ? (
+                (() => {
+                    // Group grades by semester ID
+                    const semesterGroups = {};
+                    
+                    selectedStudent.grades.forEach(gradeEntry => {
+                        const semesterId = gradeEntry.semester?._id || 
+                                          (typeof gradeEntry.semester === 'string' ? gradeEntry.semester : 'unknown');
+                        
+                        if (!semesterGroups[semesterId]) {
+                            semesterGroups[semesterId] = {
+                                semesterInfo: gradeEntry.semester,
+                                schoolYear: gradeEntry.schoolYear,
+                                subjects: []
+                            };
+                        }
+                        
+                        // Add all subjects from this grade entry to the semester group
+                        gradeEntry.subjects.forEach(subject => {
+                            semesterGroups[semesterId].subjects.push(subject);
+                        });
+                    });
+                    
+                    // Render each semester group
+                    return Object.entries(semesterGroups).map(([semesterId, group], index) => (
+                        <div key={semesterId} className="mb-4">
+                            <div className="d-flex align-items-center mb-2">
+                                <i className="bi bi-calendar-event text-primary me-2"></i>
+                                <h5 className="mb-0">
+                                    {group.semesterInfo ? (
+                                        typeof group.semesterInfo === 'object' ? 
+                                            group.semesterInfo.name : 
+                                            'Semester'
+                                    ) : 'Semester'} 
+                                    {group.schoolYear ? ` - ${group.schoolYear}` : ''}
+                                </h5>
+                            </div>
+                            
+                            <Card className="border shadow-sm">
+                                <Table responsive hover className='mb-0 text-center'>
+                                    <thead className="table-light">
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Midterm</th>
+                                            <th>Finals</th>
+                                            <th>Final Rating</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {group.subjects.map((subject, idx) => (
+                                            <tr key={idx} 
+                                                className={subject.finalRating < 75 ? 'table-warning' : ''}>
+                                                <td>{subject.subject ? (
+                                                    typeof subject.subject === 'object' ? 
+                                                        subject.subject.name : 
+                                                        subject.subjectName || 'Unknown'
+                                                ) : subject.subjectName || 'Unknown'}</td>
+                                                <td>{subject.midterm || '-'}</td>
+                                                <td>{subject.finals || '-'}</td>
+                                                <td>{subject.finalRating || '-'}</td>
+                                                <td>
+                                                    <Badge 
+                                                        bg={subject.finalRating >= 75 ? 'success' : 'danger'}
+                                                        className="px-2 py-1"
+                                                    >
+                                                        {subject.action || (subject.finalRating >= 75 ? 'PASSED' : 'FAILED')}
+                                                    </Badge>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </Card>
+                        </div>
+                    ));
+                })()
+            ) : (
+                <div className="text-center p-4 border rounded-3">
+                    <i className="bi bi-exclamation-circle text-muted fs-1"></i>
+                    <p className="mt-2">No grades available for this student.</p>
+                </div>
+            )}
         </div>
 
         <div className="text-center mt-4">

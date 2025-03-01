@@ -23,6 +23,23 @@ const TeacherEncodeGradeFilter = ({
   setSelectedYearLevel,
   setSelectedSection
 }) => {
+  // Filter subjects based on the selected semester
+  const filteredSubjects = subjects.filter(subject => {
+    if (!currentSemester) return false;
+    
+    // Check if subject has semester property and it matches current semester
+    return subject.semester && 
+           (typeof subject.semester === 'object' 
+             ? subject.semester._id === currentSemester 
+             : subject.semester === currentSemester);
+  });
+
+  // Debug logs to help troubleshoot
+  console.log('Current semester:', currentSemester);
+  console.log('All subjects:', subjects);
+  console.log('Filtered subjects:', filteredSubjects);
+  console.log('Available semesters:', semesters);
+
   return (
     <div>
       {/* Alerts */}
@@ -55,22 +72,32 @@ const TeacherEncodeGradeFilter = ({
               <Form.Group>
                 <Form.Label>Semester</Form.Label>
                 <Form.Select
-                  value={currentSemester}
-                  onChange={(e) => setCurrentSemester(e.target.value)}
+                  value={currentSemester || ''}
+                  onChange={(e) => {
+                    console.log('Selecting semester:', e.target.value);
+                    // Clear selected subject when changing semester
+                    setSelectedSubject('');
+                    setCurrentSemester(e.target.value);
+                  }}
                   disabled={loading}
                 >
                   <option value="">Select Semester</option>
-                  {semesters.map(semester => {
-                    const semesterName = semester.name || 'Unnamed Semester';
-                    const strandName = semester.strand?.name || 'No Strand';
-                    const yearLevelName = semester.yearLevel?.name || 'No Year Level';
-                    return (
-                      <option key={semester._id} value={semester._id}>
-                        {`${semesterName} - ${strandName} - ${yearLevelName}`}
-                      </option>
-                    );
-                  })}
+                  {semesters
+                    .filter(semester => semester.status === 'active') // Only show active semesters
+                    .map(semester => {
+                      const semesterName = semester.name || 'Unnamed Semester';
+                      const strandName = semester.strand?.name || 'No Strand';
+                      const yearLevelName = semester.yearLevel?.name || 'No Year Level';
+                      return (
+                        <option key={semester._id} value={semester._id}>
+                          {`${semesterName} - ${strandName} - ${yearLevelName}`}
+                        </option>
+                      );
+                    })}
                 </Form.Select>
+                <Form.Text className="text-muted">
+                  Only active semesters are displayed. Contact admin if your semester is missing.
+                </Form.Text>
               </Form.Group>
             </Col>
           </Row>
@@ -81,20 +108,27 @@ const TeacherEncodeGradeFilter = ({
                 <Form.Group>
                   <Form.Label>Subject</Form.Label>
                   <Form.Select
-                    value={selectedSubject}
+                    value={selectedSubject || ''}
                     onChange={(e) => {
                       console.log('Selected subject:', e.target.value);
                       setSelectedSubject(e.target.value);
-                  }}
+                    }}
                     disabled={!currentSemester || loading}
                   >
                     <option value="">Choose Subject</option>
-                    {subjects.map((subject) => (
-                      <option key={subject._id} value={subject._id}>
-                        {subject.name}
-                      </option>
-                    ))}
+                    {filteredSubjects.length > 0 ? (
+                      filteredSubjects.map((subject) => (
+                        <option key={subject._id} value={subject._id}>
+                          {subject.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No subjects available for this semester</option>
+                    )}
                   </Form.Select>
+                  <Form.Text className="text-muted">
+                    Only showing subjects for the selected semester
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -188,11 +222,10 @@ const TeacherEncodeGradeFilter = ({
                   >
                     <option value="">All Sections</option>
                     {availableSections.map(section => (
-        <option key={section} value={section}>
-            {section}
-        </option>
-    ))}
-
+                      <option key={section} value={section}>
+                          {section}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>

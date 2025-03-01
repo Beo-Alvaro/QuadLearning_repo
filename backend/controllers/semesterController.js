@@ -75,15 +75,15 @@ const endSemester = async (req, res) => {
         // Update students' status to pending
         const updatedStudents = await User.updateMany(
             { yearLevel: new mongoose.Types.ObjectId(semester.yearLevel), status: 'active' },
-            { status: 'pending' }
+            { status: 'inactive' }
         );
 
         // Update semester status to pending
-        semester.status = 'pending';
+        semester.status = 'inactive';
         await semester.save();
 
         console.log(updatedStudents);
-        res.status(200).json({ message: 'Semester ended, students set to pending, and semester marked as pending' });
+        res.status(200).json({ message: 'Semester ended, students set to pending, and semester marked as inactive' });
     } catch (error) {
         console.error('Error in endSemester:', error);
         res.status(500).json({ message: 'Failed to end semester', error: error.message });

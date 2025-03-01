@@ -9,10 +9,11 @@ import { useGradeDataContext } from '../hooks/useGradeDataContext';
 const TeacherEncodeGrade = () => {
     const [error, setError] = useState(null);
     const { selectedSubject, currentSemester, studentGrades, setStudentGrades,
-        subjects, successMessage, setSuccessMessage, filteredStudents,
+        subjects, successMessage, setSuccessMessage, filteredStudents, setCurrentSemester,
         showAdvisoryOnly, selectedStrand, selectedYearLevel, selectedSection,
         semesters, fetchSubjectStudents, fetchSubjects, fetchData, fetchSemesters, loading,
-        yearLevels, availableSections, setEditedGrades, strands, setSelectedSubject, setSelectedStrand, setSelectedYearLevel, setSelectedSection } = useGradeDataContext();
+        yearLevels, availableSections, setEditedGrades, strands, setSelectedSubject, setSelectedStrand,
+         setSelectedYearLevel, setSelectedSection } = useGradeDataContext();
 
     const [localGrades, setLocalGrades] = useState({});
     const [isSaving, setIsSaving] = useState(false);
@@ -389,6 +390,7 @@ const TeacherEncodeGrade = () => {
                     setSelectedStrand={setSelectedStrand}
                     setSelectedYearLevel={setSelectedYearLevel}
                     setSelectedSection={setSelectedSection}
+                    setCurrentSemester={setCurrentSemester}
                 />
 
                 {!selectedSubject ? (

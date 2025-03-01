@@ -11,6 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
 import mongoose from 'mongoose';
+
 // Derive __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename)
@@ -455,10 +456,7 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
             error: error.message
         });
     }
-});
-  
-// @desc    Update grade for a student
-// @route   PUT /api/grades/:id
+});// @route   PUT /api/grades/:id
 // @access  Private (teacher role)
 const updateGrade = async (req, res) => {
     try {
@@ -1222,6 +1220,7 @@ const getStudentGrades = asyncHandler(async (req, res) => {
         throw new Error('Error fetching student grades: ' + error.message);
     }
 });
+
 
 export { 
     getGradesByStudent, 

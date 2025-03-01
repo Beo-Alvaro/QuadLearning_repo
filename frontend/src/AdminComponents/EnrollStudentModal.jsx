@@ -180,8 +180,8 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                     (typeof semester.yearLevel === 'object' 
                         ? semester.yearLevel._id === newUser.yearLevel 
                         : semester.yearLevel === newUser.yearLevel);
-                
-                return hasValidStrand && hasValidYearLevel;
+                const isActive = semester.status === 'active' || semester.isActive === true;
+                return hasValidStrand && hasValidYearLevel && isActive;
             })
             .map(semester => {
                 // Safely extract strand and year level names

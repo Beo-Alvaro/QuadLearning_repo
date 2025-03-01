@@ -134,15 +134,18 @@ const AdminTeacherModals = ({
                         gap: '0.5rem' 
                     }}>
             <Form.Label>Semesters*</Form.Label>
-            {semesters.map((semester) => (
-              <Form.Check
-                key={semester._id}
-                type="checkbox"
-                label={`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
-                checked={newUser.semesters?.includes(semester._id)}
-                onChange={(e) => handleCheckboxChange(e, 'semesters', semester._id)}
-              />
-            ))}
+            {semesters
+                .filter(semester => semester.status === 'active')
+                .map((semester) => (
+                    <Form.Check
+                        key={semester._id}
+                        type="checkbox"
+                        label={`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
+                        checked={newUser.semesters?.includes(semester._id)}
+                        onChange={(e) => handleCheckboxChange(e, 'semesters', semester._id)}
+                    />
+                ))
+            }
           </div>
                                     <Form.Label>Advisory Section</Form.Label>
                                     <Form.Select
@@ -281,11 +284,14 @@ const AdminTeacherModals = ({
                                         })}
                                         required
                                     >
-                                        {semesters.map((semester) => (
-                                            <option key={semester._id} value={semester._id}>
-                                                {semester.name}
-                                            </option>
-                                        ))}
+                                        {semesters
+                                            .filter(semester => semester.status === 'active')
+                                            .map((semester) => (
+                                                <option key={semester._id} value={semester._id}>
+                                                    {semester.name}
+                                                </option>
+                                            ))
+                                        }
                                     </Form.Select>
                                 </Form.Group>
                             </div>
