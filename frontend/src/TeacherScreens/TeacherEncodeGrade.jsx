@@ -8,7 +8,7 @@ import { useGradeDataContext } from '../hooks/useGradeDataContext';
 
 const TeacherEncodeGrade = () => {
     const [error, setError] = useState(null);
-    const { selectedSubject, currentSemester, studentGrades, setStudentGrades,
+    const { selectedSubject, currentSemester, setCurrentSemester, studentGrades, setStudentGrades,
         subjects, successMessage, setSuccessMessage, filteredStudents,
         showAdvisoryOnly, selectedStrand, selectedYearLevel, selectedSection,
         semesters, fetchSubjectStudents, fetchSubjects, fetchData, fetchSemesters, loading,
@@ -389,6 +389,7 @@ const TeacherEncodeGrade = () => {
                     setSelectedStrand={setSelectedStrand}
                     setSelectedYearLevel={setSelectedYearLevel}
                     setSelectedSection={setSelectedSection}
+                    setCurrentSemester={setCurrentSemester}
                 />
 
                 {!selectedSubject ? (
