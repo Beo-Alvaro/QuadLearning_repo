@@ -1,11 +1,10 @@
-import express from 'express';
-import { viewStudentProfile, viewStudentGrades } from '../controllers/studentController.js';
-import { protect, authorizeRoles} from '../middleware/authMiddleware.js';
+const express = require('express');
+const { viewStudentProfile, viewStudentGrades } = require('../controllers/studentController.js');
+const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
 
 const router = express.Router();
 
-
-
 router.get('/profile', protect, authorizeRoles('student'), viewStudentProfile);
 router.get('/grades', protect, authorizeRoles('student'), viewStudentGrades);
-export default router;
+
+module.exports = router;

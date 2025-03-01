@@ -1,20 +1,17 @@
-import asyncHandler from 'express-async-handler';
-import User from '../models/userModel.js';
-import Section from '../models/sectionModel.js';
-import Student from '../models/studentModel.js';
-import Subject from '../models/subjectModel.js';
-import Semester from '../models/semesterModel.js';
-import Grade from '../models/gradeModel.js';
-import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import ExcelJS from 'exceljs';
-import mongoose from 'mongoose';
-// Derive __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename)
-
+const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel.js');
+const Section = require('../models/sectionModel.js');
+const Student = require('../models/studentModel.js');
+const Subject = require('../models/subjectModel.js');
+const Semester = require('../models/semesterModel.js');
+const { PDFDocument } = require('pdf-lib');
+const blobStream = require('blob-stream');
+const fs = require('fs');
+const path = require('path');
+const ExcelJS = require('exceljs');
+const libre = require('libreoffice-convert');
+const mongoose = require('mongoose');
+const dayjs = require('dayjs');
 
 // @desc    Fill out or update a student form
 // @route   PUT /api/teachers/student/:studentId/form
@@ -23,12 +20,11 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
     const { studentId } = req.params;
     const teacherId = req.user._id; // Authenticated teacher's ID
 
-
-      // First get the user to get their section
-      const user = await User.findById(studentId)
-      .populate('sections')
-      .populate('strand')
-      .populate('yearLevel')
+    // First get the user to get their section
+    const user = await User.findById(studentId)
+        .populate('sections')
+        .populate('strand')
+        .populate('yearLevel');
 
     if (!user) {
         res.status(404);
@@ -44,26 +40,24 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
 
     // Fetch teacher's assigned sections
     const teacherSections = await Section.find({ teacher: teacherId });
-    
+
     // Check if teacher is authorized for this section
-    const isAuthorized = teacherSections.some(section => 
+    const isAuthorized = teacherSections.some(section =>
         section._id.toString() === userSection._id.toString()
     );
-
 
     if (!isAuthorized) {
         res.status(403);
         throw new Error('Not authorized to update this student');
     }
 
-
+    
     // Find the student record
-    const student = await Student.findOne({ user: studentId });
+    const student = await findOne({ user: studentId });
     if (!student) {
         res.status(404);
         throw new Error('Student record not found');
     }
-
 
     // Update fields based on the student model
     const {
@@ -81,7 +75,6 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Update basic information
-
     if (firstName) student.firstName = firstName;
     if (lastName) student.lastName = lastName;
     if (middleInitial) student.middleInitial = middleInitial;
@@ -127,10 +120,8 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
             section: updatedStudent.section?.name,
             strand: updatedStudent.strand?.name,
         }
-
     });
 });
-
 
 // @desc    Get grades for a specific student
 // @route   GET /api/grades/student/:studentId
@@ -548,174 +539,106 @@ const deleteGrade = asyncHandler(async (req, res) => {
     res.json({ message: 'Grade removed' });
 });
 
-
 // @desc    Generate Form 137 for a student
 // @route   GET /api/grades/form137/:studentId
 // @access  Private (teacher role)
-
-// @desc    Generate Form 137 for a student
-// @route   GET /api/grades/form137/:studentId
-// @access  Private (teacher role)
-
-const generateForm137 = asyncHandler(async (req, res, next) => {
+const generateForm137 = asyncHandler(async (req, res) => {
     try {
         const { studentId } = req.params;
 
-        // Fetch the student data with necessary relationships populated
+        // Fetch student data with necessary relationships
         const student = await Student.findById(studentId)
-        .populate([
-            { path: 'user' },
-            { path: 'yearLevel' },
-            { path: 'section' },
-            { path: 'strand' },
-            {
-                path: 'grades',
-                populate: [
-                    { path: 'semester' },
-                    { path: 'subjects.subject', model: 'Subject' }
-                ]
-            }
-        ])
-        .lean();
+            .populate([
+                { path: "user" },
+                { path: "yearLevel" },
+                { path: "section" },
+                { path: "strand" },
+                {
+                    path: "grades",
+                    populate: [
+                        { path: "semester" },
+                        { path: "subjects.subject", model: "Subject" }
+                    ]
+                }
+            ])
+            .lean();
 
         if (!student) {
             res.status(404);
-            throw new Error('Student not found');
+            throw new Error("Student not found");
+        }
+        const admissionDate = dayjs(student.user.createdAt).format("MM/DD/YYYY");
+
+        // Format student's full name for the filename
+        const fullName = `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`;
+        const sanitizedFileName = fullName.replace(/[\/:*?"<>|]/g, '_');
+
+        // Define file paths
+        const templatePath = path.resolve(__dirname, "../../frontend/src/assets/Form 137-SHS 2016.xlsx");
+        const outputExcelPath = path.resolve(__dirname, `../../frontend/src/output/Form137_${sanitizedFileName}.xlsx`);
+
+        console.log(`📂 Loading template from: ${templatePath}`);
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(templatePath);
+
+        // Log available worksheets
+        console.log("✅ Available worksheets:", workbook.worksheets.map(ws => ws.name));
+
+        // Access worksheets safely
+        const worksheetFront = workbook.getWorksheet("FRONT");
+        const worksheetBack = workbook.getWorksheet("BACK");
+
+        if (!worksheetFront || !worksheetBack) {
+            throw new Error("❌ Worksheets not found in the template.");
         }
 
-        // Compute full name dynamically
-        const fullName = `${student.firstName} ${student.middleInitial ? student.middleInitial + '.' : ''} ${student.lastName}`.trim();
-        const sanitizedStudentName = fullName.replace(/[\/\\?%*:|"<>]/g, '_');
+        // 🔹 Insert student details in the FRONT worksheet
+        worksheetFront.getCell("F8").value = student.lastName || "N/A"; // Last Name
+        worksheetFront.getCell("Y8").value = student.firstName || "N/A"; // First Name
+        worksheetFront.getCell("AZ8").value = student.middleName || "N/A"; // Middle Name
+        worksheetFront.getCell("C9").value = student.user.username || "N/A"; // LRN
+        worksheetFront.getCell("AA9").value = student.birthdate || "N/A"; // Date of Birth
+        worksheetFront.getCell("AN9").value = student.gender || "N/A"; // Sex
+        worksheetFront.getCell("BH9").value = admissionDate || "N/A"; // Date of SHS Admission
 
-        // Set up PDF document
-        const doc = new PDFDocument({ size: 'A4', margin: 30 });
-        const pdfDirectory = path.join(__dirname, '../../pdfs');
+        console.log("✅ Student details inserted into the form.");
 
-        if (!fs.existsSync(pdfDirectory)) {
-            fs.mkdirSync(pdfDirectory, { recursive: true });
-        }
+        // **3️⃣ Insert Student Information**
+        worksheet.getCell("B22").value = "Tropical Village National Highschool"; // School Name
+        worksheet.getCell("F22").value = "330921"; // School ID
+        worksheet.getCell("J22").value = "11"; // Grade Level
+        worksheet.getCell("N22").value = "N/A"; // SY
+        worksheet.getCell("Q22").value = "1st Semester"; // Semester
+        worksheet.getCell("B24").value = student.section; // Section
 
-        const filePath = path.join(pdfDirectory, `form137-${sanitizedStudentName}.pdf`);
-        const writeStream = fs.createWriteStream(filePath);
+        console.log("✅ Grade 11 grades inserted.");
 
-        // Configure PDF response headers
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=form137-${sanitizedStudentName}.pdf`);
+         // **4️⃣ Insert Subjects and Grades**
+         let rowIndex = 30; // Starting row for subjects
 
-        doc.pipe(res);
-        doc.pipe(writeStream);
+            student.grades.forEach((grade) => {
+            worksheetFront.getCell(`C${rowIndex}`).value = grade.subject.name; // Subject Name
+            worksheetFront.getCell(`K${rowIndex}`).value = grade.midterm; // Midterm Grade
+            worksheetFront.getCell(`M${rowIndex}`).value = grade.final; // Final Grade
 
-        // Start PDF content
-        doc.font('Helvetica');
-
-        // Header Section
-        const leftImagePath = path.join(__dirname, '../../frontend/img/DepED.png');
-        const rightImagePath = path.join(__dirname, '../../frontend/img/TVNHS.png');
-
-        if (fs.existsSync(leftImagePath)) {
-            doc.image(leftImagePath, 95, 20, { width: 65, height: 65 });
-        } else {
-            console.error('Left image not found:', leftImagePath);
-        }
-        
-        // Right image
-        if (fs.existsSync(rightImagePath)) {
-            doc.image(rightImagePath, 455, 20, { width: 65, height: 65 });
-        } else {
-            console.error('Right image not found:', rightImagePath);
-        }
-  
-        doc.fontSize(16).text('Republic of the Philippines', 50, 20, { align: 'center' });
-        doc.fontSize(14).text('Department of Education', 50, 40, { align: 'center' });
-        doc.fontSize(12).text('Senior High School Student Permanent Record', 50, 60, { align: 'center' });
-        doc.moveDown();
-
-        doc.fontSize(15).text('Learner Information', 225, 100, { underline: true });
-        doc.moveDown();
-
-        const drawField = (label, value, x, y, width = 100) => {
-            doc.fontSize(9).text(label, x, y, { width });
-            doc.rect(x + width - 55, y - 2, 210, 12).stroke();
-            doc.text(value || '', x + width - 50, y, { width: 200 });
-        };
-
-        let startY = doc.y;
-
-        // Replace LRN with user.username
-        drawField('LRN', student.user.username || 'N/A', 30, startY);
-        drawField('Name', fullName || 'N/A', 305, startY);
-        drawField('Strand', student.strand?.name || 'N/A', 30, startY + 20);
-        drawField('Year Level', student.yearLevel?.name || 'N/A', 305, startY + 20);
-        drawField('Section', student.section?.name || 'N/A', 30, startY + 40);
-        drawField('Address', student.address || 'N/A', 305, startY + 40);
-
-        doc.fontSize(15).text('Scholastic Grades\n', 220, 285, { underline: true });
-
-        const drawSemesterTable = (semesterTitle, semesterGrades) => {
-            doc.moveDown();
-
-            // Center the semester title
-            const titleWidth = doc.widthOfString(semesterTitle);
-            const xPosition = 225;
-            doc.fontSize(10).text(semesterTitle, xPosition, doc.y, { underline: true });
-
-            const tableTop = doc.y + 10;
-            const tableWidth = 400;
-            const columnWidth = tableWidth / 4;
-
-            // Draw table headers with centered alignment
-            doc.fontSize(9)
-                .text('Subject', 30, tableTop, { width: columnWidth, align: 'center' })
-                .text('Midterm', 30 + 2 * columnWidth, tableTop, { width: columnWidth, align: 'center' })
-                .text('Finals', 30 + 3 * columnWidth, tableTop, { width: columnWidth, align: 'center' })
-                .text('Final Rating', 30 + 4 * columnWidth, tableTop, { width: columnWidth, align: 'center' });
-
-            let currentY = tableTop + 20;
-
-            if (!semesterGrades || semesterGrades.length === 0) {
-                doc.fontSize(10).text('No grades available.', { align: 'center' });
-            } else {
-                // Loop through subjects and draw rows
-                semesterGrades.forEach((grade) => {
-                    grade.subjects.forEach((subject) => {
-                        doc.fontSize(9)
-                            .text(subject.subject.name || 'N/A', 30, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.midterm || 'N/A', 30 + 2 * columnWidth, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.finals || 'N/A', 30 + 3 * columnWidth, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.finalRating || 'N/A', 30 + 4 * columnWidth, currentY, { width: columnWidth, align: 'center' });
-                        currentY += 20;
-                    });
-                });
-            }
-            doc.moveDown();
-        };
-
-        // Filter grades by semester
-        const firstSemesterGrades = student.grades?.filter((grade) => grade.semester?.name === '1st Semester') || [];
-        const secondSemesterGrades = student.grades?.filter((grade) => grade.semester?.name === '2nd Semester') || [];
-
-        drawSemesterTable('Semester: 1st Semester', firstSemesterGrades);
-        drawSemesterTable('Semester: 2nd Semester', secondSemesterGrades);
-
-        doc.end();
-
-        writeStream.on('finish', () => {
-            console.log(`Form 137 saved to: ${filePath}`);
+            rowIndex++; // Move to next row
         });
+        console.log("✅ Grade 12 grades inserted.");
 
-        writeStream.on('error', (err) => {
-            console.error('Error writing PDF to file:', err);
-            res.status(500).send('Error generating the PDF.');
+        // 🔹 Save the updated Excel file
+        await workbook.xlsx.writeFile(outputExcelPath);
+        console.log(`✅ Form 137 saved: ${outputExcelPath}`);
+
+        res.status(200).json({
+            success: true,
+            message: "Form 137 generated successfully",
+            path: outputExcelPath
         });
-
     } catch (error) {
-        if (!res.headersSent) {
-            next(error);
-        } else {
-            console.error('Error occurred during PDF generation:', error);
-        }
+        console.error("❌ Error generating Form 137:", error);
+        res.status(500);
+        throw new Error("Failed to generate Form 137: " + error.message);
     }
-
 });
 
 const getTeacherSections = asyncHandler(async (req, res) => {
@@ -725,7 +648,7 @@ const getTeacherSections = asyncHandler(async (req, res) => {
                 .populate({
                     path: 'students',
                     model: 'User',
-                    select: 'username yearLevel strand sections' 
+                    select: 'username yearLevel strand sections'
                 })
                 .populate({
                     path: 'yearLevel',
@@ -736,7 +659,7 @@ const getTeacherSections = asyncHandler(async (req, res) => {
                     select: 'name'
                 })
                 .lean(),
-            
+
             User.findById(req.user._id)
                 .populate('advisorySection')
                 .lean()
@@ -760,15 +683,15 @@ const getTeacherSections = asyncHandler(async (req, res) => {
             }))
         }));
 
-        console.log('Formatted sections:', JSON.stringify(formattedSections, null, 2)); // Debug log
+        //console.log('Formatted sections:', JSON.stringify(formattedSections, null, 2)); // Debug log
 
         res.status(200).json(formattedSections);
     } catch (error) {
         console.error('Error fetching teacher sections:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: 'Error fetching sections',
-            error: error.message 
+            error: error.message
         });
     }
 });
@@ -989,7 +912,6 @@ const getSubjectStudents = asyncHandler(async (req, res) => {
     }
 });
 
-
 // @desc    Get grades for students in a subject
 // @route   GET /api/teacher/grades/:subjectId
 // @access  Private (teacher only)
@@ -1098,7 +1020,6 @@ const getTeacherAdvisoryClass = asyncHandler(async (req, res) => {
         });
     }
 });
-
 
 // @desc    Get teacher dashboard data
 // @route   GET /api/teacher/dashboard

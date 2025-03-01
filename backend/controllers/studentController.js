@@ -1,9 +1,9 @@
-import asyncHandler from 'express-async-handler';
-import User from '../models/userModel.js';
-import Student from '../models/studentModel.js'; 
-import Subject from '../models/subjectModel.js'; // Import Subject model
-import Section from '../models/sectionModel.js';
-import Strand from '../models/strandModel.js';
+const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel.js');
+const Student = require('../models/studentModel.js');
+const Subject = require('../models/subjectModel.js'); // Import Subject model
+const Section = require('../models/sectionModel.js');
+const Strand = require('../models/strandModel.js');
 
 // @desc    Get logged-in student's profile
 // @route   GET /api/student/profile
@@ -173,5 +173,7 @@ const viewStudentGrades = asyncHandler(async (req, res) => {
   }
 });
 
-
-export { viewStudentProfile, viewStudentGrades };
+module.exports = {
+    viewStudentProfile,
+    viewStudentGrades
+};

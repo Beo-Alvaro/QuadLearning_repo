@@ -225,6 +225,14 @@ useEffect(() => {
     editUser?.yearLevel,
     subjects, 
     showAddModal
+    newUser.strand, 
+    newUser.semester, 
+    newUser.yearLevel,
+    editUser?.strand, 
+    editUser?.semester,     
+    editUser?.yearLevel,
+    subjects, 
+    showAddModal
 ]);
 
 // Update handleEditShow

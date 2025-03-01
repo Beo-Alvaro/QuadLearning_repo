@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+
 
 const sectionSchema = new mongoose.Schema({
     name: { 
@@ -18,13 +19,13 @@ const sectionSchema = new mongoose.Schema({
     strand: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Strand',
-        required: true 
+        required: false 
     }, // Reference to the strand
 
     yearLevel: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'YearLevel',
-        required: true 
+        required: false
     }, // Reference to the year level
 
     advisoryClass: {
@@ -39,4 +40,4 @@ const sectionSchema = new mongoose.Schema({
 
 const Section = mongoose.model('Section', sectionSchema);
 
-export default Section;
+module.exports = Section;

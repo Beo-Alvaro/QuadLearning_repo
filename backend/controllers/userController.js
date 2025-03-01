@@ -1,8 +1,8 @@
-import asyncHandler from 'express-async-handler';  
-import User from '../models/userModel.js';
-import generateToken from '../utils/generateToken.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel.js');
+const generateToken = require('../utils/generateToken.js');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 
 const getAdminId = async (req, res) => {
@@ -22,8 +22,6 @@ const getAdminId = async (req, res) => {
 // @desc    Auth user/set token
 // route    POST /api/users/auth
 // @access  Public
-
-
 const authUser = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
@@ -42,9 +40,7 @@ const authUser = asyncHandler(async (req, res) => {
     const isMatch = await bcrypt.compare(password.trim(), user.password);
     console.log('Password match result:', isMatch);
     if (!isMatch) {
-
         //console.log('Invalid credentials for username:', username);
-
         return res.status(401).json({ message: "Invalid password" });
     }
 
@@ -77,9 +73,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Logout successful' });
 });
 
-
-export {
-    logoutUser,
+module.exports = {
     authUser,
+    logoutUser,
     getAdminId
 };

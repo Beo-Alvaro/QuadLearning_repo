@@ -1,14 +1,9 @@
-import asyncHandler from 'express-async-handler';
-import Semester from '../models/semesterModel.js';
-import User from '../models/userModel.js';
-import mongoose from 'mongoose';
+const asyncHandler = require('express-async-handler');
+const Semester = require('../models/semesterModel.js');
 
 // @desc    Get all semesters
 // @route   GET /api/semesters
 // @access  Private
-// semesterController.js or in your existing route file
-// In your semesterController or routes file
-// controllers/semesterController.js
 const getSemesters = asyncHandler(async (req, res) => {
     try {
         const semesters = await Semester.find({})

@@ -1,15 +1,15 @@
-import asyncHandler from 'express-async-handler';
-import User from '../models/userModel.js';
-import Section from '../models/sectionModel.js';
-import Strand from '../models/strandModel.js';
-import Subject from '../models/subjectModel.js';
-import Student from '../models/studentModel.js';
-import Semester from '../models/semesterModel.js';
-import YearLevel from '../models/yearLevelModel.js';
-import bcrypt from 'bcryptjs';
-
-import mongoose from 'mongoose';
+const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel.js');
+const Section = require('../models/sectionModel.js');
+const Strand = require('../models/strandModel.js');
+const Subject = require('../models/subjectModel.js');
+const Student = require('../models/studentModel.js');
+const Semester = require('../models/semesterModel.js');
+const YearLevel = require('../models/yearlevelModel.js');
+const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Types;
+
 // @desc    Create user accounts for teacher or student
 // @route   POST /api/admin/users
 // @access  Private (admin role)
@@ -29,8 +29,6 @@ const createUserAccount = asyncHandler(async (req, res) => {
         advisorySection 
     } = req.body;
 
-    
-
     // Basic validation for all users
     if (!username || !password || !role) {
         res.status(400);
@@ -38,19 +36,19 @@ const createUserAccount = asyncHandler(async (req, res) => {
     }
 
     try {
-
-       // Add debug logging for username check
-       console.log('Checking username:', username.trim());
+        // Add debug logging for username check
+        console.log('Checking username:', username.trim());
         
-       // Check if username already exists before trying to create
-       const existingUser = await User.findOne({ username: username.trim() });
-       console.log('Existing user check result:', existingUser);
+        // Check if username already exists before trying to create
+        const existingUser = await User.findOne({ username: username.trim() });
+        console.log('Existing user check result:', existingUser);
 
-       if (existingUser) {
-           console.log('Username exists:', existingUser.username);
-           res.status(400);
-           throw new Error('Username already exists');
-       }
+        if (existingUser) {
+            console.log('Username exists:', existingUser.username);
+            res.status(400);
+            throw new Error('Username already exists');
+        }
+
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -75,28 +73,28 @@ const createUserAccount = asyncHandler(async (req, res) => {
                 throw new Error('Semesters are required for teachers');
             }
 
-              // Create teacher user
-        const user = await User.create({
-            username: username.trim(),
-            password: hashedPassword,
-            role,
-            sections,
-            subjects,
-            semesters,
-            ...(advisorySection && { advisorySection })
-        });
+            // Create teacher user
+            const user = await User.create({
+                username: username.trim(),
+                password: hashedPassword,
+                role,
+                sections,
+                subjects,
+                semesters,
+                ...(advisorySection && { advisorySection })
+            });
 
-        console.log('Created teacher with sections:', sections);
+            console.log('Created teacher with sections:', sections);
 
-        // Update sections with teacher assignment
-        for (const sectionId of sections) {
-            const updatedSection = await Section.findByIdAndUpdate(
-                sectionId,
-                { $addToSet: { teacher: user._id } },
-                { new: true }
-            );
-            console.log('Updated section:', updatedSection); // Debug log
-        }
+            // Update sections with teacher assignment
+            for (const sectionId of sections) {
+                const updatedSection = await Section.findByIdAndUpdate(
+                    sectionId,
+                    { $addToSet: { teacher: user._id } },
+                    { new: true }
+                );
+                console.log('Updated section:', updatedSection); // Debug log
+            }
 
             // Update all assigned subjects to include this teacher
             await Subject.updateMany(
@@ -104,7 +102,7 @@ const createUserAccount = asyncHandler(async (req, res) => {
                 { $addToSet: { teachers: user._id } }
             );
 
-                // Update advisory section
+            // Update advisory section
             if (advisorySection) {
                 await Section.findByIdAndUpdate(
                     advisorySection,
@@ -141,50 +139,49 @@ const createUserAccount = asyncHandler(async (req, res) => {
                 sections: sections ? [sections[0]] : [], // Students only get one section
                 subjects: subjects || [] // Add subjects for students
             });
-        }
 
-       
+            console.log('Creating user with data:', userData);
 
-        console.log('Creating user with data:', userData);
+            // Create the user
+            const user = await User.create(userData);
+            
+            // Create associated student record if role is student
+            let student;
+            if (role === 'student') {
+                student = await Student.create({
+                    user: user._id,
+                });
+            }
 
-        // Create the user
-        const user = await User.create(userData);
-        
-        // Create associated student record if role is student
-        let student;
-        if (role === 'student') {
-            student = await Student.create({
-                user: user._id,
+            const populatedStudent = student ? await Student.findById(student._id)
+                .populate('userData')
+                .populate('strand')
+                .populate('section')
+                : null;
+
+            await Section.updateMany(
+                { _id: { $in: sections } },
+                { $addToSet: { students: user._id } }
+            );
+
+            // Populate fields based on role
+            const populateFields = ['strand', 'sections'];
+            if (role === 'teacher') {
+                populateFields.push('subjects', 'semesters', 'advisorySection');
+            } else if (role === 'student') {
+                populateFields.push('yearLevel', 'semester');
+            }
+
+            // Fetch the created user with populated fields
+            const populatedUser = await User.findById(user._id)
+                .select('-password')
+                .populate(populateFields);
+
+            res.status(201).json({
+                success: true,
+                data: {populatedUser, populatedStudent}
             });
         }
-
-        const populatedStudent = student ? await Student.findById(student._id)
-            .populate('userData')
-            .populate('strand')
-            .populate('section')
-            : null;
-
-        await Section.updateMany(
-            { _id: { $in: sections } },
-            { $addToSet: { students: user._id } }
-        );
-        // Populate fields based on role
-        const populateFields = ['strand', 'sections'];
-        if (role === 'teacher') {
-            populateFields.push('subjects', 'semesters', 'advisorySection');
-        } else if (role === 'student') {
-            populateFields.push('yearLevel', 'semester');
-        }
-
-        // Fetch the created user with populated fields
-        const populatedUser = await User.findById(user._id)
-            .select('-password')
-            .populate(populateFields);
-
-        res.status(201).json({
-            success: true,
-            data: {populatedUser, populatedStudent}
-        });
 
     } catch (error) {
         console.error('Error in createUserAccount:', error);
@@ -195,6 +192,7 @@ const createUserAccount = asyncHandler(async (req, res) => {
         throw new Error(error.message || 'Failed to create user');
     }
 });
+
 // @desc    Reset user password
 // @route   PUT /api/admin/resetPassword/:id
 // @access  Private (admin role)
@@ -271,7 +269,6 @@ const getUserListByRole = asyncHandler(async (req, res) => {
 // @desc    Update user account
 // @route   PUT /api/admin/users/:id
 // @access  Private (admin role)
-// Update the updateUserAccount controller as well
 const updateUserAccount = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const {
@@ -409,7 +406,6 @@ const updateUserAccount = asyncHandler(async (req, res) => {
 // @desc    Delete user account
 // @route   DELETE /api/admin/users/:id
 // @access  Private (admin role)
-// Also update the deleteUserAccount controller to remove the student from the section
 const deleteUserAccount = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -468,6 +464,7 @@ const deleteUserAccount = asyncHandler(async (req, res) => {
         throw new Error(`Failed to delete user: ${error.message}`);
     }
 });
+
 // @desc    Get all user accounts
 // @route   GET /api/admin/users
 // @access  Private (admin role)
@@ -479,7 +476,6 @@ const getAllUsers = asyncHandler(async (req, res) => {
         .populate('subjects', 'name'); // Replace `subjects` IDs with documents, selecting only the `name` field
     res.json(users);
 });
-
 
 // @desc    Get all strands
 // @route   GET /api/admin/strands
@@ -518,14 +514,10 @@ const getAllSubjects = asyncHandler(async (req, res) => {
     res.json(subjects);
 });
 
-
-
-
 // @desc    Create a new strand
 // @route   POST /api/admin/strands
 // @access  Private (admin role)
 const createStrand = asyncHandler(async (req, res) => {
-
     const { name, description } = req.body;
 
     const strandExists = await Strand.findOne({ name });
@@ -533,7 +525,6 @@ const createStrand = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error('Strand already exists');
     }
-
 
     // Create a new strand with only name and description
     const newStrand = await Strand.create({
@@ -548,7 +539,6 @@ const createStrand = asyncHandler(async (req, res) => {
 
     // Respond with the newly created strand
     res.status(201).json(newStrand);
-
 });
 
 // @desc    Update a strand
@@ -1073,7 +1063,7 @@ const enrollStudent = async (req, res) => {
 
 
 // Exporting functions
-export { 
+module.exports = {
     createUserAccount,
     updateUserAccount,
     deleteUserAccount,

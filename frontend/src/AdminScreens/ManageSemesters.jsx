@@ -62,6 +62,20 @@ const ManageSemesters = () => {
         setSemesters
     } = useSemesterDataContext();
     
+
+    const {
+        semesters,
+        fetchData,
+        addSemester,
+        updateSemester, // Use this directly from context
+        deleteSemester,
+        loading,
+        error,
+        strands,
+        yearLevels,
+        setSemesters
+    } = useSemesterDataContext();
+    
     useEffect(() => {
         fetchData(); 
     }, []);

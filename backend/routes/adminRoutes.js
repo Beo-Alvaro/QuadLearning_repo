@@ -1,12 +1,36 @@
-import express from 'express';
-import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
-import { /* createAdmin, */ updateUserAccount, resetUserPassword, initializeYearLevels, getAllYearLevels, filterSubjects, getAvailableAdvisorySections, /* getUserList */ /* assignStudentToTeacher */ createStrand, getAllStrands, getAllUsers, createUserAccount, deleteUserAccount, getUserListByRole, createSubject, getAllSubjects, createSemester, deleteSemester, getAllSemesters, createSection, getAllSections, deleteSubject, updateSubject, deleteStrand, updateStrand, updateSection, deleteSection, updateSemester, getPendingStudents, enrollStudent } from '../controllers/adminController.js';
-
+const express = require('express');
+const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
+const {
+    updateUserAccount,
+    resetUserPassword,
+    initializeYearLevels,
+    getAllYearLevels,
+    filterSubjects,
+    getAvailableAdvisorySections,
+    createStrand,
+    getAllStrands,
+    getAllUsers,
+    createUserAccount,
+    deleteUserAccount,
+    getUserListByRole,
+    createSubject,
+    getAllSubjects,
+    createSemester,
+    deleteSemester,
+    getAllSemesters,
+    createSection,
+    getAllSections,
+    deleteSubject,
+    updateSubject,
+    deleteStrand,
+    updateStrand,
+    updateSection,
+    deleteSection,
+    updateSemester
+} = require('../controllers/adminController.js');
 
 const router = express.Router();
-/* router.route('/users').get(protect, authorizeRoles('admin'), getUserList); */
-/* router.route('/:id').put(protect, authorizeRoles('admin'), updateUserAccount); */
-/* router.route('/assign-student/:studentId').put(protect, authorizeRoles('admin'), assignStudentToTeacher); */
+
 router.route('/users/:id').delete(protect, authorizeRoles('admin'), deleteUserAccount);
 router.route('/addUsers').post(protect, authorizeRoles('admin'), createUserAccount);
 router.route('/getUsers').get(protect, authorizeRoles('admin'), getAllUsers);
@@ -40,4 +64,5 @@ router.post('/yearLevels/init', protect, authorizeRoles('admin'), initializeYear
 router.route('/yearLevels').get(protect, authorizeRoles('admin'), getAllYearLevels);
 router.route('/pending-students').get(protect, authorizeRoles('admin'), getPendingStudents);
 router.route('/enroll-student').put(protect, authorizeRoles('admin'), enrollStudent);
-export default router;
+
+module.exports = router;

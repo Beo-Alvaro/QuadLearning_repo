@@ -1,5 +1,5 @@
-import asyncHandler from 'express-async-handler';
-import User from '../models/userModel.js';
+const asyncHandler = require('express-async-handler');
+const User = require('../models/userModel.js');
 
 // @desc    Create a new admin account
 // @route   POST /api/superadmin/admins
@@ -74,7 +74,7 @@ const deleteAdminAccount = asyncHandler(async (req, res) => {
     res.json({ message: 'Admin account deleted' });
 });
 
-export {
+module.exports = {
     createAdminAccount,
     updateAdminAccount,
     deleteAdminAccount,

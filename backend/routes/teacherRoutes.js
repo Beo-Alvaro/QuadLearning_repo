@@ -1,8 +1,7 @@
-import express from 'express';
-
-import { addGrade, updateGrade,  generateForm137, getTeacherSections, fillOutStudentForm, getTeacherDashboard, getStudentData, getTeacherSubjects, getSubjectGrades, getSubjectStudents,
-     getTeacherAdvisoryClass, bulkAddGrades, getStudentGrades} from '../controllers/teacherController.js';
-import { protect, authorizeRoles, teacher } from '../middleware/authMiddleware.js';
+const express = require('express');
+const { addGrade, updateGrade, generateForm137, getTeacherSections, fillOutStudentForm, getTeacherDashboard, getStudentData, getTeacherSubjects, getSubjectGrades, getSubjectStudents,
+     getTeacherAdvisoryClass, bulkAddGrades, getStudentGrades} = require('../controllers/teacherController.js');
+const { protect, authorizeRoles, teacher } = require('../middleware/authMiddleware.js');
 
 const router = express.Router();
 
@@ -23,5 +22,5 @@ router.get('/subject-students', protect, teacher, getSubjectStudents); // GET ro
 router.get('/advisorySections', protect, teacher, getTeacherAdvisoryClass); // GET route for fetching teacher advisory class
 router.get('/dashboard', protect, teacher, getTeacherDashboard); // GET route for fetching teacher dashboard
 router.get('/student-grades/:studentId', protect, teacher, getStudentGrades);
-export default router;
 
+module.exports = router;

@@ -1,5 +1,7 @@
-import express from 'express';
-import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
+const express = require('express');
+const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
+const { authUser, logoutUser } = require('../controllers/userController.js');
+
 const router = express.Router();
 import {
     authUser,
@@ -13,4 +15,4 @@ router.post('/auth', authUser);
 router.post('/logout', logoutUser);
 router.get('/adminId', protect, getAdminId);
 
-export default router;
+module.exports = router;

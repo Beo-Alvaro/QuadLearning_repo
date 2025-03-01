@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const subjectSchema = new mongoose.Schema({
     name: { 
@@ -38,4 +38,4 @@ const subjectSchema = new mongoose.Schema({
 
 const Subject = mongoose.model('Subject', subjectSchema);
 
-export default Subject;
+module.exports = Subject;
