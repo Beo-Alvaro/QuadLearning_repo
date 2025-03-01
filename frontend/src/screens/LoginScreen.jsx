@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/authContext';
 import FormContainer from '../components/FormContainer';
 import './LoginScreen.css';
 const LoginScreen = () => {

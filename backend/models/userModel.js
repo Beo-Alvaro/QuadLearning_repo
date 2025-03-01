@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
 
 const userSchema = mongoose.Schema({
     username: {
@@ -52,6 +51,8 @@ const userSchema = mongoose.Schema({
         required: function() { return this.role === 'teacher'; }    
         // This will only be populated for teachers
     },
+    status: { type: String, enum: ['active', 'pending'], default: 'active' }
+    ,
 
 
 

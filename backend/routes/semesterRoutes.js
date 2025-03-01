@@ -1,9 +1,8 @@
-const express = require('express');
-const { getSemesters } = require('../controllers/semesterController.js');
-const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
-
+import express from 'express';
+import { getSemesters, endSemester } from '../controllers/semesterController.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { authorizeRoles } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 router.route('/semesters').get(protect, authorizeRoles('admin', 'teacher'), getSemesters);
-
-module.exports = router;
+router.route('/endSemester/:id').put(protect, authorizeRoles('admin', 'teacher'), endSemester);

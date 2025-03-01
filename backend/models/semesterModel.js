@@ -17,25 +17,18 @@ const semesterSchema = new mongoose.Schema({
         required: false
     },
     subjects: [{ 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Subject',
-        required: false 
-}], 
-    startDate: {
-        type: Date,
-        required: true
-    },
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Subject',
+      required: false 
+    }], 
     endDate: {
         type: Date,
         required: true
     },
-
+    status: { type: String, enum: ['active', 'pending'], default: 'active' }
 }, { 
     timestamps: true 
 });
-
-// Add compound index to ensure unique combination of name, strand, and yearLevel
-semesterSchema.index({ name: 1, strand: 1, yearLevel: 1 }, { unique: true });
 
 const Semester = mongoose.model('Semester', semesterSchema);
 module.exports = Semester;

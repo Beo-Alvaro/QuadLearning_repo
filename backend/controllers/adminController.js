@@ -782,11 +782,11 @@ const filterSubjects = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/subjects/:id
 // @access  Private (admin role)
 const updateSubject = asyncHandler(async (req, res) => {
-    const { name, code, semester, yearLevel, strand } = req.body;
+    const { name, code, selectedSemester, selectedYearLevel, selectedStrand } = req.body;
     const { id } = req.params;
 
     // Validate inputs
-    if (!name || !code || !semester || !yearLevel || !strand) {
+    if (!name || !code || !selectedSemester || !selectedYearLevel || !selectedStrand) {
         res.status(400);
         throw new Error('All fields are required');
     }
@@ -799,10 +799,10 @@ const updateSubject = asyncHandler(async (req, res) => {
 
     // Update subject
     subject.name = name;
-    subject.strand = strand;
-    subject.yearLevel = yearLevel;
+    subject.strand = selectedStrand;
+    subject.yearLevel = selectedYearLevel;
     subject.code = code;
-    subject.semester = semester;
+    subject.semester = selectedSemester;
 
     try {
         const updatedSubject = await subject.save();
@@ -1009,6 +1009,58 @@ const getAvailableAdvisorySections = asyncHandler(async (req, res) => {
     }
 });
 
+const getPendingStudents = async (req, res) => {
+    try {
+        console.log('Fetching pending students...');
+        const pendingStudents = await User.find({ status: 'pending', role: 'student' })
+            .populate('yearLevel sections strand');
+        console.log('Pending students:', pendingStudents);
+        res.status(200).json(pendingStudents);
+    } catch (error) {
+        console.error('Error fetching pending students:', error);
+        res.status(500).json({ message: 'Failed to fetch pending students', error: error.message });
+    }
+};
+
+// Enroll a pending student to Grade 12
+const enrollStudent = async (req, res) => {
+    const { userId, section, strand, subjects, yearLevel, semester } = req.body;
+
+    console.log('Received userId:', userId); // Check if userId is being passed
+
+    try {
+        const user = await User.findById(userId);
+        console.log('User found:', user); // See if a user is actually found
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found in database' });
+        }
+
+        if (user.role !== 'student' || user.status !== 'pending') {
+            console.log('User role or status mismatch:', user.role, user.status);
+            return res.status(404).json({ message: 'Pending student not found' });
+        }
+
+        // Update student information for Grade 12
+        user.status = 'active';
+        user.yearLevel = yearLevel;
+        user.semester = semester;
+        user.sections = [section];
+        user.strand = strand;
+        user.subjects = subjects;
+
+        await user.save();
+
+        res.status(200).json({ message: 'Student successfully enrolled to Grade 12', user });
+    } catch (error) {
+        console.error('Error enrolling student:', error.message);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
+
+
+  
+
 
 // Exporting functions
 module.exports = {
@@ -1037,5 +1089,7 @@ module.exports = {
     initializeYearLevels,
     getAllYearLevels,
     filterSubjects,
-    getAvailableAdvisorySections
+    getAvailableAdvisorySections,
+    getPendingStudents,
+    enrollStudent
 };

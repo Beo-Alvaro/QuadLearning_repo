@@ -6,65 +6,23 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { useState, useEffect } from 'react';
 import AdminSidebar from "../AdminComponents/AdminSidebar";
 import '../AdminComponents/AdminTableList.css';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 import Header from '../components/Header';
-import Alert from 'react-bootstrap/Alert';
-
-const modalStyles = {
-    modal: {
-        maxWidth: '800px',
-        margin: '1.75rem auto',
-    },
-    formGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1rem',
-    },
-    fullWidth: {
-        gridColumn: '1 / -1',
-    },
-    formSection: {
-        padding: '1rem',
-        marginBottom: '1rem',
-        backgroundColor: '#f8f9fa',
-        borderRadius: '8px',
-        border: '1px solid #dee2e6',
-    },
-    modalHeader: {
-        background: '#f8f9fa',
-        borderBottom: '2px solid #dee2e6',
-        padding: '1rem 1.5rem',
-    },
-    modalFooter: {
-        background: '#f8f9fa',
-        borderTop: '2px solid #dee2e6',
-        padding: '1rem 1.5rem',
-    },
-    deleteModal: {
-        textAlign: 'center',
-        padding: '2rem',
-    },
-    deleteIcon: {
-        fontSize: '3rem',
-        color: '#dc3545',
-        marginBottom: '1rem',
-    }
-};
+import { useTeacherDataContext } from '../hooks/useTeacherDataContext';
+import AdminTeacherModals from '../AdminComponents/CreatingTeacherComponents/AdminTeacherModals';
+import AdminTeacherTable from '../AdminComponents/CreatingTeacherComponents/AdminTeacherTable';
 
 const AdminCreateTeacherAccount = () => {
-    const [show, setShow] = useState(false);
-    const [editModalShow, setEditModalShow] = useState(false);
+    const { teacherUsers, sections, semesters, advisorySections, loading, dispatch, fetchData} = useTeacherDataContext()
+    const [users, setUsers] = useState()
+    const [error, setError] = useState(null)
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [entriesPerPage, setEntriesPerPage] = useState(10);
-    const [loading, setLoading] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [error, setError] = useState('');
-    const [users, setUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [availableSubjects, setAvailableSubjects] = useState([]);
-    const [advisorySections, setAdvisorySections] = useState([]);
     const [newUser, setNewUser] = useState({
         username: '',
         password: '',
@@ -74,198 +32,8 @@ const AdminCreateTeacherAccount = () => {
         semesters: [],
         advisorySection: '' // Add this field
     });
-    
-    const [sections, setSections] = useState([]);
-    const [subjects, setSubjects] = useState([]);
-    const [semesters, setSemesters] = useState([]);
 
-        // First, modify your fetchData function to get available advisory sections
-        const fetchData = async () => {
-            const token = localStorage.getItem('token');
-            try {
-                const [usersRes, sectionsRes, subjectsRes, semestersRes, advisorySectionsRes] = await Promise.all([
-                    fetch('/api/admin/users?role=teacher', { 
-                        headers: { Authorization: `Bearer ${token}` } 
-                    }),
-                    fetch('/api/admin/getSections', { 
-                        headers: { Authorization: `Bearer ${token}` } 
-                    }),
-                    fetch('/api/admin/getSubjects', { 
-                        headers: { Authorization: `Bearer ${token}` } 
-                    }),
-                    fetch('/api/admin/semesters', { 
-                        headers: { Authorization: `Bearer ${token}` } 
-                    }),
-                    fetch('/api/admin/advisorySections', { 
-                        headers: { Authorization: `Bearer ${token}` } 
-                    })
-                ]);
         
-                // Helper function to handle JSON parsing with error logging
-                const parseResponse = async (response, label) => {
-                    if (!response.ok) {
-                        console.error(`${label} Error:`, {
-                            status: response.status,
-                            statusText: response.statusText
-                        });
-                        try {
-                            const errorBody = await response.text();
-                            console.error(`${label} Error Body:`, errorBody);
-                        } catch (parseError) {
-                            console.error(`Failed to parse error body for ${label}:`, parseError);
-                        }
-                        return null;
-                    }
-                    
-                    try {
-                        const data = await response.json();
-                        console.log(`${label} Data:`, data);
-                        return data;
-                    } catch (parseError) {
-                        console.error(`Failed to parse ${label} response:`, parseError);
-                        return null;
-                    }
-                };
-        
-                const [users, sections, subjects, semesters, advisorySections] = await Promise.all([
-                    parseResponse(usersRes, 'Users'),
-                    parseResponse(sectionsRes, 'Sections'),
-                    parseResponse(subjectsRes, 'Subjects'),
-                    parseResponse(semestersRes, 'Semesters'),
-                    parseResponse(advisorySectionsRes, 'Advisory Sections')
-                ]);
-        
-                // Validate and set data with fallbacks
-                const safeSetState = (setter, data) => {
-                    if (data && Array.isArray(data)) {
-                        setter(data);
-                    } else {
-                        console.warn(`Invalid data for ${setter.name}:`, data);
-                        setter([]);
-                    }
-                };
-        
-                // Safely set states
-                if (users) safeSetState(setUsers, users);
-                if (sections) safeSetState(setSections, sections);
-                if (subjects) safeSetState(setSubjects, subjects);
-                if (semesters) {
-                    // Additional validation for semesters
-                    const validSemesters = semesters.filter(semester => 
-                        semester._id && 
-                        semester.name && 
-                        semester.strand && 
-                        semester.yearLevel
-                    );
-                    safeSetState(setSemesters, validSemesters);
-                }
-                if (advisorySections) safeSetState(setAdvisorySections, advisorySections);
-        
-            } catch (error) {
-                console.error('Comprehensive Fetch Error:', error);
-                // Optionally set an error state to show to the user
-                setError('Failed to load data. Please try again.');
-            }
-        };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const handleClose = () => {
-        setShow(false);
-        setSelectedUserId(null);
-    };
-
-    const handleShow = (userId) => {
-        setSelectedUserId(userId);
-        setShow(true);
-    };
-
-    const deleteHandler = async (userId) => {
-        const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-        console.log("Deleting user with ID:", userId);
-        try {
-            const response = await fetch(`/api/admin/users/${userId}`, { // Corrected endpoint
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`, // Ensure token is included
-                }
-            });
-    
-            console.log("Response status:", response.status);
-            if (response.ok) {
-                setUsers(prevUsers => prevUsers.filter(user => user._id !== userId));
-                handleClose(); // Close the modal after deletion
-            } else {
-                const json = await response.json();
-                console.error('Error response:', json);
-                setError(json.message);
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            setError('Failed to delete user');
-        }
-    };
-
-    // Update handleAddUser to properly handle the advisory section
-const handleAddUser = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    // Validate required fields
-    if (!newUser.username || !newUser.password || !newUser.sections.length || 
-        !newUser.subjects.length || !newUser.semesters.length) {
-        setError('Please fill in all required fields');
-        setLoading(false);
-        return;
-    }
-
-    const userData = {
-        username: newUser.username.trim(),
-        password: newUser.password,
-        role: 'teacher',
-        sections: newUser.sections.map(id => id.toString()),
-        subjects: newUser.subjects.map(id => id.toString()),
-        semesters: newUser.semesters.map(id => id.toString()),
-        advisorySection: newUser.advisorySection || null // Make it explicitly null if not selected
-    };
-
-    console.log('Sending user data:', userData); // Debug log
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/addUsers', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(userData)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to create teacher account');
-        }
-
-        setUsers(prevUsers => [...prevUsers, data.data]);
-        setShowAddModal(false);
-        resetForm();
-        alert('Teacher account created successfully');
-        
-    } catch (error) {
-        console.error('Error creating teacher:', error);
-        setError(error.message || 'Failed to create teacher account');
-    } finally {
-        setLoading(false);
-    }
-};
-    
-    // Add a reset form function
     const resetForm = () => {
         setNewUser({
             username: '',
@@ -276,6 +44,126 @@ const handleAddUser = async (e) => {
             semesters: [],
             advisorySection: ''
         });
+    };
+
+
+    const handleClose = () => {
+        setShowAddModal(false)
+        setShowDeleteModal(false);
+        setShowEditModal(false);
+        setSelectedUserId(null);
+        resetForm();
+    };
+    
+
+   const handleShow = (userId) => {
+    if (!userId) {
+        console.error("Invalid userId:", userId);
+        return; // Don't proceed if the userId is invalid
+    }
+    console.log("User ID passed to deleteHandler:", userId); // Check if it passes correctly here
+    setSelectedUserId(userId); // Set the user ID for deletion
+    setShowDeleteModal(true); // Show the modal after initiating the delete
+};
+
+    
+
+const deleteHandler = async (userId) => {
+    console.log("Deleting user with ID:", userId);  // Log userId to make sure it's valid
+    if (!userId) {
+        console.error("Invalid userId:", userId);
+        return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            }
+        });
+
+        console.log("Response status:", response.status);
+        if (response.ok) {
+            // Ensure the deletion is complete before updating the state
+            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const updatedTeachers = await updatedTeachersRes.json();
+
+            // Dispatch the updated list of teachers to the context
+            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
+
+            handleClose(); // Close modal after successful deletion
+        } else {
+            const json = await response.json();
+            console.error('Error response:', json);
+            setError(json.message);
+        }
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        setError('Failed to delete user');
+    }
+};
+    // Update handleAddUser to properly handle the advisory section
+    const handleAddUser = async (e) => {
+        e.preventDefault();
+        setError('');
+    
+        // Validate required fields
+        if (!newUser.username || !newUser.password || !newUser.sections.length || 
+            !newUser.subjects.length || !newUser.semesters.length) {
+            setError('Please fill in all required fields');
+            return;
+        }
+    
+        const userData = {
+            username: newUser.username.trim(),
+            password: newUser.password,
+            role: 'teacher',
+            sections: newUser.sections.map(id => id.toString()),
+            subjects: newUser.subjects.map(id => id.toString()),
+            semesters: newUser.semesters.map(id => id.toString()),
+            advisorySection: newUser.advisorySection || null // Make it explicitly null if not selected
+        };
+    
+        console.log('Sending user data:', userData); // Debug log
+    
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/admin/addUsers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(userData)
+            });
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to create teacher account');
+            }
+    
+            // Fetch the updated list of teachers
+            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const updatedTeachers = await updatedTeachersRes.json();
+    
+            // Dispatch the updated list of teachers to the context
+            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
+    
+            setShowAddModal(false);
+            resetForm();
+            alert('Teacher account created successfully');
+        
+        } catch (error) {
+            console.error('Error creating teacher:', error);
+            setError(error.message || 'Failed to create teacher account');
+        }
     };
 
     const handleEditShow = async (user) => {
@@ -318,7 +206,7 @@ const handleAddUser = async (e) => {
             setAvailableSubjects([]);
         }
         
-        setEditModalShow(true);
+        setShowEditModal(true);
     };
 
 // Update the editUser state
@@ -331,18 +219,11 @@ const [editUser, setEditUser] = useState({
 });
     
     const handleEditClose = () => {
-        setEditModalShow(false);
-        setEditUser({
-            id: '',
-            sections: [],
-            subjects: [],
-            semesters: [] // Changed
-        });
+        setShowEditModal(false);
     };
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError('');
     
         try {
@@ -374,74 +255,97 @@ const [editUser, setEditUser] = useState({
     
             // Show success message
             alert('Teacher updated successfully');
-            
+    
+            // Re-fetch the updated list of teachers
+            const token = localStorage.getItem('token');
+            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const updatedTeachers = await updatedTeachersRes.json();
+    
+            // Dispatch the updated list of teachers to the context
+            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
+    
+            // Close the modal and reset the form
             handleEditClose();
-            await fetchData(); // Refresh the data
         } catch (error) {
             setError(error.message);
             console.error('Update error:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
-    const filteredUsers = users.filter((user) =>
+    const filteredUsers = teacherUsers?.filter((user) =>
         user.username.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
+    ) || []; // Default to an empty array if teacherUsers is undefined
+    
     const totalPages = Math.ceil(filteredUsers.length / entriesPerPage);
 
     const handlePageChange = (direction) => {
         if (direction === 'prev' && currentPage > 1) setCurrentPage(currentPage - 1);
         if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
+    
+    // Check if the data exists before rendering
+    {filteredUsers?.length > 0 && (
+        <AdminTeacherTable
+            filteredUsers={filteredUsers}
+            showEditModal={handleEditShow}
+            handleShow={handleShow}
+            currentPage={currentPage}
+            entriesPerPage={entriesPerPage}
+            handlePageChange={handlePageChange}
+            totalPages={totalPages}
+        />
+    )}
+    
+    useEffect(() => {
+        fetchData();
+      }, []); 
 
-// Update useEffect for filtering subjects
-useEffect(() => {
-    const filterSubjects = async () => {
-        const activeUser = showAddModal ? newUser : editUser;
-        
-        // Check if both arrays exist and have length
-        if (activeUser?.sections?.length > 0 && activeUser?.semesters?.length > 0) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/admin/subjects/filter', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        sections: activeUser.sections,
-                        semesters: activeUser.semesters
-                    })
-                });
+    useEffect(() => {
+        const filterSubjects = async () => {
+            const activeUser = showAddModal ? newUser : editUser;
+            
+            // Check if both arrays exist and have length
+            if (activeUser?.sections?.length > 0 && activeUser?.semesters?.length > 0) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/admin/subjects/filter', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            sections: activeUser.sections,
+                            semesters: activeUser.semesters
+                        })
+                    });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch filtered subjects');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch filtered subjects');
+                    }
+
+                    const filteredSubjects = await response.json();
+                    console.log('Filtered subjects:', filteredSubjects); // Debug log
+                    setAvailableSubjects(filteredSubjects || []); // Ensure it's always an array
+                } catch (error) {
+                    console.error('Error filtering subjects:', error);
+                    setAvailableSubjects([]);
                 }
-
-                const filteredSubjects = await response.json();
-                console.log('Filtered subjects:', filteredSubjects); // Debug log
-                setAvailableSubjects(filteredSubjects || []); // Ensure it's always an array
-            } catch (error) {
-                console.error('Error filtering subjects:', error);
+            } else {
                 setAvailableSubjects([]);
             }
-        } else {
-            setAvailableSubjects([]);
-        }
-    };
+        };
 
-    filterSubjects();
-}, [
-    newUser.sections, 
-    newUser.semesters,
-    editUser.sections,
-    editUser.semesters,
-    showAddModal
-]); // Add editUser dependencies
-
+        filterSubjects();
+    }, [
+        newUser.sections, 
+        newUser.semesters,
+        editUser.sections,
+        editUser.semesters,
+        showAddModal
+    ]); 
     return (
         <>
         <Header/>
@@ -475,431 +379,40 @@ useEffect(() => {
     </button>
                                 </div>
 
-                                {/* Teachers Table */}
-                                <Table responsive hover className='custom-table text-center align-middle'>
-    <thead>
-        <tr>
-            <th>Teacher ID</th>
-            <th>Sections Handled</th>
-            <th>Advisory Section</th>
-            <th>Subjects</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {filteredUsers
-            .slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage)
-            .map(user => (
-                <tr key={user._id}>
-                    <td>
-                        <div className="d-flex align-items-center justify-content-center">
-                            {user.username}
-                        </div>
-                    </td>
-                    <td>
-                        <div className="subjects-list">
-                            {user.sections?.map((section) => (
-                                <span key={section._id} className="subject-pill">
-                                    {section.name}
-                                </span>
-                            )) || 'No Sections'}
-                        </div>
-                    </td>
-                    <td>
-                        <span className="text-muted">
-                            {user.advisorySection?.name || 'Not Assigned'}
-                        </span>
-                    </td>
-                    <td>
-                        <div className="subjects-list">
-                            {user.subjects?.map((subject) => (
-                                <span key={subject._id} className="subject-pill">
-                                    {subject.name}
-                                </span>
-                            )) || 'No Subjects'}
-                        </div>
-                    </td>
-                    <td>
-                        <div className="action-buttons">
-                            <Button 
-                                variant="outline-success" 
-                                size="sm" 
-                                className="btn-action"
-                                onClick={() => handleEditShow(user)}
-                            >
-                                <i className="bi bi-pencil-square me-1"></i>
-                                Edit
-                            </Button>
-                            <Button 
-                                variant="outline-danger" 
-                                size="sm" 
-                                className="btn-action"
-                                onClick={() => handleShow(user._id)}
-                            >
-                                <i className="bi bi-trash me-1"></i>
-                                Delete
-                            </Button>
-                        </div>
-                    </td>
-                </tr>
-            ))}
-    </tbody>
-</Table>
-
-                                {/* Pagination controls */}
-                                <div className="d-flex justify-content-between mt-3">
-                                    <Button
-                                        variant="outline-primary" 
-                                        size="sm"
-                                        disabled={currentPage === 1}
-                                        onClick={() => handlePageChange('prev')}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <span>Page {currentPage} of {totalPages}</span>
-                                    <Button 
-                                        variant="outline-primary" 
-                                        size="sm"
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => handlePageChange('next')}
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
-
-                                {/* Add Modal */}
-<Modal 
-    show={showAddModal} 
-    onHide={() => setShowAddModal(false)}
-    size="lg"
-    centered
->
-    <Modal.Header closeButton style={modalStyles.modalHeader}>
-        <Modal.Title>
-            <i className="bi bi-person-plus-fill me-2"></i>
-            Add New Teacher Account
-        </Modal.Title>
-    </Modal.Header>
-    <Modal.Body className="p-4">
-        <Form onSubmit={handleAddUser}>
-           {/* Basic Information Section */}
-<div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-    <h6 className="mb-3">Basic Information</h6>
-    <div style={modalStyles.formGrid}>
-        <Form.Group>
-            <Form.Label>Username*</Form.Label>
-            <Form.Control
-                type="text"
-                value={newUser.username}
-                onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                required
-                style={{ borderColor: '#ced4da' }} // Override default validation styling
-            />
-        </Form.Group>
-
-        <Form.Group>
-            <Form.Label>Password*</Form.Label>
-            <Form.Control
-                type="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                required
-                style={{ borderColor: '#ced4da' }} // Override default validation styling
-            />
-        </Form.Group>
-    </div>
-</div>
-
-{/* Teaching Assignment Section */}
-<div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-    <h6 className="mb-3">Teaching Assignment</h6>
-    <div style={modalStyles.formGrid}>
-        <Form.Group>
-            <Form.Label>Sections*</Form.Label>
-            <Form.Select
-                multiple
-                value={newUser.sections}
-                onChange={(e) => setNewUser({
-                    ...newUser, 
-                    sections: Array.from(e.target.selectedOptions, option => option.value)
-                })}
-                required
-                style={{ borderColor: '#ced4da' }} // Override default validation styling
-            >
-                {sections.map((section) => (
-                    <option key={section._id} value={section._id}>
-                        {section.name} - {section.yearLevel.name}
-                    </option>
-                ))}
-            </Form.Select>
-        </Form.Group>
-
-        <Form.Group>
-            <Form.Label>Advisory Section</Form.Label>
-            <Form.Select
-                value={newUser.advisorySection}
-                onChange={(e) => setNewUser({...newUser, advisorySection: e.target.value})}
-                style={{ borderColor: '#ced4da' }} // Override default validation styling
-            >
-                <option value="">Select Advisory Section (Optional)</option>
-                {advisorySections.map((section) => (
-                    <option key={section._id} value={section._id}>
-                        {section.name}
-                    </option>
-                ))}
-            </Form.Select>
-        </Form.Group>
-
-        <Form.Group>
-            <Form.Label>Semesters*</Form.Label>
-            <Form.Select
-                multiple
-                value={newUser.semesters}
-                onChange={(e) => setNewUser({
-                    ...newUser, 
-                    semesters: Array.from(e.target.selectedOptions, option => option.value)
-                })}
-                required
-                style={{ borderColor: '#ced4da' }} // Override default validation styling
-            >
-               {semesters && Array.isArray(semesters) ? (
-    semesters.map((semester) => {
-        // Safely access nested properties
-        const strandName = semester.strand?.name || 'Unknown Strand';
-        const yearLevelName = semester.yearLevel?.name || 'Unknown Year Level';
-
-        return (
-            <option key={semester._id} value={semester._id}>
-                {semester.name || 'Unnamed Semester'} - {strandName} - {yearLevelName}
-            </option>
-        );
-    })
-) : (
-    <option value="">No semesters available</option>
-)}
-            </Form.Select>
-        </Form.Group>
-    </div>
-</div>
-
-            {/* Subjects Section */}
-            <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Subject Assignment</h6>
-                <Form.Group>
-                    <Form.Label>Subjects*</Form.Label>
-                    {availableSubjects.length > 0 ? (
-                        <Form.Select
-                            multiple
-                            value={newUser.subjects}
-                            onChange={(e) => setNewUser({
-                                ...newUser, 
-                                subjects: Array.from(e.target.selectedOptions, option => option.value)
-                            })}
-                            required
-                            isInvalid={!newUser.subjects.length}
-                            disabled={!newUser.sections.length || !newUser.semesters.length}
-                        >
-                            {availableSubjects.map((subject) => (
-                                <option key={subject._id} value={subject._id}>
-                                    {subject.name}
-                                </option>
-                            ))}
-                        </Form.Select>
-                    ) : (
-                        <p className="text-muted">
-                            Please select sections and semesters to view available subjects
-                        </p>
-                    )}
-                    <Form.Control.Feedback type="invalid">
-                        Please select at least one subject
-                    </Form.Control.Feedback>
-                </Form.Group>
-            </div>
-
-            {error && <div className="alert alert-danger mt-3">{error}</div>}
-        </Form>
-    </Modal.Body>
-    <Modal.Footer style={modalStyles.modalFooter}>
-        <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-            <i className="bi bi-x-circle me-2"></i>Cancel
-        </Button>
-        <Button 
-            variant="primary" 
-            onClick={handleAddUser}
-            disabled={loading}
-        >
-            {loading ? (
-                <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Adding...
-                </>
-            ) : (
-                <>
-                    <i className="bi bi-check-circle me-2"></i>
-                    Add Teacher
-                </>
-            )}
-        </Button>
-    </Modal.Footer>
-</Modal>
-
-{/* Edit Modal */}
-<Modal 
-    show={editModalShow} 
-    onHide={handleEditClose}
-    size="lg"
-    centered
->
-    <Modal.Header closeButton style={modalStyles.modalHeader}>
-        <Modal.Title>
-            <i className="bi bi-pencil-square me-2"></i>
-            Edit Teacher Account
-        </Modal.Title>
-    </Modal.Header>
-    <Modal.Body className="p-4">
-        <Form onSubmit={handleEditSubmit}>
-            {/* Teaching Assignment Section */}
-            <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Teaching Assignment</h6>
-                <div style={modalStyles.formGrid}>
-                <Form.Group>
-    <Form.Label>Sections*</Form.Label>
-    <Form.Select
-        multiple
-        value={editUser.sections}
-        onChange={(e) => setEditUser({
-            ...editUser,
-            sections: Array.from(e.target.selectedOptions, option => option.value)
-        })}
-        required
-    >
-        {sections.map((section) => (
-            <option key={section._id} value={section._id}>
-                {section.name} - {section.yearLevel.name || 'No Year Level'}
-            </option>
-        ))}
-    </Form.Select>
-</Form.Group>
-
-                    <Form.Group>
-                        <Form.Label>Advisory Section</Form.Label>
-                        <Form.Select
-                            value={editUser.advisorySection}
-                            onChange={(e) => setEditUser({
-                                ...editUser,
-                                advisorySection: e.target.value
-                            })}
-                        >
-                            <option value="">Select Advisory Section (Optional)</option>
-                            {advisorySections.map((section) => (
-                                <option key={section._id} value={section._id}>
-                                    {section.name}
-                                </option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group>
-
-                    <Form.Group>
-                        <Form.Label>Semesters*</Form.Label>
-                        <Form.Select
-                            multiple
-                            value={editUser.semesters}
-                            onChange={(e) => setEditUser({
-                                ...editUser,
-                                semesters: Array.from(e.target.selectedOptions, option => option.value)
-                            })}
-                            required
-                        >
-                            {semesters.map((semester) => (
-                                <option key={semester._id} value={semester._id}>
-                                    {semester.name}
-                                </option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group>
-                </div>
-            </div>
-
-            {/* Subjects Section */}
-            <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Subject Assignment</h6>
-                <Form.Group>
-                    <Form.Label>Subjects*</Form.Label>
-                    {loading ? (
-                        <p>Loading subjects...</p>
-                    ) : availableSubjects.length > 0 ? (
-                        <Form.Select
-                            multiple
-                            value={editUser.subjects}
-                            onChange={(e) => setEditUser({
-                                ...editUser,
-                                subjects: Array.from(e.target.selectedOptions, option => option.value)
-                            })}
-                            required
-                        >
-                            {availableSubjects.map((subject) => (
-                                <option key={subject._id} value={subject._id}>
-                                    {subject.name}
-                                </option>
-                            ))}
-                        </Form.Select>
-                    ) : (
-                        <p className="text-muted">
-                            {editUser.sections.length === 0 || editUser.semesters.length === 0 
-                                ? "Please select sections and semesters to view available subjects"
-                                : "No subjects available for the selected sections and semesters"}
-                        </p>
-                    )}
-                </Form.Group>
-            </div>
-
-            {error && <div className="alert alert-danger mt-3">{error}</div>}
-        </Form>
-    </Modal.Body>
-    <Modal.Footer style={modalStyles.modalFooter}>
-        <Button variant="secondary" onClick={handleEditClose}>
-            <i className="bi bi-x-circle me-2"></i>Cancel
-        </Button>
-        <Button 
-            variant="primary" 
-            onClick={handleEditSubmit}
-            disabled={loading}
-        >
-            {loading ? (
-                <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Updating...
-                </>
-            ) : (
-                <>
-                    <i className="bi bi-check-circle me-2"></i>
-                    Update Teacher
-                </>
-            )}
-        </Button>
-    </Modal.Footer>
-</Modal>
-
-{/* Delete Modal */}
-<Modal show={show} onHide={handleClose} centered>
-    <Modal.Body style={modalStyles.deleteModal}>
-        <div style={modalStyles.deleteIcon}>
-            <i className="bi bi-exclamation-triangle-fill"></i>
-        </div>
-        <h4 className="mb-3">Confirm Deletion</h4>
-        <p className="text-muted">
-            Are you sure you want to delete this teacher account? This action cannot be undone.
-        </p>
-    </Modal.Body>
-    <Modal.Footer style={modalStyles.modalFooter} className="justify-content-center">
-        <Button variant="secondary" onClick={handleClose}>
-            <i className="bi bi-x-circle me-2"></i>Cancel
-        </Button>
-        <Button variant="danger" onClick={() => deleteHandler(selectedUserId)}>
-            <i className="bi bi-trash me-2"></i>Delete
-        </Button>
-    </Modal.Footer>
-</Modal>
+                        {/* Teachers Table */}
+                        <AdminTeacherTable 
+                        filteredUsers={filteredUsers}
+                        showEditModal={handleEditShow} // Pass the function that handles showing the modal
+                        handleShow={handleShow}
+                        currentPage={currentPage}
+                        entriesPerPage={entriesPerPage}
+                        handlePageChange={handlePageChange}
+                        totalPages={totalPages}
+                    />
+                                <AdminTeacherModals 
+                                showAddModal={showAddModal}
+                                setShowAddModal={setShowAddModal}
+                                showEditModal={showEditModal}
+                                setShowEditModal={setShowEditModal}
+                                showDeleteModal={showDeleteModal}
+                                setShowDeleteModal={setShowDeleteModal}
+                                newUser={newUser}
+                                setNewUser={setNewUser}
+                                editUser={editUser}
+                                setEditUser={setEditUser}
+                                availableSubjects={availableSubjects}
+                                sections={sections}
+                                semesters={semesters}
+                                advisorySections={advisorySections}
+                                loading={loading}
+                                error={error}
+                                handleAddUser={handleAddUser}
+                                handleEditSubmit={handleEditSubmit}
+                                handleEditClose={handleEditClose}
+                                deleteHandler={deleteHandler}
+                                selectedUserId={selectedUserId} 
+                                handleClose={handleClose}
+                                />
                             </Card.Body>
                         </Card>
                     </Container>
