@@ -1,10 +1,10 @@
-const express = require('express');
-const { protect, authorizeRoles } = require('../middleware/authMiddleware.js');
-const {
+import express from 'express';
+import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
+import {
     createAdminAccount,
     updateAdminAccount,
     deleteAdminAccount,
-} = require('../controllers/superadminController.js'); // Adjust the import path as necessary
+} from '../controllers/superadminController.js'; // Adjust the import path as necessary
 
 const router = express.Router();
 
@@ -23,4 +23,4 @@ router.put('/:id', protect, authorizeRoles('superadmin'), updateAdminAccount);
 // @access  Private/Superadmin
 router.delete('/:id', protect, authorizeRoles('superadmin'), deleteAdminAccount);
 
-module.exports = router;
+export default router;

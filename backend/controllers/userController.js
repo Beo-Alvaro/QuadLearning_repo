@@ -22,6 +22,8 @@ const getAdminId = async (req, res) => {
 // @desc    Auth user/set token
 // route    POST /api/users/auth
 // @access  Public
+
+
 const authUser = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
@@ -40,7 +42,9 @@ const authUser = asyncHandler(async (req, res) => {
     const isMatch = await bcrypt.compare(password.trim(), user.password);
     console.log('Password match result:', isMatch);
     if (!isMatch) {
+
         //console.log('Invalid credentials for username:', username);
+
         return res.status(401).json({ message: "Invalid password" });
     }
 

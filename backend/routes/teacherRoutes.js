@@ -24,5 +24,3 @@ router.get('/advisorySections', protect, teacher, getTeacherAdvisoryClass); // G
 router.get('/dashboard', protect, teacher, getTeacherDashboard); // GET route for fetching teacher dashboard
 router.get('/student-grades/:studentId', protect, teacher, getStudentGrades);
 export default router;
-
-module.exports = router;

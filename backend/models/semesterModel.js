@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const semesterSchema = new mongoose.Schema({
     name: { 
@@ -9,12 +9,16 @@ const semesterSchema = new mongoose.Schema({
     strand: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Strand',
-        required: false
+        required: true
     },
     yearLevel: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'YearLevel',
-        required: false
+        required: true
+    },
+    startDate: {
+        type: Date,
+        required: true
     },
     subjects: [{ 
       type: mongoose.Schema.Types.ObjectId, 
@@ -31,4 +35,4 @@ const semesterSchema = new mongoose.Schema({
 });
 
 const Semester = mongoose.model('Semester', semesterSchema);
-module.exports = Semester;
+export default Semester;

@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-
+import mongoose from 'mongoose';
 
 const strandSchema = new mongoose.Schema({
     name: { 
@@ -16,4 +15,4 @@ const strandSchema = new mongoose.Schema({
 
 const Strand = mongoose.model('Strand', strandSchema);
 
-module.exports = Strand;
+export default Strand;

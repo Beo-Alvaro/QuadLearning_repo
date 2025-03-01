@@ -39,16 +39,19 @@ const userSchema = mongoose.Schema({
         required: function() { return this.role === 'student'; }
     },
        // For teachers: multiple semesters
-    // For teachers: multiple semesters
-    semesters: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Semester'
-    }],
+       semesters: {
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Semester'
+        }],
+        select: function() {
+            return this.role === 'teacher';
+        }
+    },
        // For teachers only - their advisory section
        advisorySection: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Section',
-        required: function() { return this.role === 'teacher'; }    
         // This will only be populated for teachers
     },
     status: { type: String, enum: ['active', 'pending'], default: 'active' }
@@ -73,4 +76,4 @@ userSchema.set('toObject', { virtuals: true });
 
 const User = mongoose.model('User', userSchema);
 
-module.exports = User;
+export default User;

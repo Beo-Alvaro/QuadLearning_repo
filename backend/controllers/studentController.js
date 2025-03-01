@@ -173,7 +173,5 @@ const viewStudentGrades = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = {
-    viewStudentProfile,
-    viewStudentGrades
-};
+
+export { viewStudentProfile, viewStudentGrades };

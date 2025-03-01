@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const studentSchema = mongoose.Schema(
     {
@@ -11,15 +11,18 @@ const studentSchema = mongoose.Schema(
             unique: true
         },
         firstName: {
+
             type: String,
+            // required: true removed
         },
         lastName: {
             type: String,
             // required: true removed
         },
-        middleName: {
+        middleInitial: {
 
             type: String,
+            maxlength: 1,
         },
         middleInitial: {
             type: String, // Middle initial is optional
@@ -32,6 +35,7 @@ const studentSchema = mongoose.Schema(
         },
         birthdate: {
             type: Date,
+            // required: true removed
         },
         birthplace: {
             province: String,   
@@ -40,40 +44,41 @@ const studentSchema = mongoose.Schema(
         },
         address: {
             type: String,
+            // required: true removed
         },
         guardian: {
             name: {
                 type: String,
+                // required: true removed
             },
             occupation: String,
         },
         yearLevel: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'YearLevel',
-            required: false
-
+            ref: 'YearLevel'
         },
         section: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Section',
-            required: false
         },
         strand: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Strand',
-            required: false
         },
         school: {
             name: {
-                type: String,   
+                type: String,
+                // required: true removed
             },
             year: {
                 type: String,
+                // required: true removed
             }
         },
         attendance: {
             totalYears: {
                 type: Number,
+                // required: true removed
             }
         },
         // Additional metadata
@@ -109,4 +114,4 @@ studentSchema.index({ 'user': 1, 'grades.semester': 1, 'grades.subjects.subject'
 // Create the Student model
 const Student = mongoose.model('Student', studentSchema);
 
-module.exports = Student;
+export default Student;

@@ -6,3 +6,5 @@ const router = express.Router();
 
 router.route('/semesters').get(protect, authorizeRoles('admin', 'teacher'), getSemesters);
 router.route('/endSemester/:id').put(protect, authorizeRoles('admin', 'teacher'), endSemester);
+
+export default router;
