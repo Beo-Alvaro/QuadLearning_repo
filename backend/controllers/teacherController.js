@@ -4,6 +4,7 @@ import Section from '../models/sectionModel.js';
 import Student from '../models/studentModel.js';
 import Subject from '../models/subjectModel.js';
 import Semester from '../models/semesterModel.js';
+import YearLevel from '../models/yearLevelModel.js';
 import Grade from '../models/gradeModel.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
@@ -251,19 +252,34 @@ const importStudents = asyncHandler(async (req, res) => {
 
 
 const addGrade = asyncHandler(async (req, res) => {
-    const { studentId, subjectId, semesterId, midterm, finals } = req.body;
+  const { studentId, subjectId, semesterId, midterm, finals, section, yearLevel } = req.body;
 
-    // Validate required fields
-    if (!studentId || !subjectId || !semesterId) {
+  if (!studentId || !subjectId || !semesterId || !section || !yearLevel) {
     res.status(400);
-        throw new Error('Student ID, Subject ID, and Semester ID are required');
-  }
+    throw new Error('Student ID, Subject ID, Semester ID, Section, and Year Level are required');
+}
+
 
   try {
         // Convert IDs to ObjectId
         const objectIdStudent = new mongoose.Types.ObjectId(studentId);
         const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
         const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
+
+        const sectionRecord = await Section.findOne({ name: section }); // Assuming section name is unique
+        if (!sectionRecord) {
+            res.status(400);
+            throw new Error("Section not found");
+        }
+        const objectIdSection = sectionRecord._id;
+        
+        const yearLevelREcord = await YearLevel.findOne({ name: yearLevel }); // Assuming section name is unique
+        if (!yearLevelREcord) {
+            res.status(400);
+            throw new Error("Section not found");
+        }
+        const objectIdYearLevel = yearLevelREcord._id;
+
 
         // Calculate final rating (40% midterm, 60% finals)
         const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
@@ -278,8 +294,8 @@ const addGrade = asyncHandler(async (req, res) => {
       student: objectIdStudent,
       semester: objectIdSemester,
       schoolYear: req.body.schoolYear, // Include schoolYear if needed
-      yearLevel: req.body.yearLevel,   // Include yearLevel if needed
-      section: req.body.section,       // Include section if needed
+      yearLevel: objectIdYearLevel,   // Include yearLevel if needed
+      section: objectIdSection,       // Include section if needed
       strand: req.body.strand ,         // Include strand if needed
         });
 
@@ -312,19 +328,22 @@ const addGrade = asyncHandler(async (req, res) => {
         } else {
             // Create new grade
             grade = new Grade({
-                student: objectIdStudent,
-                semester: objectIdSemester,
-                subjects: [{
-                    subject: objectIdSubject,
-                    midterm: midtermValue,
-                    finals: finalsValue,
-                    finalRating: parseFloat(finalRating),
-                    action
-                }]
-            });
+              student: objectIdStudent,
+              semester: objectIdSemester,
+              yearLevel: objectIdYearLevel,   // Save year level
+              section: objectIdSection,    // Save section
+              subjects: [{
+                  subject: objectIdSubject,
+                  midterm: midtermValue,
+                  finals: finalsValue,
+                  finalRating: parseFloat(finalRating),
+                  action
+              }]
+          });
 
             result = await grade.save();
         }
+        console.log('Received IDs:', { studentId, subjectId, semesterId, section, yearLevel });
 
         // Log the saved grade for debugging
         console.log('Saved grade:', {
@@ -366,7 +385,7 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
         let updatedGrades = [];
 
         for (const update of updates) {
-            const { studentId, subjectId, semesterId, midterm, finals } = update;
+          const { studentId, subjectId, semesterId, midterm, finals, schoolYear, yearLevel, section, strand } = update;
             
             if (!studentId || !subjectId || !semesterId) {
                 console.warn('Skipping update with missing required fields:', update);
@@ -378,32 +397,53 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
             const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
             const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
 
+            const sectionRecord = await Section.findOne({ name: section }); // Assuming section name is unique
+            if (!sectionRecord) {
+                res.status(400);
+                throw new Error("Section not found");
+            }
+            const objectIdSection = sectionRecord._id;
+            
+            const yearLevelREcord = await YearLevel.findOne({ name: yearLevel }); // Assuming section name is unique
+            if (!yearLevelREcord) {
+                res.status(400);
+                throw new Error("Section not found");
+            }
+            const objectIdYearLevel = yearLevelREcord._id;
+
             // Calculate final rating
             const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
             const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
             const finalRating = (midtermValue * 0.4 + finalsValue * 0.6).toFixed(2);
             const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
 
-            // Find existing grade for this student, semester, and subject
+            // Find existing grade including the new fields
             let grade = await Grade.findOne({
+              student: objectIdStudent,
+              semester: objectIdSemester,
+              schoolYear,
+              yearLevel: objectIdYearLevel,
+              section: objectIdSection,
+              strand
+          });
+
+          if (!grade) {
+            // Create new grade document
+            grade = new Grade({
                 student: objectIdStudent,
                 semester: objectIdSemester,
-                'subjects.subject': objectIdSubject
+                schoolYear,
+                yearLevel: objectIdYearLevel,
+                section: objectIdSection,
+                strand,
+                subjects: [{
+                    subject: objectIdSubject,
+                    midterm: midtermValue,
+                    finals: finalsValue,
+                    finalRating: parseFloat(finalRating),
+                    action
+                }]
             });
-
-            if (!grade) {
-                // Create new grade document
-                grade = new Grade({
-                    student: objectIdStudent,
-                    semester: objectIdSemester,
-                    subjects: [{
-                        subject: objectIdSubject,
-                        midterm: midtermValue,
-                        finals: finalsValue,
-                        finalRating: parseFloat(finalRating),
-                        action
-                    }]
-                });
             } else {
                 // Find the subject in the subjects array
                 const subjectIndex = grade.subjects.findIndex(
@@ -431,17 +471,20 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
             // Save the grade
             await grade.save();
             
-            // Add to updated grades
-            updatedGrades.push({
-                studentId,
-                subjectId,
-                midterm: midtermValue,
-                finals: finalsValue,
-                finalRating,
-                action
-            });
-        }
-
+           // Add to updated grades
+           updatedGrades.push({
+            studentId,
+            subjectId,
+            schoolYear,
+            yearLevel,
+            section,
+            strand,
+            midterm: midtermValue,
+            finals: finalsValue,
+            finalRating,
+            action
+        });
+    }
         console.log(`Successfully updated ${updatedGrades.length} grades`);
 
         // Send response

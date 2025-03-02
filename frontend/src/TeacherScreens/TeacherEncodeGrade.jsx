@@ -66,23 +66,40 @@ const TeacherEncodeGrade = () => {
     const addGrade = async (studentId) => {
         if (isSaving) return;
         setIsSaving(true);
-        
+    
+        const student = filteredStudents.find(s => s._id === studentId);
+        if (!student) {
+            setIsSaving(false);
+            console.error('Student not found');
+            return;
+        }
+    
         try {
             const studentLocalGrades = localGrades[studentId] || {};
             const existingGrades = studentGrades[studentId]?.[selectedSubject] || {};
-            
-            // Only send grades that have been changed
+    
             const midterm = studentLocalGrades.midterm !== undefined ? 
                 studentLocalGrades.midterm : existingGrades.midterm;
             const finals = studentLocalGrades.finals !== undefined ? 
                 studentLocalGrades.finals : existingGrades.finals;
-            
-            // Don't save if no changes
+    
             if (midterm === undefined && finals === undefined) {
                 setIsSaving(false);
                 return;
             }
+            console.log('Student data:', student);
 
+            console.log('Sending data:', {
+                studentId,
+                subjectId: selectedSubject,
+                semesterId: currentSemester,
+                midterm,
+                finals,
+                section: student.sectionName,      // Updated this line
+                yearLevel: student.yearLevelName   // And this one
+            });
+            
+    
             const response = await fetch('/api/teacher/add-grades', {
                 method: 'POST',
                 headers: {
@@ -94,48 +111,46 @@ const TeacherEncodeGrade = () => {
                     subjectId: selectedSubject,
                     semesterId: currentSemester,
                     midterm,
-                    finals
+                    finals,
+                    section: student.sectionName,      // Updated this line
+                    yearLevel: student.yearLevelName   // And this one
                 })
             });
-  
+    
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Failed to save grade');
             }
-
+    
             const result = await response.json();
-            console.log('Grade save result:', result); // Debug log
-            
-            // Update the UI immediately with the saved data
+            console.log('Grade save result:', result);
+    
             const updatedGrades = { ...studentGrades };
             if (!updatedGrades[studentId]) {
                 updatedGrades[studentId] = {};
             }
-            
+    
             updatedGrades[studentId][selectedSubject] = {
-                midterm: midterm,
-                finals: finals,
+                midterm,
+                finals,
                 finalRating: result.data.finalRating,
                 action: result.data.action
             };
             
-            // Save to state
+    
             setStudentGrades(updatedGrades);
-            
-            // Clear local changes for this student
             setLocalGrades(prev => {
                 const updated = { ...prev };
                 delete updated[studentId];
                 return updated;
             });
-
-            // Exit edit mode after saving
+    
             setEditModeStudents(prev => {
                 const updated = { ...prev };
                 updated[studentId] = false;
                 return updated;
             });
-
+    
             setSuccessMessage('Grade saved successfully!');
         } catch (error) {
             console.error('Failed to add grade:', error);
@@ -145,6 +160,8 @@ const TeacherEncodeGrade = () => {
         }
     };
 
+    
+    
     // Save all changed grades at once
     const saveAllGrades = async () => {
         if (isSaving || Object.keys(localGrades).length === 0) return;
@@ -153,16 +170,20 @@ const TeacherEncodeGrade = () => {
         try {
             // Prepare updates array
             const updates = Object.entries(localGrades).map(([studentId, grades]) => {
+                const student = filteredStudents.find(s => s._id === studentId); // Get section and year level
                 const existingGrades = studentGrades[studentId]?.[selectedSubject] || {};
-                
+            
                 return {
                     studentId,
                     subjectId: selectedSubject,
                     semesterId: currentSemester,
                     midterm: grades.midterm !== undefined ? grades.midterm : existingGrades.midterm,
-                    finals: grades.finals !== undefined ? grades.finals : existingGrades.finals
+                    finals: grades.finals !== undefined ? grades.finals : existingGrades.finals,
+                    section: student.sectionName,      // Updated this line
+                    yearLevel: student.yearLevelName   // And this one
                 };
             }).filter(update => update.midterm !== undefined || update.finals !== undefined);
+            
             
             if (updates.length === 0) {
                 setIsSaving(false);
