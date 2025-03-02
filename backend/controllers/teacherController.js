@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
 import mongoose from 'mongoose';
 import Attendance from '../models/attendanceModel.js';
+import dayjs from 'dayjs';
 
 // Derive __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -602,166 +603,317 @@ const deleteGrade = asyncHandler(async (req, res) => {
 // @desc    Generate Form 137 for a student
 // @route   GET /api/grades/form137/:studentId
 // @access  Private (teacher role)
+const generateForm137 = asyncHandler(async (req, res) => {
+  try {
+      const { studentId } = req.params;
 
-const generateForm137 = asyncHandler(async (req, res, next) => {
-    try {
-        const { studentId } = req.params;
+      // Fetch student data without grades
+      const student = await Student.findById(studentId)
+          .populate([
+              { path: "user" },
+              { path: "yearLevel" },
+              { path: "section" },
+              { path: "strand" }
+          ])
+          .lean(); // Convert to plain JSON for better performance
 
-        // Fetch the student data with necessary relationships populated
-        const student = await Student.findById(studentId)
-        .populate([
-            { path: 'user' },
-            { path: 'yearLevel' },
-            { path: 'section' },
-            { path: 'strand' },
-            {
-                path: 'grades',
-                populate: [
-                    { path: 'semester' },
-                    { path: 'subjects.subject', model: 'Subject' }
-                ]
-            }
-        ])
-        .lean();
+      if (!student) {
+          res.status(404);
+          throw new Error("Student not found");
+      }
 
-        if (!student) {
-            res.status(404);
-            throw new Error('Student not found');
-        }
+          const grades = await Grade.find({ student: student.user })
+          .populate({
+          path: "semester",
+          select: "name status startDate yearLevel",
+          populate: {
+              path: "yearLevel",
+              select: "name",
+          },
+          })
+          .populate("subjects.subject", "name code")
+          .lean();
+      
+      console.log("📌 Retrieved Grades (with Semester):", JSON.stringify(grades, null, 2));
+      
 
-        // Compute full name dynamically
-        const fullName = `${student.firstName} ${student.middleInitial ? student.middleInitial + '.' : ''} ${student.lastName}`.trim();
-        const sanitizedStudentName = fullName.replace(/[\/\\?%*:|"<>]/g, '_');
+      const admissionDate = dayjs(student.user.createdAt).format("MM/DD/YYYY");
 
-        // Set up PDF document
-        const doc = new PDFDocument({ size: 'A4', margin: 30 });
-        const pdfDirectory = path.join(__dirname, '../../pdfs');
+      // Format student's full name for the filename
+      const fullName = `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`;
+      const sanitizedFileName = fullName.replace(/[\/:*?"<>|]/g, '_');
 
-        if (!fs.existsSync(pdfDirectory)) {
-            fs.mkdirSync(pdfDirectory, { recursive: true });
-        }
+      // Define file paths
+      const templatePath = path.resolve(__dirname, "../utils/Form 137-SHS 2016.xlsx");
+      const outputExcelPath = path.resolve(__dirname, `../output/Form137_${sanitizedFileName}.xlsx`);
+      const fileName = `Form137_${sanitizedFileName}.xlsx`;
 
-        const filePath = path.join(pdfDirectory, `form137-${sanitizedStudentName}.pdf`);
-        const writeStream = fs.createWriteStream(filePath);
+      console.log(`📂 Loading template from: ${templatePath}`);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(templatePath);
 
-        // Configure PDF response headers
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=form137-${sanitizedStudentName}.pdf`);
+      // Log available worksheets
+      console.log("✅ Available worksheets:", workbook.worksheets.map(ws => ws.name));
 
-        doc.pipe(res);
-        doc.pipe(writeStream);
+      // Access worksheets safely
+      const worksheetFront = workbook.getWorksheet("FRONT");
+      const worksheetBack = workbook.getWorksheet("BACK");
 
-        // Start PDF content
-        doc.font('Helvetica');
+      if (!worksheetFront || !worksheetBack) {
+          throw new Error("❌ Worksheets not found in the template.");
+      }
 
-        // Header Section
-        const leftImagePath = path.join(__dirname, '../../frontend/img/DepED.png');
-        const rightImagePath = path.join(__dirname, '../../frontend/img/TVNHS.png');
+      // 🔹 Insert student details in the FRONT worksheet
+      worksheetFront.getCell("F8").value = student.lastName || "N/A"; // Last Name
+      worksheetFront.getCell("Y8").value = student.firstName || "N/A"; // First Name
+      worksheetFront.getCell("AZ8").value = student.middleName || "N/A"; // Middle Name
+      worksheetFront.getCell("C9").value = student.user.username || "N/A"; // LRN
+      worksheetFront.getCell("AA9").value = student.birthdate || "N/A"; // Date of Birth
+      worksheetFront.getCell("AN9").value = student.gender || "N/A"; // Sex
+      worksheetFront.getCell("BH9").value = admissionDate || "N/A"; // Date of SHS Admission
 
-        if (fs.existsSync(leftImagePath)) {
-            doc.image(leftImagePath, 95, 20, { width: 65, height: 65 });
-        } else {
-            console.error('Left image not found:', leftImagePath);
-        }
-        
-        // Right image
-        if (fs.existsSync(rightImagePath)) {
-            doc.image(rightImagePath, 455, 20, { width: 65, height: 65 });
-        } else {
-            console.error('Right image not found:', rightImagePath);
-        }
-  
-        doc.fontSize(16).text('Republic of the Philippines', 50, 20, { align: 'center' });
-        doc.fontSize(14).text('Department of Education', 50, 40, { align: 'center' });
-        doc.fontSize(12).text('Senior High School Student Permanent Record', 50, 60, { align: 'center' });
-        doc.moveDown();
+      console.log("✅ Student details inserted into the form.");
+       
+       /// Fetch Grade 11 grades from the database
+const grade11FirstSemester = await Grade.findOne({
+  student: student.user
+})
+.populate({
+  path: "semester",
+  select: "name yearLevel",
+  populate: {
+      path: "yearLevel",
+      select: "name"
+  }
+})
+.populate({
+  path: "subjects.subject",
+  select: "name"
+})
 
-        doc.fontSize(15).text('Learner Information', 225, 100, { underline: true });
-        doc.moveDown();
+// **3️⃣ Insert Student Information**
+      worksheetFront.getCell("E23").value = "Tropical Village National Highschool"; // School Name
+      worksheetFront.getCell("AF23").value = "330921"; // School ID
+      worksheetFront.getCell("AS23").value = "11"; // Grade Level
+      worksheetFront.getCell("BA23").value = "2022-2023"; // SY
+      worksheetFront.getCell("BK23").value = "1st"; // Semester
+      worksheetFront.getCell("G25").value = student.strand.name; // Strand
+      worksheetFront.getCell("AS25").value = "Current Section"; // Section
 
-        const drawField = (label, value, x, y, width = 100) => {
-            doc.fontSize(9).text(label, x, y, { width });
-            doc.rect(x + width - 55, y - 2, 210, 12).stroke();
-            doc.text(value || '', x + width - 50, y, { width: 200 });
-        };
+console.log("📄 Retrieved Grades:", grade11FirstSemester);
+if (!grade11FirstSemester) {
+  console.warn("⚠️ Warning: No grades found for the student.");
+} else if (
+  grade11FirstSemester.semester &&
+  grade11FirstSemester.semester.yearLevel?.name === "Grade 11" &&
+  grade11FirstSemester.semester.name === "1st Semester"
+) {
+  let rowIndex = 31; // Starting row for subjects
 
-        let startY = doc.y;
+  if (!grade11FirstSemester.subjects || grade11FirstSemester.subjects.length === 0) {
+      console.warn("⚠️ Warning: No subjects found for Grade 11 First Semester.");
+  } else {
+      grade11FirstSemester.subjects.forEach((subjectEntry) => {
+          if (!subjectEntry.subject || !subjectEntry.subject.name) {
+              console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+              return; // Skip this entry to prevent errors
+          }
 
-        // Replace LRN with user.username
-        drawField('LRN', student.user.username || 'N/A', 30, startY);
-        drawField('Name', fullName || 'N/A', 305, startY);
-        drawField('Strand', student.strand?.name || 'N/A', 30, startY + 20);
-        drawField('Year Level', student.yearLevel?.name || 'N/A', 305, startY + 20);
-        drawField('Section', student.section?.name || 'N/A', 30, startY + 40);
-        drawField('Address', student.address || 'N/A', 305, startY + 40);
+          worksheetFront.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+          worksheetFront.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+          worksheetFront.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
 
-        doc.fontSize(15).text('Scholastic Grades\n', 220, 285, { underline: true });
+          rowIndex++;
+      });
+  }
+} else {
+  console.warn("⚠️ Warning: No grades found for Grade 11 First Semester.");
+}
+      
 
-        const drawSemesterTable = (semesterTitle, semesterGrades) => {
-            doc.moveDown();
+const grade11SecondSemester = await Grade.findOne({
+  student: student.user
+})
+.populate({
+  path: "semester",
+  select: "name yearLevel",
+  populate: {
+      path: "yearLevel",
+      select: "name"
+  }
+})
+.populate({
+  path: "subjects.subject",
+  select: "name"
+})
 
-            // Center the semester title
-            const titleWidth = doc.widthOfString(semesterTitle);
-            const xPosition = 225;
-            doc.fontSize(10).text(semesterTitle, xPosition, doc.y, { underline: true });
+// **3️⃣ Insert Student Information**
+worksheetFront.getCell("E66").value = "Tropical Village National Highschool"; // School Name
+worksheetFront.getCell("AF66").value = "330921"; // School ID
+worksheetFront.getCell("AS66").value = "11"; // Grade Level
+worksheetFront.getCell("BA66").value = "2022-2023"; // SY
+worksheetFront.getCell("BK66").value = "2nd"; // Semester
+worksheetFront.getCell("G68").value = student.strand.name; // Strand
+worksheetFront.getCell("AS68").value = "Current Section"; // Section
 
-            const tableTop = doc.y + 10;
-            const tableWidth = 400;
-            const columnWidth = tableWidth / 4;
+console.log("📄 Retrieved Grades:", grade11SecondSemester);
+if (!grade11SecondSemester) {
+  console.warn("⚠️ Warning: No grades found for the student.");
+} else if (
+  grade11SecondSemester.semester &&
+  grade11SecondSemester.semester.yearLevel?.name === "Grade 11" &&
+  grade11SecondSemester.semester.name === "2nd Semester"
+) {
+  let rowIndex = 74; // Starting row for subjects
 
-            // Draw table headers with centered alignment
-            doc.fontSize(9)
-                .text('Subject', 30, tableTop, { width: columnWidth, align: 'center' })
-                .text('Midterm', 30 + 2 * columnWidth, tableTop, { width: columnWidth, align: 'center' })
-                .text('Finals', 30 + 3 * columnWidth, tableTop, { width: columnWidth, align: 'center' })
-                .text('Final Rating', 30 + 4 * columnWidth, tableTop, { width: columnWidth, align: 'center' });
+  if (!grade11SecondSemester.subjects || grade11SecondSemester.subjects.length === 0) {
+      console.warn("⚠️ Warning: No subjects found for Grade 11 Second Semester.");
+  } else {
+      grade11SecondSemester.subjects.forEach((subjectEntry) => {
+          if (!subjectEntry.subject || !subjectEntry.subject.name) {
+              console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+              return; // Skip this entry to prevent errors
+          }
 
-            let currentY = tableTop + 20;
+          worksheetFront.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+          worksheetFront.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+          worksheetFront.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
 
-            if (!semesterGrades || semesterGrades.length === 0) {
-                doc.fontSize(10).text('No grades available.', { align: 'center' });
-            } else {
-                // Loop through subjects and draw rows
-                semesterGrades.forEach((grade) => {
-                    grade.subjects.forEach((subject) => {
-                        doc.fontSize(9)
-                            .text(subject.subject.name || 'N/A', 30, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.midterm || 'N/A', 30 + 2 * columnWidth, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.finals || 'N/A', 30 + 3 * columnWidth, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.finalRating || 'N/A', 30 + 4 * columnWidth, currentY, { width: columnWidth, align: 'center' });
-                        currentY += 20;
-                    });
-                });
-            }
-            doc.moveDown();
-        };
+          rowIndex++;
+      });
+  }
+} else {
+  console.warn("⚠️ Warning: No grades found for Grade 11 Second Semester.");
+}         
+     console.log("✅ Grade 11 grades inserted.");
+     
+      /// Fetch Grade 12 grades from the database
+      const grade12FirstSemester = await Grade.findOne({
+          student: student.user
+      })
+      .populate({
+          path: "semester",
+          select: "name yearLevel",
+          populate: {
+              path: "yearLevel",
+              select: "name"
+          }
+      })
+      .populate({
+          path: "subjects.subject",
+          select: "name"
+      })
+      
+          // **3️⃣ Insert Student Information**
+          worksheetBack.getCell("E4").value = "Tropical Village National Highschool"; // School Name
+          worksheetBack.getCell("AF4").value = "330921"; // School ID
+          worksheetBack.getCell("AS4").value = "12"; // Grade Level
+          worksheetBack.getCell("BA4").value = "2023-2024"; // SY
+          worksheetBack.getCell("BK4").value = "1st"; // Semester
+          worksheetBack.getCell("G5").value = student.strand.name; // Strand
+          worksheetBack.getCell("AS5").value = "Current Section"; // Section
 
-        // Filter grades by semester
-        const firstSemesterGrades = student.grades?.filter((grade) => grade.semester?.name === '1st Semester') || [];
-        const secondSemesterGrades = student.grades?.filter((grade) => grade.semester?.name === '2nd Semester') || [];
 
-        drawSemesterTable('Semester: 1st Semester', firstSemesterGrades);
-        drawSemesterTable('Semester: 2nd Semester', secondSemesterGrades);
+      console.log("📄 Retrieved Grades:", grade12FirstSemester);
+      if (!grade12FirstSemester) {
+          console.warn("⚠️ Warning: No grades found for the student.");
+      } else if (
+          grade12FirstSemester.semester &&
+          grade12FirstSemester.semester.yearLevel?.name === "Grade 12" &&
+          grade12FirstSemester.semester.name === "1st Semester"
+      ) {
+          let rowIndex = 11; // Starting row for subjects
+      
+          if (!grade12FirstSemester.subjects || grade12FirstSemester.subjects.length === 0) {
+              console.warn("⚠️ Warning: No subjects found for Grade 12 First Semester.");
+          } else {
+              grade12FirstSemester.subjects.forEach((subjectEntry) => {
+                  if (!subjectEntry.subject || !subjectEntry.subject.name) {
+                      console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+                      return; // Skip this entry to prevent errors
+                  }
+      
+                  worksheetBack.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+                  worksheetBack.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+                  worksheetBack.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
+      
+                  rowIndex++;
+              });
+          }
+      } else {
+          console.warn("⚠️ Warning: No grades found for Grade 12 First Semester.");
+      }
+      
+      const grade12SecondSemester = await Grade.findOne({
+          student: student.user
+      })
+      .populate({
+          path: "semester",
+          select: "name yearLevel",
+          populate: {
+              path: "yearLevel",
+              select: "name"
+          }
+      })
+      .populate({
+          path: "subjects.subject",
+          select: "name"
+      })
 
-        doc.end();
+      // **3️⃣ Insert Student Information**
+      worksheetBack.getCell("E46").value = "Tropical Village National Highschool"; // School Name
+      worksheetBack.getCell("AF46").value = "330921"; // School ID
+      worksheetBack.getCell("AS46").value = "12"; // Grade Level
+      worksheetBack.getCell("BA46").value = "2023-2024"; // SY
+      worksheetBack.getCell("BK46").value = "1st"; // Semester
+      worksheetBack.getCell("G48").value = student.strand.name; // Strand
+      worksheetBack.getCell("AS48").value = "Current Section"; // Section
+      
+      console.log("📄 Retrieved Grades:", grade12SecondSemester);
+      if (!grade12SecondSemester) {
+          console.warn("⚠️ Warning: No grades found for the student.");
+      } else if (
+          grade12SecondSemester.semester &&
+          grade12SecondSemester.semester.yearLevel?.name === "Grade 12" &&
+          grade12SecondSemester.semester.name === "2nd Semester"
+      ) {
+          let rowIndex = 74; // Starting row for subjects
+      
+          if (!grade12SecondSemester.subjects || grade12SecondSemester.subjects.length === 0) {
+              console.warn("⚠️ Warning: No subjects found for Grade 12 Second Semester.");
+          } else {
+              grade12SecondSemester.subjects.forEach((subjectEntry) => {
+                  if (!subjectEntry.subject || !subjectEntry.subject.name) {
+                      console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+                      return; // Skip this entry to prevent errors
+                  }
+      
+                  worksheetBack.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+                  worksheetBack.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+                  worksheetBack.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
+      
+                  rowIndex++;
+              });
+          }
+      } else {
+          console.warn("⚠️ Warning: No grades found for Grade 12 Second Semester.");
+      }         
+     console.log("✅ Grade 12 grades inserted.");
 
-        writeStream.on('finish', () => {
-            console.log(`Form 137 saved to: ${filePath}`);
-        });
+     // Send the file as a downloadable response
+     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+     res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
-        writeStream.on('error', (err) => {
-            console.error('Error writing PDF to file:', err);
-            res.status(500).send('Error generating the PDF.');
-        });
+    // Write the workbook to the output file
+await workbook.xlsx.writeFile(outputExcelPath);
+console.log(`✅ Form 137 saved as: ${outputExcelPath}`);
 
-    } catch (error) {
-        if (!res.headersSent) {
-            next(error);
-        } else {
-            console.error('Error occurred during PDF generation:', error);
-        }
-    }
-
+  } catch (error) {
+      console.error("❌ Error generating Form 137:", error);
+      res.status(500);
+      throw new Error("Failed to generate Form 137: " + error.message);
+  }
 });
 
 /**
@@ -822,7 +974,7 @@ const getTeacherSections = asyncHandler(async (req, res) => {
 
 const getStudentData = asyncHandler(async (req, res) => {
     const { studentId } = req.params;
-    
+  
     try {
         
         const student = await Student.findOne({ user: studentId })
@@ -857,58 +1009,6 @@ const getStudentData = asyncHandler(async (req, res) => {
     };
 
     res.json(studentData);
-
-        // Format the date to YYYY-MM-DD for the input field
-        const formattedBirthdate = student.birthdate ? 
-            new Date(student.birthdate).toISOString().split('T')[0] : '';
-
-            res.status(200).json({
-                success: true,
-                student: {
-                    firstName: student.firstName,
-                    lastName: student.lastName,
-                    middleInitial: student.middleInitial,
-                    gender: student.gender || '',  // Ensure gender is included
-                    birthdate: formattedBirthdate,  // Format the date
-                    birthplace: {
-                        province: student.birthplace?.province || '',
-                        municipality: student.birthplace?.municipality || '',
-                        barrio: student.birthplace?.barrio || ''
-                    },
-                    address: student.address,
-                    guardian: {
-                        name: student.guardian?.name || '',
-                        occupation: student.guardian?.occupation || ''
-                    },
-                    school: {
-                        name: student.school?.name || '',
-                        year: student.school?.year || ''
-                    },
-                    attendance: {
-                        totalYears: student.attendance?.totalYears || ''
-                    },
-                    contactNumber: student.contactNumber,
-                    // Academic info
-                    yearLevel: 
-                    student.yearLevel?.name || 
-                    user?.yearLevel?.name || 
-                    student.yearLevel || 
-                    user?.yearLevel || 
-                    '',
-                section: 
-                    student.section?.name || 
-                    user?.sections?.[0]?.name || 
-                    student.section || 
-                    user?.sections?.[0] || 
-                    '',
-                strand: 
-                    student.strand?.name || 
-                    user?.strand?.name || 
-                    student.strand || 
-                    user?.strand || 
-                    '',
-                }
-            });
         } catch (error) {
             console.error('Error fetching student data:', error);
             res.status(500).json({

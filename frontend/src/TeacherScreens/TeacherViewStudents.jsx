@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar';
-import { Table, Container, Alert, Form, Row, Col , Modal, Button, Badge, Card, OverlayTrigger, Tooltip} from 'react-bootstrap';
+import { Container, Form, Row, Col , Button, Badge, Card, OverlayTrigger, Tooltip} from 'react-bootstrap';
 import { useTeacherUserContext } from '../hooks/useTeacherUserContext';
 import UpdateStudentModal from '../TeacherComponents/UpdateStudentModal';
 import './TeacherViewStudent.css';
