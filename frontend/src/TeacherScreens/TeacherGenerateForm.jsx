@@ -5,9 +5,10 @@ import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar'
 import { useTeacherUserContext } from '../context/teacherUserContext';
 import TeacherModal from '../TeacherComponents/TeacherModal';
 import TeacherTable from '../TeacherComponents/TeacherTable';
+
 const TeacherGenerateForm = () => {
     const [showModal, setShowModal] = useState(false);  // State to control the modal visibility
-    const {sections, teacherAdvisoryClassId,strands,yearLevels,loading,error,fetchData,handleGenerateForm,handleSelectStudent,selectedStudent, setSelectedStudent} = useTeacherUserContext()
+    const {sections, teacherAdvisoryClassId, strands, yearLevels, loading, error, fetchData, handleGenerateForm, handleSelectStudent, selectedStudent, setSelectedStudent} = useTeacherUserContext()
     const [searchTerm, setSearchTerm] = useState('');
    
     useEffect(() => {
@@ -19,9 +20,9 @@ const TeacherGenerateForm = () => {
         setSelectedStudent(null); // Clear previously selected student if needed
     };
    
-    // Get all students from sections
-    const allStudents = sections.flatMap(section => 
-        section.students.map(student => ({
+    // Get all students from sections with proper error handling
+    const allStudents = sections ? sections.flatMap(section => 
+        (section.students || []).map(student => ({
             _id: student._id,
             username: student.username,
             sectionName: section.name,
@@ -29,12 +30,16 @@ const TeacherGenerateForm = () => {
             strand: section.strand?.name || 'Not Set',
             isAdvisory: section.isAdvisory || false
         }))
-    );
+    ) : [];
 
     const filteredStudents = allStudents
     .filter((student) =>
         student.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    
+    // Debug information
+    console.log('Sections:', sections);
+    console.log('All Students:', allStudents);
     
     return (
         <>
@@ -87,18 +92,42 @@ const TeacherGenerateForm = () => {
 
                 {error && <Alert variant="danger">{error}</Alert>}
 
-                <TeacherTable 
-        filteredStudents={filteredStudents}
-        handleSelectStudent={handleSelectStudent}
-        modalHandler={modalHandler}
-      />
+                {loading ? (
+                    <div className="text-center my-4">
+                        <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="mt-2">Loading sections and students...</p>
+                    </div>
+                ) : !sections || sections.length === 0 ? (
+                    <Alert variant="info">
+                        <i className="bi bi-info-circle me-2"></i>
+                        No sections found. You may not have any assigned sections.
+                    </Alert>
+                ) : allStudents.length === 0 ? (
+                    <Alert variant="info">
+                        <i className="bi bi-info-circle me-2"></i>
+                        No students found in your sections. The sections data may not include student information.
+                    </Alert>
+                ) : filteredStudents.length === 0 ? (
+                    <Alert variant="info">
+                        <i className="bi bi-search me-2"></i>
+                        No students match your search criteria.
+                    </Alert>
+                ) : (
+                    <TeacherTable 
+                        filteredStudents={filteredStudents}
+                        handleSelectStudent={handleSelectStudent}
+                        modalHandler={modalHandler}
+                    />
+                )}
 
                 <TeacherModal 
-        showModal={showModal} 
-        setShowModal={setShowModal} 
-        selectedStudent={selectedStudent}
-        handleGenerateForm={handleGenerateForm}
-      />
+                    showModal={showModal} 
+                    setShowModal={setShowModal} 
+                    selectedStudent={selectedStudent}
+                    handleGenerateForm={handleGenerateForm}
+                />
             </div>
         </>
     );

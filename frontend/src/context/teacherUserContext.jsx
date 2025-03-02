@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 export const TeacherUserContext = createContext();
 
@@ -11,12 +11,22 @@ export const TeacherUserContextProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [selectedStudent, setSelectedStudent] = useState(null);
 
-    // Fetch Data for Sections, Advisory Class, Strands, and Year Levels
-    const fetchData = async () => {
+    // Use useCallback to memoize the fetchData function
+    const fetchData = useCallback(async () => {
+        // Use a local variable to track if we're already fetching
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const token = userInfo.token || localStorage.getItem('token');
+        
         try {
-            const token = localStorage.getItem('token');
-            if (!token) throw new Error('No authentication token found');
+            setLoading(true);
+            setError(null);
+            
+            if (!token) {
+                throw new Error('No authentication token found. Please log in again.');
+            }
 
+            console.log('Fetching sections with token:', token.substring(0, 10) + '...');
+            
             const sectionsResponse = await fetch('/api/teacher/sections', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -24,29 +34,49 @@ export const TeacherUserContextProvider = ({ children }) => {
                 },
             });
 
-            if (!sectionsResponse.ok) throw new Error('Failed to fetch sections');
+            console.log('Sections response status:', sectionsResponse.status);
+
+            if (!sectionsResponse.ok) {
+                if (sectionsResponse.status === 401) {
+                    throw new Error('Your session has expired. Please log in again.');
+                }
+                throw new Error(`Failed to fetch sections (Status: ${sectionsResponse.status})`);
+            }
 
             const sectionsData = await sectionsResponse.json();
+            console.log('Fetched sections:', sectionsData);
 
-            const advisorySection = sectionsData.find(section => section.advisoryClass);
-            if (advisorySection?.advisoryClass) {
-                setTeacherAdvisoryClassId(advisorySection.advisoryClass.trim());
+            // Check if we got valid data
+            if (!Array.isArray(sectionsData)) {
+                console.error('Unexpected response format:', sectionsData);
+                throw new Error('Received invalid data format from server');
+            }
+
+            const advisorySection = sectionsData.find(section => section.isAdvisory);
+            if (advisorySection) {
+                setTeacherAdvisoryClassId(advisorySection._id);
             }
 
             setSections(sectionsData);
 
-            const uniqueStrands = [...new Set(sectionsData.map(section => section.strand?.name))].filter(Boolean);
-            const uniqueYearLevels = [...new Set(sectionsData.map(section => section.yearLevel?.name))].filter(Boolean);
+            // Extract unique strands and year levels
+            const uniqueStrands = [...new Set(sectionsData
+                .filter(section => section.strand && section.strand.name)
+                .map(section => section.strand.name))];
+                
+            const uniqueYearLevels = [...new Set(sectionsData
+                .filter(section => section.yearLevel && section.yearLevel.name)
+                .map(section => section.yearLevel.name))];
 
             setStrands(uniqueStrands);
             setYearLevels(uniqueYearLevels);
         } catch (error) {
-            console.error('Error:', error);
-            setError(error.message);
+            console.error('Error fetching teacher data:', error);
+            setError(error.message || 'Failed to load sections. Please try again later.');
         } finally {
             setLoading(false);
         }
-    };
+    }, []); // Empty dependency array
 
     // Handle Form 137 Generation
     const handleGenerateForm = async (studentId) => {

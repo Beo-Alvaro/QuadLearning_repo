@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 import { useAuth } from './authContext';
 
 export const StrandDataContext = createContext();
@@ -34,6 +34,7 @@ export const StrandDataProvider = ({ children }) => {
 
   // Create a new strand
   const addStrand = async (newStrand) => {
+    const token = localStorage.getItem('token');
     setLoading(true);
     try {
       const response = await fetch('/api/admin/addStrands', {

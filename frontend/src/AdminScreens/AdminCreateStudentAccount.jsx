@@ -104,7 +104,7 @@ const AdminCreateStudentAccount = () => {
             strand: newUser.strand,
             yearLevel: newUser.yearLevel,
             semester: newUser.semester,
-            subjects: newUser.subjects
+            subjects: newUser.subjects,
         };
     
         console.log('Sending User Data:', userData);

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import StudentDashboardNavbar from '../StudentComponents/StudentDashboardNavbar';
 import { Container, Card, Row, Col } from 'react-bootstrap';
 import { FaUser, FaGraduationCap, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
-import { motion } from 'framer-motion';
 
 const StudentProfile = () => {
     const [studentData, setStudentData] = useState({
@@ -76,11 +75,6 @@ const StudentProfile = () => {
         <>
         <StudentDashboardNavbar />
         <Container className="py-5">
-            <motion.div 
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-            >
                 <div className="mb-5 text-center">
                     <h1 className="display-6 fw-bold text-dark mb-3">
                         Student Profile
@@ -113,7 +107,7 @@ const StudentProfile = () => {
                                     {[
                                         { label: 'Full Name', value: `${studentData.firstName} ${studentData.middleInitial} ${studentData.lastName}` },
                                         { label: 'Gender', value: studentData.gender },
-                                        { label: 'Birthdate', value: new Date(studentData.birthdate).toLocaleDateString() },
+                                        { label: 'Birthdate', value: studentData.birthdate ? new Date(studentData.birthdate).toLocaleDateString() : 'N/A' },
                                         { label: 'Contact Number', value: studentData.contactNumber },
                                     ].map((item, index) => (
                                         <Col md={6} key={index}>
@@ -195,7 +189,7 @@ const StudentProfile = () => {
                                     <Col md={6}>
                                         <div className="bg-light rounded-3 p-3 h-100">
                                             <small className="text-muted d-block mb-2">Guardian Name</small>
-                                            <h6 className="mb-0 text-dark">{studentData.guardian.name}</h6>
+                                            <h6 className="mb-0 text-dark">{studentData.guardian?.name || 'N/A'}</h6>
                                         </div>
                                     </Col>
                                     <Col md={6}>
@@ -243,7 +237,6 @@ const StudentProfile = () => {
     </Card>
     </Col>
     </Row>
-    </motion.div>
     </Container>
     </>
     );

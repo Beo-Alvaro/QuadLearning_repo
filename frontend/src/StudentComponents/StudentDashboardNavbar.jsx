@@ -75,6 +75,7 @@ function StudentDashboardNavbar() {
               <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentHomeScreen">Home</Nav.Link>
               <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentProfile">Profile</Nav.Link>
               <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentViewGrades">Grades</Nav.Link>
+              <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentMessages">Contact Admin</Nav.Link>
             </Nav>
             <Nav>
             <Nav.Link 

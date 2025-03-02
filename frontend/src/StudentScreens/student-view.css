@@ -1,0 +1,215 @@
+/* Main container styling */
+.grades-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Page title styling */
+.page-title {
+  color: #2c3e50;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+/* Year level tabs styling */
+.year-level-tabs {
+  border-bottom: none;
+  padding: 0.5rem;
+}
+
+
+.year-level-tabs .nav-link {
+  color: #64748b;
+  font-weight: 500;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+
+.year-level-tabs .nav-link.active {
+  color: #3b82f6;
+  background-color: #eff6ff;
+  border: none;
+}
+
+.year-level-tabs .nav-link:hover:not(.active) {
+  background-color: #f8fafc;
+}
+
+
+/* Semester accordion styling */
+.semester-accordion .accordion-button {
+  padding: 1rem 1.5rem;
+  background-color: #fff;
+}
+
+.accordion-button:hover{
+  background-color: #f0f6f8;
+}
+
+/* Semester header styling */
+.semester-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  margin-right: 15px;
+}
+
+/* GPA Badge styling */
+.gpa-badge {
+  background-color: #00bcd4;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Card styling */
+.semester-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  background-color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+
+.semester-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0;
+}
+
+.semester-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.semester-accordion .accordion-button:not(.collapsed) {
+  background-color: #f8f9fa;
+  color: #2c3e50;
+  box-shadow: none;
+}
+
+.semester-accordion .accordion-button:focus {
+  box-shadow: none;
+  border-color: rgba(52, 152, 219, 0.25);
+}
+
+/* Semester GPA badge */
+.semester-gpa {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Performance summary */
+.performance-summary {
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Improved grade distribution styling */
+.grade-distribution {
+  margin-top: 10px;
+}
+
+.grade-category {
+  margin-bottom: 12px;
+}
+
+.grade-label {
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.grade-count {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.progress {
+  height: 8px;
+  border-radius: 4px;
+}
+
+/* Grades table styling */
+.grades-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.grades-table thead th {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+  padding: 12px 15px;
+}
+
+.grades-table tbody tr:hover {
+  background-color: rgba(52, 152, 219, 0.05);
+}
+
+.grades-table td {
+  padding: 12px 15px;
+  vertical-align: middle;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.subject-name {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+/* Badge styling */
+.grade-badge {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  min-width: 45px;
+  display: inline-block;
+  text-align: center;
+}
+
+.remarks-badge {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  min-width: 70px;
+  display: inline-block;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .semester-gpa {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .grades-table {
+    font-size: 0.9rem;
+  }
+
+  .grades-table td,
+  .grades-table th {
+    padding: 8px 10px;
+  }
+
+  .grade-label,
+  .grade-count {
+    font-size: 0.75rem;
+  }
+}
+

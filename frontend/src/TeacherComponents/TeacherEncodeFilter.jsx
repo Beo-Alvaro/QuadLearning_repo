@@ -1,4 +1,7 @@
+import { useState, useEffect } from 'react';
 import { Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
+import axios from 'axios';
+
 const TeacherEncodeGradeFilter = ({
   successMessage,
   error,
@@ -23,21 +26,72 @@ const TeacherEncodeGradeFilter = ({
   setSelectedYearLevel,
   setSelectedSection
 }) => {
-  // Filter subjects based on the selected semester
-  const filteredSubjects = subjects.filter(subject => {
-    if (!currentSemester) return false;
-    
-    // Check if subject has semester property and it matches current semester
-    return subject.semester && 
-           (typeof subject.semester === 'object' 
-             ? subject.semester._id === currentSemester 
-             : subject.semester === currentSemester);
-  });
+  // Add state for directly fetched subjects
+  const [semesterSubjects, setSemesterSubjects] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [subjectError, setSubjectError] = useState(null);
 
-  // Debug logs to help troubleshoot
-  console.log('Current semester:', currentSemester);
-  console.log('All subjects:', subjects);
-  console.log('Filtered subjects:', filteredSubjects);
+  // Helper function to get auth config
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    };
+  };
+
+  // Add useEffect for fetching subjects when semester changes
+useEffect(() => {
+  const fetchSubjectsForSemester = async () => {
+    if (!currentSemester) {
+      setSemesterSubjects([]);
+      return;
+    }
+    
+    setLoadingSubjects(true);
+    setSubjectError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `/api/teacher/subjects`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          params: {
+            semesterId: currentSemester
+          }
+        }
+      );
+      
+      console.log('Subjects response:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        setSemesterSubjects(response.data);
+        // Reset selected subject when subjects change
+        setSelectedSubject('');
+      } else {
+        console.warn('Unexpected subjects data format:', response.data);
+        setSemesterSubjects([]);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      setSubjectError('Failed to load subjects');
+      setSemesterSubjects([]);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  fetchSubjectsForSemester();
+}, [currentSemester, setSelectedSubject]);
+
+  // Debug logs
+  console.log('Current semester ID:', currentSemester);
+  console.log('Directly fetched subjects:', semesterSubjects);
+  console.log('All subjects from props:', subjects);
   console.log('Available semesters:', semesters);
 
   return (
@@ -63,6 +117,16 @@ const TeacherEncodeGradeFilter = ({
           {error}
         </Alert>
       )}
+      {subjectError && (
+        <Alert 
+          variant="warning" 
+          onClose={() => setSubjectError(null)} 
+          dismissible 
+          className="mb-3"
+        >
+          {subjectError}
+        </Alert>
+      )}
 
       {/* Semester and Subject Selection */}
       <Card className="mb-4 shadow-sm">
@@ -74,10 +138,12 @@ const TeacherEncodeGradeFilter = ({
                 <Form.Select
                   value={currentSemester || ''}
                   onChange={(e) => {
-                    console.log('Selecting semester:', e.target.value);
+                    const selectedSemesterId = e.target.value;
+                    console.log('Selecting semester:', selectedSemesterId);
+                    
                     // Clear selected subject when changing semester
                     setSelectedSubject('');
-                    setCurrentSemester(e.target.value);
+                    setCurrentSemester(selectedSemesterId);
                   }}
                   disabled={loading}
                 >
@@ -105,31 +171,43 @@ const TeacherEncodeGradeFilter = ({
           {currentSemester && (
             <Row className="mb-3">
               <Col md={12}>
-                <Form.Group>
-                  <Form.Label>Subject</Form.Label>
-                  <Form.Select
-                    value={selectedSubject || ''}
-                    onChange={(e) => {
-                      console.log('Selected subject:', e.target.value);
-                      setSelectedSubject(e.target.value);
-                    }}
-                    disabled={!currentSemester || loading}
-                  >
-                    <option value="">Choose Subject</option>
-                    {filteredSubjects.length > 0 ? (
-                      filteredSubjects.map((subject) => (
-                        <option key={subject._id} value={subject._id}>
-                          {subject.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option disabled>No subjects available for this semester</option>
-                    )}
-                  </Form.Select>
-                  <Form.Text className="text-muted">
-                    Only showing subjects for the selected semester
-                  </Form.Text>
-                </Form.Group>
+              <Form.Group>
+    <Form.Label>Subject</Form.Label>
+    {loadingSubjects ? (
+        <div className="text-center py-3">
+            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Loading subjects...
+        </div>
+    ) : (
+        <>
+            <Form.Select
+                value={selectedSubject}
+                onChange={(e) => {
+                    console.log('Selected subject:', e.target.value);
+                    setSelectedSubject(e.target.value);
+                }}
+                disabled={!currentSemester || loading || loadingSubjects}
+            >
+                <option value="">Choose Subject</option>
+                {semesterSubjects.map((subject) => (
+    <option key={subject._id} value={subject._id}>
+        {subject.name} ({subject.code || 'No Code'})
+    </option>
+))}
+            </Form.Select>
+            {subjectError && (
+                <Form.Text className="text-danger">
+                    {subjectError}
+                </Form.Text>
+            )}
+            {semesterSubjects.length === 0 && !subjectError && (
+                <Form.Text className="text-muted">
+                    No subjects available for this semester
+                </Form.Text>
+            )}
+        </>
+    )}
+</Form.Group>
               </Col>
             </Row>
           )}

@@ -694,13 +694,13 @@ const deleteSection = asyncHandler(async (req, res) => {
 // @access  Private (admin role)
 const createSubject = asyncHandler(async (req, res) => {
     const { name, code, strand, semester, yearLevel } = req.body;
+    let newSubject = null; // Initialize variable outside try block
 
     // Validate required fields
     if (!name || !code || !strand || !semester || !yearLevel) {
         res.status(400);
         throw new Error('Please provide all required fields');
     }
-
 
     // Find the semester and strand documents
     const semesterDoc = await Semester.findById(semester).populate('strand');
@@ -713,7 +713,7 @@ const createSubject = asyncHandler(async (req, res) => {
 
     try {
         // Create subject
-        const subject = await Subject.create({
+        newSubject = await Subject.create({
             name,
             code,
             strand,
@@ -725,10 +725,10 @@ const createSubject = asyncHandler(async (req, res) => {
         // Update semester with new subject
         await Semester.findByIdAndUpdate(
             semester,
-            { $push: { subjects: subject._id } }
+            { $push: { subjects: newSubject._id } }
         );
         // Populate the references for response
-        const populatedSubject = await Subject.findById(subject._id)
+        const populatedSubject = await Subject.findById(newSubject._id)
             .populate('strand', 'name')
             .populate({
                 path: 'semester',
@@ -747,8 +747,8 @@ const createSubject = asyncHandler(async (req, res) => {
 
     } catch (error) {
         // If something goes wrong, we should clean up any partial creation
-        if (subject) {
-            await Subject.findByIdAndDelete(subject._id);
+        if (newSubject) {
+            await Subject.findByIdAndDelete(newSubject._id);
         }
         res.status(400);
         throw new Error(`Failed to create subject: ${error.message}`);
