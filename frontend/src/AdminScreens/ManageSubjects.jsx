@@ -4,6 +4,7 @@ import AdminSidebar from "../AdminComponents/AdminSidebar";
 import { useNavigate } from 'react-router-dom';
 import './AdminCreateStrand.css';
 import Modal from 'react-bootstrap/Modal';
+import { toast, ToastContainer } from 'react-toastify';
 import Header from '../components/Header';
 import { useSubjectDataContext } from '../hooks/useSubjectDataContext';
 import SubjectForm from '../AdminComponents/CreateSubjectComponents/SubjectForm';
@@ -32,6 +33,7 @@ const ManageSubjects = () => {
             await handleDeleteSubject(id);
             fetchAllData(); // Refresh the list after deletion
             setShow(false);
+            toast.success('Subject deleted successfully!')
         } catch (error) {
             console.error("Error deleting semester:", error);
         }
@@ -45,6 +47,7 @@ const ManageSubjects = () => {
     const handleShow = (subjectId) => {
         setSelectedSubjectId(subjectId);  // Set the userId when showing modal
         setShow(true);
+        toast.warn('Are you sure you want to delete this subject? This action is permanent and cannot be undone.')
     };
 
     const handleEditShow = (subjectId) => {
@@ -83,6 +86,7 @@ const ManageSubjects = () => {
         <>
         <Header/>
             <AdminSidebar />
+            <ToastContainer />
             <div className='d-flex'>
                 <main className="main-content flex-grow-1">
                     <Container>

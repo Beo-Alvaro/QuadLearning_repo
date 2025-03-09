@@ -3,7 +3,7 @@ import { Container, Card, Form, Button, } from 'react-bootstrap';
 import AdminSidebar from "../AdminComponents/AdminSidebar";
 import { useNavigate } from 'react-router-dom';
 import './AdminCreateStrand.css';
-
+import { ToastContainer, toast } from 'react-toastify';
 import Header from '../components/Header';
 import { useSectionDataContext } from '../hooks/useSectionDataContext';
 import SectionForm from '../AdminComponents/CreateSectionComponent.jsx/SectionForm';
@@ -31,6 +31,7 @@ const ManageSections = () => {
     const handleShow = (sectionId) => {
         setSelectedSectionId(sectionId);
         setShow(true);
+        toast.warn('Are you sure you want to delete this section? This action is permanent and cannot be undone.')
     };
 
     const handleEditShow = (sectionId) => {
@@ -47,27 +48,21 @@ const ManageSections = () => {
     const handleSaveChangesWithModalClose = async (selectedSectionId) => {
         const success = await handleSaveChanges(selectedSectionId);
         if (success) {
-            setEditModalShow(false); // Close modal if the save is successful
+            setEditModalShow(false); 
+            toast.success('Section updated successfully!')
         }
     };
-    
-    
-    // Log selectedSectionId to ensure it stays consistent
-useEffect(() => {
-    console.log('Selected Section ID updated:', selectedSectionId);
-}, [selectedSectionId]);
-    
     
     const handleCloseModal = () => {
         setEditModalShow(false); 
     };
 
-    // Modified deleteHandler that also closes the modal
     const deleteHandler = async (id) => {
         try {
             await contextDeleteHandler(id);  // Use the deleteHandler from context
             await fetchData(); // Refresh the list after deletion
             setShow(false); // Close the modal after successful deletion
+            toast.success('Section deleted successfully!')
         } catch (error) {
             console.error("Error deleting section:", error);
         }
@@ -79,6 +74,7 @@ useEffect(() => {
         <>
         <Header/>
             <AdminSidebar />
+            <ToastContainer />
             <div className='d-flex'>
                 <main className="main-content flex-grow-1">
                     <Container>

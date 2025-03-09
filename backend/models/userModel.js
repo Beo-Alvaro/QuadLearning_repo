@@ -54,7 +54,7 @@ const userSchema = mongoose.Schema({
         ref: 'Section',
         // This will only be populated for teachers
     },
-    status: { type: String, enum: ['active', 'pending'], default: 'active' }
+    status: { type: String, enum: ['active', 'pending', 'inactive'], default: 'active' }
     ,
 
 

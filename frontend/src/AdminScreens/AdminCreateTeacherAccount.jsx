@@ -10,6 +10,7 @@ import Header from '../components/Header';
 import { useTeacherDataContext } from '../hooks/useTeacherDataContext';
 import AdminTeacherModals from '../AdminComponents/CreatingTeacherComponents/AdminTeacherModals';
 import AdminTeacherTable from '../AdminComponents/CreatingTeacherComponents/AdminTeacherTable';
+import { ToastContainer, toast } from 'react-toastify';
 
 const AdminCreateTeacherAccount = () => {
     const { teacherUsers, sections, semesters, advisorySections, loading, dispatch, fetchData} = useTeacherDataContext()
@@ -59,14 +60,13 @@ const AdminCreateTeacherAccount = () => {
    const handleShow = (userId) => {
     if (!userId) {
         console.error("Invalid userId:", userId);
-        return; // Don't proceed if the userId is invalid
+        return; 
     }
     console.log("User ID passed to deleteHandler:", userId); // Check if it passes correctly here
     setSelectedUserId(userId); // Set the user ID for deletion
     setShowDeleteModal(true); // Show the modal after initiating the delete
+    toast.warn('Are you sure you want to delete this user? This action is permanent and cannot be undone.')
 };
-
-    
 
 const deleteHandler = async (userId) => {
     console.log("Deleting user with ID:", userId);  // Log userId to make sure it's valid
@@ -94,8 +94,8 @@ const deleteHandler = async (userId) => {
 
             // Dispatch the updated list of teachers to the context
             dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-
             handleClose(); // Close modal after successful deletion
+            toast.success('Teacher deleted successfully!')
         } else {
             const json = await response.json();
             console.error('Error response:', json);
@@ -158,7 +158,7 @@ const deleteHandler = async (userId) => {
     
             setShowAddModal(false);
             resetForm();
-            alert('Teacher account created successfully');
+            toast.success('Teacher created successfully!')
         
         } catch (error) {
             console.error('Error creating teacher:', error);
@@ -253,9 +253,6 @@ const [editUser, setEditUser] = useState({
                 throw new Error(data.message || 'Failed to update user');
             }
     
-            // Show success message
-            alert('Teacher updated successfully');
-    
             // Re-fetch the updated list of teachers
             const token = localStorage.getItem('token');
             const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
@@ -268,6 +265,7 @@ const [editUser, setEditUser] = useState({
     
             // Close the modal and reset the form
             handleEditClose();
+            toast.success('Teacher updated successfully!')
         } catch (error) {
             setError(error.message);
             console.error('Update error:', error);
@@ -350,6 +348,7 @@ const [editUser, setEditUser] = useState({
         <>
         <Header/>
             <AdminSidebar />
+            <ToastContainer />
             <div className='d-flex'>
                 <main className="main-content flex-grow-1">
                     <Container fluid>

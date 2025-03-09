@@ -27,11 +27,11 @@ const SemesterModal = ({
   return (
     <div>
       {/* Delete Confirmation Modal */}
-      <Modal show={show} onHide={handleClose} className="text-center">
+      <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>CONFIRMATION MESSAGE</Modal.Title>
+          <Modal.Title className='text-center w-100'>CONFIRMATION MESSAGE</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className='text-center w-100'>
           The data will be erased and cannot be retrieved. Are you sure you want to continue?
         </Modal.Body>
         <Modal.Footer className="justify-content-center">

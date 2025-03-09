@@ -233,6 +233,15 @@
     font-weight: 500;
 }
 
+.custom-nav .nav-link {
+    color: green !important; /* Inactive tab text color */
+  }
+  
+  .custom-nav .nav-link.active {
+    color: black !important; /* Active tab text color */
+  }
+  
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .profile-header {

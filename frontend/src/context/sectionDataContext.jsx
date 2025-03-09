@@ -1,5 +1,5 @@
 import React, { createContext, useState } from 'react';
-
+import { toast } from 'react-toastify';
 export const SectionDataContext = createContext();
 
 export const SectionDataProvider = ({ children }) => {
@@ -145,6 +145,7 @@ export const SectionDataProvider = ({ children }) => {
                 setLinkedStrand('');
                 setLinkedYearLevel('');
                 fetchData();
+                toast.success('Section created successfully!')
             }
         } catch (error) {
             setError('An error occurred while creating the section');

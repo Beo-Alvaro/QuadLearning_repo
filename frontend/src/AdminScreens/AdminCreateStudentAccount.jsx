@@ -9,6 +9,8 @@ import Header from '../components/Header';
 import { useStudentDataContext } from '../hooks/useStudentsDataContext';
 import StudModals from '../AdminComponents/CreateStudentComponents/StudModals';
 import StudTables from '../AdminComponents/CreateStudentComponents/StudTables';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const AdminCreateStudentAccount = () => {
 
         const { users, strands, sections, subjects, semesters, yearLevels,fetchData } = useStudentDataContext()
@@ -62,6 +64,7 @@ const AdminCreateStudentAccount = () => {
     const handleShow = (userId) => {
         setSelectedUserId(userId);  // Set the userId when showing modal
         setShow(true);
+        toast.warn('Are you sure you want to delete this user? This action is permanent and cannot be undone.')
     };
 
     const deleteHandler = async (userId) => {
@@ -80,6 +83,7 @@ const AdminCreateStudentAccount = () => {
             if (response.ok) {
                 handleClose(); // Close the modal after deletion
                 fetchData(); // Refresh the user list after deletion
+                toast.success('User deleted successfully!');
             } else {
                 const json = await response.json();
                 console.error('Error response:', json);
@@ -139,6 +143,7 @@ const AdminCreateStudentAccount = () => {
             
             setShowAddModal(false);
             fetchData();
+            toast.success('User created successfully!');
         } catch (error) {
             console.error('Error:', error);
             setError(error.message);
@@ -287,6 +292,7 @@ const handleEditSubmit = async (e) => {
 
         handleEditClose();
         fetchData(); // Refresh the data
+        toast.success('User updated successfully!');
     } catch (error) {
         setError(error.message);
         console.error('Error:', error);
@@ -315,6 +321,7 @@ const filteredUsers = (users || [])
         <>
         <Header/>
         <AdminSidebar/>
+        <ToastContainer />
         <div className='d-flex'>
         <main className="main-content flex-grow-1">
         <Container fluid>

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-
+import 'react-toastify/dist/ReactToastify.css';
 import { TeacherDataContextProvider } from './context/teacherDataContext.jsx';
 import { UserContextProvider } from './context/userDataContext.jsx'
 import { StudentDataProvider } from './context/studentDataContext.jsx'
