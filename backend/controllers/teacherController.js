@@ -900,19 +900,18 @@ if (!grade11SecondSemester) {
       }         
      console.log("✅ Grade 12 grades inserted.");
 
-     // Send the file as a downloadable response
-     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-     res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+     // Instead of writing the file to disk, send it as a buffer
+    const buffer = await workbook.xlsx.writeBuffer();
 
-    // Write the workbook to the output file
-await workbook.xlsx.writeFile(outputExcelPath);
-console.log(`✅ Form 137 saved as: ${outputExcelPath}`);
+    res.setHeader("Content-Disposition", `attachment; filename=Form137_${student.lastName}.xlsx`);
+    res.setHeader("X-Filename", `Form137_${sanitizedFileName}.xlsx`); // Custom header for frontend
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
+    res.send(Buffer.from(buffer)); // Convert to Buffer and send
   } catch (error) {
-      console.error("❌ Error generating Form 137:", error);
-      res.status(500);
-      throw new Error("Failed to generate Form 137: " + error.message);
+    console.error("❌ Error generating Form 137:", error);
+    res.status(500).json({ message: "Failed to generate Form 137" });
   }
 });
 
@@ -946,8 +945,8 @@ const getTeacherSections = asyncHandler(async (req, res) => {
     // Format the response
     const formattedSections = sections.map(section => {
       const isAdvisory = teacher.advisorySection && 
-                 section._id.toString() === teacher.advisorySection.toString();
-      
+      section._id.toString() === teacher.advisorySection.section.toString();
+
       // Mark students in advisory section
       const studentsWithAdvisory = (section.students || []).map(student => ({
         ...student,
@@ -973,51 +972,64 @@ const getTeacherSections = asyncHandler(async (req, res) => {
 });
 
 const getStudentData = asyncHandler(async (req, res) => {
-    const { studentId } = req.params;
-  
-    try {
-        
-        const student = await Student.findOne({ user: studentId })
-            .populate('user')
-            .populate('yearLevel')
-            .populate('section')
-            .populate('strand')
-            .populate({
-                path: 'grades',
-                populate: { path: 'semester' },
-                populate: { path: 'subjects.subject', model: 'Subject' }
-            })
-            .lean();
+  const { studentId } = req.params;
+  console.log('Fetching student data for ID:', studentId); // Debug log
 
-        // Also get the user data to get yearLevel
-        const user = await User.findById(studentId)
-            .populate('yearLevel')
-            .populate('sections')
-            .populate('strand');
+  try {
+      // First, find the student record
+      const student = await Student.findOne({ user: studentId })
+          .populate({
+              path: 'user',
+              select: 'username sections strand yearLevel'
+          })
+          .populate('yearLevel')
+          .populate('section')
+          .populate('strand')
+          .lean();
 
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: 'Student not found'
-            });
-        }
-          // Combine User and Student profile data
-    const studentData = {
-        ...student,
-        ...student.studentProfile,
-        username: student.username
-    };
+      if (!student) {
+          console.log('No student found with user ID:', studentId); // Debug log
+          return res.status(404).json({
+              success: false,
+              message: 'Student not found'
+          });
+      }
 
-    res.json(studentData);
-        } catch (error) {
-            console.error('Error fetching student data:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error fetching student data',
-                error: error.message
-            });
-        }
-    });
+      console.log('Found student:', student); // Debug log
+
+      const studentData = {
+          _id: student._id,
+          user: student.user._id,
+          username: student.user.username,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          middleInitial: student.middleInitial,
+          gender: student.gender,
+          birthdate: student.birthdate,
+          birthplace: student.birthplace,
+          address: student.address,
+          guardian: student.guardian,
+          contactNumber: student.contactNumber,
+          yearLevel: student.yearLevel?.name,
+          section: student.section?.name,
+          strand: student.strand?.name,
+          school: student.school
+      };
+
+      res.status(200).json({
+          success: true,
+          data: studentData
+      });
+  } catch (error) {
+      console.error('Error fetching student data:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching student data',
+          error: error.message
+      });
+  }
+});
+
 
 // @desc    Get teacher's subjects
 // @route   GET /api/teacher/subjects
@@ -1276,72 +1288,80 @@ const getTeacherAdvisoryClass = asyncHandler(async (req, res) => {
 // @route   GET /api/teacher/dashboard
 // @access  Private (teacher only)
 const getTeacherDashboard = asyncHandler(async (req, res) => {
-    try {
-        // Get teacher data with populated fields
-        const teacherData = await User.findById(req.user._id)
-            .populate('subjects')
-            .populate('sections')
-            .populate('advisorySection')
-            .populate('semesters')
-            .lean();
+  try {
+      // Fetch teacher data with proper population
+      const teacherData = await User.findById(req.user._id)
+          .populate('subjects')
+          .populate('sections')
+          .populate({
+              path: 'advisorySection.section',
+              select: 'name yearLevel strand',
+              populate: [
+                  { path: 'yearLevel', select: 'name' },
+                  { path: 'strand', select: 'name' }
+              ]
+          })
+          .populate('semesters')
+          .lean();
 
-        if (!teacherData) {
-            return res.status(404).json({
-                success: false,
-                message: 'Teacher not found'
-            });
-        }
+      if (!teacherData) {
+          return res.status(404).json({
+              success: false,
+              message: 'Teacher not found'
+          });
+      }
 
-        // Get all students from teacher's sections
-        const sections = await Section.find({ 
-            _id: { $in: teacherData.sections }
-        }).populate('students');
+      // Get all students from teacher's sections
+      const sections = await Section.find({ 
+          _id: { $in: teacherData.sections }
+      }).populate('students');
 
-        // Calculate total unique students
-        const uniqueStudents = new Set();
-        sections.forEach(section => {
-            section.students.forEach(student => {
-                uniqueStudents.add(student._id.toString());
-            });
-        });
+      // Calculate total unique students
+      const uniqueStudents = new Set();
+      sections.forEach(section => {
+          section.students.forEach(student => {
+              uniqueStudents.add(student._id.toString());
+          });
+      });
 
-        // Get today's schedule
-        const today = new Date();
-        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      // Format the dashboard data
+      const dashboardData = {
+          username: teacherData.username,
+          totalStudents: uniqueStudents.size,
+          totalSubjects: teacherData.subjects?.length || 0,
+          totalSections: teacherData.sections?.length || 0,
+          advisorySection: teacherData.advisorySection?.section ? {
+              name: teacherData.advisorySection.section.name,
+              yearLevel: teacherData.advisorySection.section.yearLevel?.name,
+              strand: teacherData.advisorySection.section.strand?.name,
+              status: teacherData.advisorySection.status
+          } : null,
+          sections: sections.map(section => ({
+              name: section.name,
+              studentCount: section.students.length,
+              isAdvisory: section._id.toString() === teacherData.advisorySection?.section?._id?.toString()
+          })),
+          subjects: teacherData.subjects.map(subject => ({
+              name: subject.name,
+              section: subject.section?.name,
+              schedule: subject.schedule
+          })),
+          currentSemester: teacherData.semesters?.[teacherData.semesters.length - 1]?.name
+      };
 
-        // Format the dashboard data
-        const dashboardData = {
-            username: teacherData.username,
-            totalStudents: uniqueStudents.size,
-            totalSubjects: teacherData.subjects?.length || 0,
-            totalSections: teacherData.sections?.length || 0,
-            advisorySection: teacherData.advisorySection?.name || 'None',
-            sections: sections.map(section => ({
-                name: section.name,
-                studentCount: section.students.length,
-                isAdvisory: section._id.equals(teacherData.advisorySection?._id)
-            })),
-            subjects: teacherData.subjects.map(subject => ({
-                name: subject.name,
-                section: subject.section?.name,
-                schedule: subject.schedule // Assuming you have schedule in your subject model
-            })),
-            currentSemester: teacherData.semesters?.[teacherData.semesters.length - 1]?.name
-        };
+      res.json({
+          success: true,
+          data: dashboardData
+      });
 
-        res.json({
-            success: true,
-            data: dashboardData
-        });
-
-    } catch (error) {
-        console.error('Error fetching teacher dashboard:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching dashboard data',
-            error: error.message
-        });
-    }
+  } catch (error) {
+      console.error('Error fetching teacher dashboard:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching dashboard data',
+          error: error.message
+      });
+  }
 });
   
 
@@ -1444,27 +1464,28 @@ const getSectionById = asyncHandler(async (req, res) => {
  */
 const getSectionStudents = asyncHandler(async (req, res) => {
   const { section } = req.query;
-  
+
   if (!section) {
     res.status(400);
     throw new Error('Section ID is required');
   }
-  
+
   try {
     // Check if the teacher is authorized to access this section
     const teacherSections = await Section.find({ teacher: req.user._id });
     const isAuthorized = teacherSections.some(s => s._id.toString() === section);
-    
+
     if (!isAuthorized) {
       res.status(403);
       throw new Error('Not authorized to access this section');
     }
-    
-    // Get all students in this section
-    const students = await Student.find({ section })
+
+    // Get all students in this section — convert section to ObjectId
+    const students = await Student.find({ section: new mongoose.Types.ObjectId(section) })
       .select('firstName lastName middleInitial _id')
       .sort({ lastName: 1, firstName: 1 });
-    
+      console.log(students);
+
     res.json(students);
   } catch (error) {
     console.error('Error fetching section students:', error);
@@ -1498,19 +1519,25 @@ const getAttendanceData = async (req, res) => {
     );
 
     // Combine students with their attendance — keep existing records, add blanks for new students
-    const combinedData = students.map(student => {
-      const existingRecord = attendanceMap.get(student._id.toString());
+   const combinedData = students.map(student => {
+  const existingRecord = attendanceMap.get(student._id.toString());
 
-      return existingRecord
-        ? existingRecord // Keep the existing attendance record
-        : {
-            student: student._id,
-            weeks: { week1: {}, week2: {}, week3: {}, week4: {}, week5: {} },
-            absent: 0,
-            tardy: 0,
-            remarks: ''
-          };
-    });
+  return existingRecord
+    ? existingRecord
+    : {
+        student: {
+          _id: student._id,
+          username: student.user?.username, // Make sure 'user' is populated
+          firstName: student.firstName,
+          lastName: student.lastName
+        },
+        weeks: { week1: {}, week2: {}, week3: {}, week4: {}, week5: {} },
+        absent: 0,
+        tardy: 0,
+        remarks: ''
+      };
+});
+
 
     // If no attendance data exists yet, create an empty structure for the response
     const response = {
@@ -1767,7 +1794,7 @@ const saveAttendanceData = asyncHandler(async (req, res) => {
         return 'tue';
       case 'W':
         return 'wed';
-      case 'Th':
+      case 'TH':
         return 'thu';
       case 'F':
         return 'fri';

@@ -48,17 +48,18 @@ const userSchema = mongoose.Schema({
             return this.role === 'teacher';
         }
     },
-       // For teachers only - their advisory section
-       advisorySection: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Section',
-        // This will only be populated for teachers
-    },
-    status: { type: String, enum: ['active', 'pending', 'inactive'], default: 'active' }
-    ,
-
-
-
+    advisorySection: {
+        section: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Section'
+        },
+        status: {
+            type: String,
+            enum: ['active', 'pending', 'inactive'],
+            default: 'active'
+        }
+    },    
+    status: { type: String, enum: ['active', 'pending', 'inactive'], default: 'active' },
 }, { timestamps: true });
 
 // Add this virtual field to link with Student model
