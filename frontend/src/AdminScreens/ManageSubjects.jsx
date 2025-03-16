@@ -33,7 +33,7 @@ const ManageSubjects = () => {
             await handleDeleteSubject(id);
             fetchAllData(); // Refresh the list after deletion
             setShow(false);
-            toast.success('Subject deleted successfully!')
+            toast.error('Subject deleted successfully!')
         } catch (error) {
             console.error("Error deleting semester:", error);
         }

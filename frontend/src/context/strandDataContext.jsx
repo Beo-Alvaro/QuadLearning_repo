@@ -95,7 +95,7 @@ export const StrandDataProvider = ({ children }) => {
       if (!response.ok) throw new Error('Failed to delete strand');
 
       setStudStrands((prevStrands) => prevStrands.filter((strand) => strand._id !== id));
-      toast.success('Strand deleted successfully!')
+      toast.error('Strand deleted successfully!')
     } catch (err) {
       setError(err.message);
     }

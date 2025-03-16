@@ -5,12 +5,12 @@ import './TeacherViewStudent.css';
 import TeacherGradeHeader from '../TeacherComponents/TeacherGradeHeader';
 import TeacherEncodeGradeFilter from '../TeacherComponents/TeacherEncodeFilter';
 import { useGradeDataContext } from '../hooks/useGradeDataContext';
-
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherEncodeGrade = () => {
     const [error, setError] = useState(null);
     const { selectedSubject, currentSemester, studentGrades, setStudentGrades,
         subjects, successMessage, setSuccessMessage, filteredStudents, setCurrentSemester,
-        showAdvisoryOnly, selectedStrand, selectedYearLevel, selectedSection,
+        selectedStrand, selectedYearLevel, selectedSection,
         semesters, fetchSubjectStudents, fetchSubjects, fetchData, fetchSemesters, loading,
         yearLevels, availableSections, setEditedGrades, strands, setSelectedSubject, setSelectedStrand,
          setSelectedYearLevel, setSelectedSection } = useGradeDataContext();
@@ -150,8 +150,7 @@ const TeacherEncodeGrade = () => {
                 updated[studentId] = false;
                 return updated;
             });
-    
-            setSuccessMessage('Grade saved successfully!');
+            toast.success('Grades saved successfully!')
         } catch (error) {
             console.error('Failed to add grade:', error);
             setError(error.message || 'Failed to add grade');
@@ -247,8 +246,7 @@ const TeacherEncodeGrade = () => {
             });
             setEditModeStudents(updatedEditModes);
             
-            setSuccessMessage('All grades saved successfully!');
-            
+            toast.success('All grades saved successfully!')
             // Refresh grades from server (but we've already updated the UI)
             try {
                 await getSubjectGrades();
@@ -388,6 +386,7 @@ const TeacherEncodeGrade = () => {
     return (
         <>
             <TeacherDashboardNavbar />
+            <ToastContainer />
             <Container className="mt-4">
                 <TeacherGradeHeader />
                 <TeacherEncodeGradeFilter
@@ -396,7 +395,6 @@ const TeacherEncodeGrade = () => {
                     loading={loading}
                     currentSemester={currentSemester}
                     selectedSubject={selectedSubject}
-                    showAdvisoryOnly={showAdvisoryOnly}
                     selectedStrand={selectedStrand}
                     selectedYearLevel={selectedYearLevel}
                     selectedSection={selectedSection}
@@ -416,10 +414,6 @@ const TeacherEncodeGrade = () => {
 
                 {!selectedSubject ? (
                     <Alert variant="info">Please select a subject to encode grades.</Alert>
-                ) : filteredStudents.length === 0 ? (
-                    <Alert variant="info">
-                        {showAdvisoryOnly ? "No advisory students found." : "No students found for the selected filters."}
-                    </Alert>
                 ) : (
                     <Card className="shadow-sm">
                         <Card.Body className="p-0">

@@ -3,7 +3,7 @@ import { Modal, Button, Table, Form, Alert, Row, Col, Badge, Tabs, Tab } from 'r
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
-
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherAttendanceModal = ({ isOpen, onClose, sectionId }) => {
   const [data, setData] = useState([]);
   const [error, setError] = useState('');
@@ -404,6 +404,7 @@ useEffect(() => {
       saveAs(blob, `SF2-SHS_${formData.section}_${formData.month}.xlsx`);
       
       console.log('Excel file generated and downloaded successfully');
+      toast.success('Excel file generated and downloaded successfully!')
       setLoading(false);
     } catch (err) {
       console.error('Error exporting Excel file:', err);
@@ -452,7 +453,7 @@ useEffect(() => {
       console.log('Save attendance response:', response.data);
       
       setLoading(false);
-      alert('Attendance data saved successfully!');
+      toast.success('Attendance data saved successfully!')
     } catch (err) {
       console.error('Error saving attendance data:', err);
       
@@ -674,7 +675,7 @@ useEffect(() => {
           
           <div className="d-flex align-items-end">
             <Button 
-              variant="primary" 
+              variant="outline-success" 
               onClick={handleSaveAttendance}
               className="me-2"
               disabled={loading}
@@ -683,7 +684,7 @@ useEffect(() => {
             </Button>
             
             <Button 
-              variant="success" 
+              variant="outline-primary" 
               onClick={handleExport}
               disabled={loading || data.length === 0}
             >

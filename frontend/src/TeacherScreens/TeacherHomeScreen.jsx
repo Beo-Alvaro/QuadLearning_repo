@@ -16,12 +16,17 @@ const TeacherHomeScreen = () => {
     totalStudents: 0,
     totalSubjects: 0,
     totalSections: 0,
-    advisorySection: 'None',
+    advisorySection: '',
     sections: [],
     subjects: [],
     currentSemester: ''
   });
-  
+  // Add new state for section averages
+const [sectionAverages, setSectionAverages] = useState([]);
+// Add new state for subject performance
+const [subjectPerformance, setSubjectPerformance] = useState([]);
+
+
   // State for real attendance data
   const [attendanceData, setAttendanceData] = useState([]);
   const [selectedWeek, setSelectedWeek] = useState('current');
@@ -29,6 +34,10 @@ const TeacherHomeScreen = () => {
 // Add new state variables
 const [semesters, setSemesters] = useState([]);
 const [selectedSemester, setSelectedSemester] = useState('');
+
+
+// Update the subject performance chart section with loading state
+const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
 const fetchSemesters = useCallback(async () => {
   try {
@@ -66,21 +75,72 @@ const fetchSemesters = useCallback(async () => {
     };
   };
 
-  // Sample data for grade distribution (keep this until you have real data)
-  const gradeDistributionData = [
-    { name: 'A (90-100)', value: 15 },
-    { name: 'B (80-89)', value: 25 },
-    { name: 'C (70-79)', value: 35 },
-    { name: 'D (60-69)', value: 20 },
-    { name: 'F (Below 60)', value: 5 },
-  ];
+// Add function to fetch section averages
+const fetchSectionAverages = useCallback(async () => {
+  try {
+    const config = getAuthConfig();
+    const response = await axios.get(
+      `/api/teacher/section-averages?semester=${selectedSemester}`,
+      config
+    );
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF0000'];
+    if (response.data.success) {
+      setSectionAverages(response.data.data);
+    }
+  } catch (error) {
+    console.error('Error fetching section averages:', error);
+  }
+}, [selectedSemester]);
 
-  const subjectPerformanceData = dashboardData.subjects.map((subject, index) => ({
-    name: subject,
-    average: 75 + Math.floor(Math.random() * 15), // Simulated average scores
-  }));
+// Update useEffect to fetch section averages
+useEffect(() => {
+  if (selectedSemester) {
+    fetchSectionAverages();
+  }
+}, [selectedSemester, fetchSectionAverages]);
+
+// Add function to fetch subject performance
+const fetchSubjectPerformance = useCallback(async () => {
+  try {
+    if (!selectedSemester) {
+      console.log('No semester selected, skipping fetch');
+      return;
+    }
+
+    setIsLoadingSubjects(true); // Start loading
+    console.log('Fetching subject performance for semester:', selectedSemester);
+    const config = getAuthConfig();
+    
+    const response = await axios.get(
+      `/api/teacher/subject-performance`,
+      {
+        ...config,
+        params: {
+          semesterId: selectedSemester
+        }
+      }
+    );
+
+    console.log('Subject performance API response:', response.data);
+
+    if (response.data.success && Array.isArray(response.data.data)) {
+      setSubjectPerformance(response.data.data);
+    }
+  } catch (error) {
+    console.error('Error fetching subject performance:', error);
+  } finally {
+    setIsLoadingSubjects(false); // End loading regardless of outcome
+  }
+}, [selectedSemester]);
+
+useEffect(() => {
+  if (selectedSemester) {
+    fetchSubjectPerformance();
+  }
+}, [selectedSemester, fetchSubjectPerformance]);
+
+// Update the grade distribution chart
+const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -262,17 +322,28 @@ const fetchSemesters = useCallback(async () => {
                             </Card>
                         </Col>
                         <Col md={3}>
-                            <Card className="stat-card">
-                                <Card.Body>
-                                    <div className="stat-icon advisory">
-                                        <Award size={24} />
-                                    </div>
-                                    <div className="stat-content">
-                                        <h3>{dashboardData.advisorySection || 'N/A'}</h3>
-                                        <p>Advisory Section</p>
-                                    </div>
-                                </Card.Body>
-                            </Card>
+                        <Card className="stat-card">
+    <Card.Body>
+        <div className="stat-icon advisory">
+            <Award size={24} />
+        </div>
+        <div className="stat-content">
+            <h3>
+                {dashboardData.advisorySection ? (
+                    <>
+                        {dashboardData.advisorySection.name}
+                        <small className="d-block text-muted">
+                            {dashboardData.advisorySection.yearLevel} - {dashboardData.advisorySection.strand}
+                        </small>
+                    </>
+                ) : (
+                    'No Advisory'
+                )}
+            </h3>
+            <p>Advisory Section</p>
+        </div>
+    </Card.Body>
+</Card>
                         </Col>
                     </Row>
 
@@ -418,65 +489,123 @@ const fetchSemesters = useCallback(async () => {
                             </Card>
                         </Col>
                         <Col md={4}>
-                            <Card className="chart-card">
-                                <Card.Header>
-                                    <h5 className="mb-0">Grade Distribution</h5>
-                                </Card.Header>
-                                <Card.Body>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                data={gradeDistributionData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                outerRadius={80}
-                                                fill="#8884d8"
-                                                dataKey="value"
-                                            >
-                                                {gradeDistributionData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </Card.Body>
-                            </Card>
+                        <Card className="chart-card">
+  <Card.Header className="d-flex justify-content-between align-items-center">
+    <h5 className="mb-0">Section Grade Averages</h5>
+    <Form.Select 
+      value={selectedSemester} 
+      onChange={handleSemesterChange}
+      size="sm"
+      style={{ width: 'auto' }}
+    >
+      {semesters.map(semester => (
+        <option key={semester._id} value={semester._id}>
+          {semester.name}
+        </option>
+      ))}
+    </Form.Select>
+  </Card.Header>
+  <Card.Body>
+    <ResponsiveContainer width="100%" height={300}>
+      <PieChart>
+        <Pie
+          data={sectionAverages}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          label={({ name, average }) => `${name}: ${average}%`}
+          outerRadius={80}
+          fill="#8884d8"
+          dataKey="average"
+        >
+          {sectionAverages.map((entry, index) => (
+            <Cell 
+              key={`cell-${index}`} 
+              fill={COLORS[index % COLORS.length]} 
+            />
+          ))}
+        </Pie>
+        <Tooltip 
+          formatter={(value, name) => [`Average: ${value}%`, `Section: ${name}`]}
+        />
+        <Legend />
+      </PieChart>
+    </ResponsiveContainer>
+  </Card.Body>
+</Card>
+
                         </Col>
                     </Row>
+                    
 
                     {/* Subject Performance Chart */}
                     <Row className="mb-4">
                         <Col>
-                            <Card className="chart-card">
-                                <Card.Header className="d-flex justify-content-between align-items-center">
-                                    <h5 className="mb-0">Subject Performance</h5>
-                                    <div className="chart-actions">
-                                        <Button variant="outline-secondary" size="sm">This Quarter</Button>
-                                        <Button variant="outline-secondary" size="sm" className="ms-2">Last Quarter</Button>
-                                    </div>
-                                </Card.Header>
-                                <Card.Body>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <LineChart data={subjectPerformanceData.length > 0 ? subjectPerformanceData : [
-                                            { name: 'Math', average: 82 },
-                                            { name: 'Science', average: 78 },
-                                            { name: 'English', average: 85 },
-                                            { name: 'History', average: 76 },
-                                            { name: 'Art', average: 90 }
-                                        ]}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="name" />
-                                            <YAxis domain={[60, 100]} />
-                                            <Tooltip />
-                                            <Legend />
-                    <Line type="monotone" dataKey="average" stroke="#1b8231" activeDot={{ r: 8 }} name="Class Average" />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </Card.Body>
-                            </Card>
+                        <Card className="chart-card">
+  <Card.Header className="d-flex justify-content-between align-items-center">
+    <h5 className="mb-0">Subject Performance</h5>
+    <Form.Select 
+      value={selectedSemester} 
+      onChange={handleSemesterChange}
+      size="sm"
+      style={{ width: 'auto' }}
+      disabled={isLoadingSubjects}
+    >
+      {semesters.map(semester => (
+        <option key={semester._id} value={semester._id}>
+          {semester.name}
+        </option>
+      ))}
+    </Form.Select>
+  </Card.Header>
+  <Card.Body>
+    {isLoadingSubjects ? (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-2">Loading subject performance data...</p>
+      </div>
+    ) : subjectPerformance.length > 0 ? (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={subjectPerformance}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis 
+  dataKey="name" 
+  angle={-25} // Slight tilt for better readability
+  textAnchor="end" 
+  height={100} // Increased height for better spacing
+  interval={0} // Ensures all labels are displayed
+  tick={{ 
+    fontSize: 12, // Adjust font size for readability
+    fill: "#555", // Dark gray for better contrast
+    fontWeight: "bold", // Make labels stand out
+  }}
+  tickLine={{ stroke: "#ccc" }} // Subtle tick lines
+/>
+          <YAxis domain={[0, 100]} />
+          <Tooltip 
+            formatter={(value) => [`${value}%`, 'Average']}
+            labelFormatter={(label) => `Subject: ${label}`}
+          />
+          <Legend />
+          <Line 
+            type="monotone" 
+            dataKey="average" 
+            stroke="#1b8231" 
+            activeDot={{ r: 8 }} 
+            name="Class Average" 
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    ) : (
+      <div className="text-center py-5">
+        <p>No subject performance data available for this semester.</p>
+        <small className="text-muted">Selected Semester ID: {selectedSemester}</small>
+      </div>
+    )}
+  </Card.Body>
+</Card>
                         </Col>
                     </Row>
                 </Container>

@@ -5,7 +5,7 @@ import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar'
 import { useTeacherUserContext } from '../context/teacherUserContext';
 import TeacherModal from '../TeacherComponents/TeacherModal';
 import TeacherTable from '../TeacherComponents/TeacherTable';
-
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherGenerateForm = () => {
     const [showModal, setShowModal] = useState(false);  // State to control the modal visibility
     const {sections, teacherAdvisoryClassId, strands, yearLevels, loading, error, fetchData, handleGenerateForm, handleSelectStudent, selectedStudent, setSelectedStudent} = useTeacherUserContext()
@@ -44,6 +44,7 @@ const TeacherGenerateForm = () => {
     return (
         <>
             <TeacherDashboardNavbar />
+            <ToastContainer />
             <div className="container mt-4">
             <Card className="mb-4 border-0 shadow-sm">
     <Card.Body className="p-4">

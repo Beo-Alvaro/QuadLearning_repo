@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { Modal, Button, Form, Row, Col, Card, Spinner, Alert } from "react-bootstrap"
-
+import { ToastContainer, toast } from 'react-toastify';
 const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -33,7 +33,6 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
 
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState({ type: "", text: "" })
 
   const fetchStudentData = useCallback(async () => {
     setIsLoading(true)
@@ -52,39 +51,36 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
 
       setFormData((prevData) => ({
         ...prevData,
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        middleInitial: data.middleInitial || "",
-        gender: data.gender || "",
-        birthdate: data.birthdate ? data.birthdate.split("T")[0] : "",
-        contactNumber: data.contactNumber || "",
+        firstName: data.data.firstName || "",
+        lastName: data.data.lastName || "",
+        middleInitial: data.data.middleInitial || "",
+        gender: data.data.gender || "",
+        birthdate: data.data.birthdate ? data.data.birthdate.split("T")[0] : "",
+        contactNumber: data.data.contactNumber || "",
         birthplace: {
-          province: data.birthplace?.province || "",
-          municipality: data.birthplace?.municipality || "",
-          barrio: data.birthplace?.barrio || "",
+            province: data.data.birthplace?.province || "",
+            municipality: data.data.birthplace?.municipality || "",
+            barrio: data.data.birthplace?.barrio || "",
         },
-        address: data.address || "",
+        address: data.data.address || "",
         guardian: {
-          name: data.guardian?.name || "",
-          occupation: data.guardian?.occupation || "",
+            name: data.data.guardian?.name || "",
+            occupation: data.data.guardian?.occupation || "",
         },
-        yearLevel: data.yearLevel?.name || data.yearLevel || data.yearLevelName || prevData.yearLevel || "",
-        section: data.section?.name || data.section || data.sectionName || prevData.section || "",
-        strand: data.strand?.name || data.strand || data.strandName || prevData.strand || "",
-        school: {
-          name: data.school?.name || "Tropical Village National Highschool",
-          year: data.school?.year || "",
-        },
+        yearLevel: data.data.yearLevel || "",
+            section: data.data.section || "",
+            strand: data.data.strand || "",
+            school: {
+                name: data.data.school?.name || "Tropical Village National Highschool",
+                year: data.data.school?.year || "",
+            },
         attendance: {
-          totalYears: data.attendance?.totalYears || "",
+          totalYears: data.data.attendance?.totalYears || "",
         },
       }))
     } catch (error) {
       console.error("Error fetching student data:", error)
-      setMessage({
-        type: "danger",
-        text: "Failed to load student data: " + error.message,
-      })
+      toast.error('Failed to fetch student data')
     } finally {
       setIsLoading(false)
     }
@@ -94,7 +90,6 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
     if (show && studentId) {
       fetchStudentData()
       setIsEditing(false)
-      setMessage({ type: "", text: "" })
     }
   }, [show, studentId, fetchStudentData])
 
@@ -121,7 +116,6 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
-    setMessage({ type: "", text: "" })
 
     try {
       const formattedGender = formData.gender
@@ -172,21 +166,15 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
 
       const data = await response.json()
       if (data.success) {
-        setMessage({
-          type: "success",
-          text: "Student information updated successfully",
-        })
         setIsEditing(false)
+        toast.success('Student information updated successfully!')
         await fetchStudentData()
       } else {
         throw new Error(data.message || "Failed to update student")
       }
     } catch (error) {
       console.error("Error updating student:", error)
-      setMessage({
-        type: "danger",
-        text: "Failed to update student: " + error.message,
-      })
+      toast.error('Failed to update student')
     } finally {
       setIsLoading(false)
     }
@@ -229,12 +217,6 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
         </Modal.Title>
       </Modal.Header>
       <Modal.Body className="bg-light">
-        {message.text && (
-          <Alert variant={message.type} dismissible onClose={() => setMessage({ type: "", text: "" })}>
-            {message.text}
-          </Alert>
-        )}
-
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h4 className="mb-0">
             {formData.firstName} {formData.lastName}

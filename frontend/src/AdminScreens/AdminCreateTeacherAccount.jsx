@@ -95,7 +95,7 @@ const deleteHandler = async (userId) => {
             // Dispatch the updated list of teachers to the context
             dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
             handleClose(); // Close modal after successful deletion
-            toast.success('Teacher deleted successfully!')
+            toast.error('Teacher deleted successfully!')
         } else {
             const json = await response.json();
             console.error('Error response:', json);
@@ -106,65 +106,68 @@ const deleteHandler = async (userId) => {
         setError('Failed to delete user');
     }
 };
-    // Update handleAddUser to properly handle the advisory section
-    const handleAddUser = async (e) => {
-        e.preventDefault();
-        setError('');
-    
-        // Validate required fields
-        if (!newUser.username || !newUser.password || !newUser.sections.length || 
-            !newUser.subjects.length || !newUser.semesters.length) {
-            setError('Please fill in all required fields');
-            return;
-        }
-    
-        const userData = {
-            username: newUser.username.trim(),
-            password: newUser.password,
-            role: 'teacher',
-            sections: newUser.sections.map(id => id.toString()),
-            subjects: newUser.subjects.map(id => id.toString()),
-            semesters: newUser.semesters.map(id => id.toString()),
-            advisorySection: newUser.advisorySection || null // Make it explicitly null if not selected
-        };
-    
-        console.log('Sending user data:', userData); // Debug log
-    
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/addUsers', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(userData)
-            });
-    
-            const data = await response.json();
-    
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to create teacher account');
-            }
-    
-            // Fetch the updated list of teachers
-            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const updatedTeachers = await updatedTeachersRes.json();
-    
-            // Dispatch the updated list of teachers to the context
-            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-    
-            setShowAddModal(false);
-            resetForm();
-            toast.success('Teacher created successfully!')
-        
-        } catch (error) {
-            console.error('Error creating teacher:', error);
-            setError(error.message || 'Failed to create teacher account');
-        }
+   // Update handleAddUser to properly handle the advisory section
+const handleAddUser = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    // Validate required fields
+    if (!newUser.username || !newUser.password || !newUser.sections.length || 
+        !newUser.subjects.length || !newUser.semesters.length) {
+        setError('Please fill in all required fields');
+        return;
+    }
+
+    const userData = {
+        username: newUser.username.trim(),
+        password: newUser.password,
+        role: 'teacher',
+        sections: newUser.sections.map(id => id.toString()),
+        subjects: newUser.subjects.map(id => id.toString()),
+        semesters: newUser.semesters.map(id => id.toString()),
+        advisorySection: newUser.advisorySection 
+        ? { section: newUser.advisorySection.toString() }
+        : null
     };
+
+    console.log('Sending user data:', userData); // Debug log
+    console.log('Advisory Section:', newUser.advisorySection);
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/addUsers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(userData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to create teacher account');
+        }
+
+        // Fetch the updated list of teachers
+        const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const updatedTeachers = await updatedTeachersRes.json();
+
+        // Dispatch the updated list of teachers to the context
+        dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
+
+        setShowAddModal(false);
+        resetForm();
+        toast.success('Teacher created successfully!')
+
+    } catch (error) {
+        console.error('Error creating teacher:', error);
+        setError(error.message || 'Failed to create teacher account');
+    }
+};
 
     const handleEditShow = async (user) => {
         console.log('Editing user:', user); // Debug log
@@ -232,7 +235,9 @@ const [editUser, setEditUser] = useState({
                 sections: editUser.sections,
                 subjects: editUser.subjects,
                 semesters: editUser.semesters,
-                advisorySection: editUser.advisorySection
+                advisorySection: editUser.advisorySection 
+                ? { section: editUser.advisorySection.toString() }
+                : null
             };
     
             console.log('Sending update request:', userData);

@@ -8,7 +8,6 @@ const TeacherEncodeGradeFilter = ({
   loading,
   currentSemester,
   selectedSubject,
-  showAdvisoryOnly,
   selectedStrand,
   selectedYearLevel,
   selectedSection,
@@ -21,7 +20,6 @@ const TeacherEncodeGradeFilter = ({
   setError,
   setCurrentSemester,
   setSelectedSubject,
-  setShowAdvisoryOnly,
   setSelectedStrand,
   setSelectedYearLevel,
   setSelectedSection
@@ -31,15 +29,6 @@ const TeacherEncodeGradeFilter = ({
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [subjectError, setSubjectError] = useState(null);
 
-  // Helper function to get auth config
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    };
-  };
 
   // Add useEffect for fetching subjects when semester changes
 useEffect(() => {
@@ -218,22 +207,6 @@ useEffect(() => {
       <Card className="mb-4 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <Form.Check 
-              type="switch"
-              id="advisory-switch"
-              label={<span className="fw-bold">Show Only Advisory Class</span>}
-              checked={showAdvisoryOnly}
-              onChange={(e) => {
-                setShowAdvisoryOnly(e.target.checked);
-                if (e.target.checked) {
-                  setSelectedStrand('');
-                  setSelectedYearLevel('');
-                  setSelectedSection('');
-                }
-              }}
-              className="mb-0"
-            />
-            {!showAdvisoryOnly && (
               <Button 
                 variant="outline-secondary" 
                 size="sm"
@@ -245,10 +218,7 @@ useEffect(() => {
               >
                 Clear Filters
               </Button>
-            )}
           </div>
-
-          {!showAdvisoryOnly && (
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group>
@@ -308,7 +278,6 @@ useEffect(() => {
                 </Form.Group>
               </Col>
             </Row>
-          )}
         </Card.Body>
       </Card>
     </div>

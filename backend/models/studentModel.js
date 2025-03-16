@@ -48,6 +48,7 @@ const studentSchema = mongoose.Schema(
                 // required: true removed
             },
             occupation: String,
+            contactNumber: String,
         },
         yearLevel: {
             type: mongoose.Schema.Types.ObjectId,

@@ -51,9 +51,6 @@
 }
 
 .status-badge {
-    position: absolute;
-    bottom: 0;
-    right: 0;
     background: #22c55e;
     color: white;
     padding: 0.25rem 0.75rem;

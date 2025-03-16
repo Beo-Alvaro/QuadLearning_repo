@@ -5,6 +5,7 @@ import { useTeacherUserContext } from '../hooks/useTeacherUserContext';
 import UpdateStudentModal from '../TeacherComponents/UpdateStudentModal';
 import './TeacherViewStudent.css';
 import TeacherStudentTable from '../TeacherComponents/TeacherStudentTable';
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherViewStudents = () => {
     const [availableSections, setAvailableSections] = useState([]);
     const [showAdvisoryOnly, setShowAdvisoryOnly] = useState(false);
@@ -26,7 +27,9 @@ const TeacherViewStudents = () => {
     }, [])
 
     const handleViewStudent = (student) => {
-        setSelectedStudentId(student._id);
+        // Make sure we're passing the user ID, not the student record ID
+        const userId = typeof student === 'string' ? student : student.user;
+        setSelectedStudentId(userId);
         setShowModal(true);
     };
     
@@ -89,6 +92,7 @@ const TeacherViewStudents = () => {
    return (
     <>
     <TeacherDashboardNavbar />
+    <ToastContainer />
     <Container fluid className="px-4 py-3">
         {/* Header Section */}
         <Card className="mb-4 shadow-sm">

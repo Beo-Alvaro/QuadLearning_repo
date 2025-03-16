@@ -1367,52 +1367,49 @@ const getTeacherDashboard = asyncHandler(async (req, res) => {
 
 // Add this new controller function
 const getStudentGrades = asyncHandler(async (req, res) => {
-    const { studentId } = req.params;
-    
-    if (!studentId) {
-        res.status(400);
-        throw new Error('Student ID is required');
-    }
-    
-    try {
-        // Convert studentId to ObjectId
-        const objectIdStudent = new mongoose.Types.ObjectId(studentId);
-        
-        // Find all grades for this student
-        const grades = await Grade.find({ student: objectIdStudent })
-            .populate('semester')
-            .populate({
-                path: 'subjects.subject',
-                model: 'Subject',
-                select: 'name'
-            })
-            .lean();
-        
-        console.log(`Found ${grades.length} grade records for student ${studentId}`);
-        
-        // Format the grades for easier consumption by the frontend
-        const formattedGrades = grades.map(grade => {
-            return {
-                _id: grade._id,
-                semester: grade.semester?.name || 'Unknown Semester',
-                semesterId: grade.semester?._id || null,
-                subjects: grade.subjects.map(subject => ({
-                    subjectId: subject.subject?._id || null,
-                    subjectName: subject.subject?.name || 'Unknown Subject',
-                    midterm: subject.midterm,
-                    finals: subject.finals,
-                    finalRating: subject.finalRating,
-                    action: subject.action
-                }))
-            };
-        });
-        
-        res.json(formattedGrades);
-    } catch (error) {
-        console.error('Error fetching student grades:', error);
-        res.status(500);
-        throw new Error('Error fetching student grades: ' + error.message);
-    }
+  const { studentId } = req.params;
+  
+  try {
+      const objectIdStudent = new mongoose.Types.ObjectId(studentId);
+      
+      // Populate subject details, semester, and year level information
+      const grades = await Grade.find({ student: objectIdStudent })
+          .populate({
+              path: 'semester',
+              select: 'name status'
+          })
+          .populate('yearLevel', 'name') // Add year level population
+          .populate({
+              path: 'subjects.subject',
+              select: 'name code'
+          })
+          .lean();
+      
+      console.log('Raw grades from database:', grades);
+      
+      // Format grades with proper subject and year level information
+      const formattedGrades = grades.map(grade => ({
+          semester: grade.semester,
+          yearLevel: grade.yearLevel?.name || 'Unknown Year Level',
+          subjects: grade.subjects.map(subject => ({
+              subject: {
+                  _id: subject.subject?._id,
+                  name: subject.subject?.name || 'Unknown Subject'
+              },
+              midterm: subject.midterm,
+              finals: subject.finals,
+              finalRating: subject.finalRating,
+              action: subject.action
+          }))
+      }));
+
+      console.log('Formatted grades:', formattedGrades);
+      res.json(formattedGrades);
+  } catch (error) {
+      console.error('Error fetching student grades:', error);
+      res.status(500);
+      throw new Error('Error fetching student grades: ' + error.message);
+  }
 });
 
 /**
@@ -1656,24 +1653,28 @@ const saveAttendanceData = asyncHandler(async (req, res) => {
 
       let startDate, endDate;
   
-      // Determine the correct start date based on the week requested
-    switch (week) {
-        case 'current':
-          startDate = new Date();
-    startDate = new Date(today.getFullYear(), today.getMonth(), 1); // Always start on the 1st
-          break;
-        case 'previous':
-          startDate = new Date();
-          startDate.setDate(startDate.getDate() - startDate.getDay() - 6);
-          break;
-        case 'twoWeeksAgo':
-          startDate = new Date();
-          startDate.setDate(startDate.getDate() - startDate.getDay() - 13);
-          break;
-        default:
-          startDate = new Date();
-          startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
-      }
+   // Determine the correct start date based on the week requested
+switch (week) {
+  case 'current':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() + 1); // Start on Monday
+      break;
+  case 'previous':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() - 6); // Previous Monday
+      break;
+  case 'twoWeeksAgo':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() - 13); // Two Mondays ago
+      break;
+  default:
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() + 1); // Fallback to current week
+}
+
+endDate = new Date(startDate);
+endDate.setDate(startDate.getDate() + 6); // Always end on Sunday
+
 
         // Ensure endDate is always 6 days after startDate
         endDate = new Date(startDate);
@@ -1857,8 +1858,143 @@ const saveAttendanceData = asyncHandler(async (req, res) => {
     }
   });
 
+  const getSectionAverages = asyncHandler(async (req, res) => {
+    try {
+      const teacherId = req.user._id;
+  
+      // Get all sections taught by this teacher
+      const sections = await Section.find({ teacher: teacherId })
+        .select('name _id')
+        .lean();
+  
+      const sectionAverages = await Promise.all(sections.map(async (section) => {
+        // Get all grades for students in this section
+        const grades = await Grade.find({
+          section: section._id,
+          semester: req.query.semester // Add semester filter
+        }).populate('subjects.subject', 'name');
+  
+        // Calculate average final rating for the section
+        let totalRating = 0;
+        let totalSubjects = 0;
+  
+        grades.forEach(grade => {
+          grade.subjects.forEach(subject => {
+            if (subject.finalRating) {
+              totalRating += subject.finalRating;
+              totalSubjects++;
+            }
+          });
+        });
+  
+        const average = totalSubjects > 0 ? (totalRating / totalSubjects).toFixed(2) : 0;
+  
+        return {
+          name: section.name,
+          average: parseFloat(average),
+          studentCount: grades.length
+        };
+      }));
+  
+      // Sort sections by average
+      sectionAverages.sort((a, b) => b.average - a.average);
+  
+      res.json({
+        success: true,
+        data: sectionAverages
+      });
+  
+    } catch (error) {
+      console.error('Error getting section averages:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error calculating section averages'
+      });
+    }
+  });
+
+  const getSubjectPerformance = asyncHandler(async (req, res) => {
+    try {
+        const { semesterId } = req.query;
+        if (!semesterId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Semester ID is required' 
+            });
+        }
+
+        // Get teacher's sections
+        const sections = await Section.find({ teacher: req.user._id });
+        const sectionIds = sections.map(section => section._id);
+
+        console.log('Fetching grades for sections:', sectionIds);
+        console.log('Semester ID:', semesterId);
+
+        // Find all grades for these sections in the specified semester
+        const grades = await Grade.find({
+            semester: semesterId,
+            section: { $in: sectionIds }
+        })
+        .populate({
+            path: 'subjects.subject',
+            select: 'name'
+        })
+        .lean();
+
+        console.log('Found grades:', grades.length);
+
+        // Calculate averages for each subject
+        const subjectAverages = {};
+
+        grades.forEach(grade => {
+            grade.subjects.forEach(subject => {
+                if (subject.subject && subject.subject.name) {
+                    if (!subjectAverages[subject.subject.name]) {
+                        subjectAverages[subject.subject.name] = {
+                            sum: 0,
+                            count: 0
+                        };
+                    }
+                    
+                    if (subject.finalRating) {
+                        subjectAverages[subject.subject.name].sum += subject.finalRating;
+                        subjectAverages[subject.subject.name].count += 1;
+                    }
+                }
+            });
+        });
+
+        // Format the data for the chart
+        const performanceData = Object.entries(subjectAverages)
+            .map(([name, data]) => ({
+                name,
+                average: data.count > 0 ? Number((data.sum / data.count).toFixed(2)) : 0
+            }))
+            .filter(subject => subject.average > 0); // Remove subjects with no grades
+
+        // Sort by average descending
+        performanceData.sort((a, b) => b.average - a.average);
+
+        console.log('Performance data:', performanceData);
+
+        res.json({
+            success: true,
+            data: performanceData
+        });
+
+    } catch (error) {
+        console.error('Error getting subject performance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching subject performance data'
+        });
+    }
+});
+  
   export { 
     getTeacherSemesters,
+    getSubjectPerformance,
+    getSectionAverages,
     getGradesByStudent, 
     addGrade, 
     updateGrade, 

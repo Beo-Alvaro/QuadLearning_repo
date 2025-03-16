@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-
+import { toast } from 'react-toastify';
 export const TeacherUserContext = createContext();
 
 export const TeacherUserContextProvider = ({ children }) => {
@@ -78,111 +78,132 @@ export const TeacherUserContextProvider = ({ children }) => {
         }
     }, []); // Empty dependency array
 
-    // Handle Form 137 Generation
-    const handleGenerateForm = async (studentId) => {
-        try {
-            if (!studentId) throw new Error('Invalid Student ID');
+  // Handle Form 137 Generation
+  const handleGenerateForm = async (studentId) => {
+    try {
+        if (!studentId) throw new Error('Invalid Student ID');
 
-            const response = await fetch(`/api/teacher/generate-form137/${studentId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+        const response = await fetch(`/api/teacher/generate-form137/${studentId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            },
+        });
+         // Get filename from headers
+         const filename = response.headers.get("X-Filename") || `Form137_${studentId}.xlsx`;
+         // Convert response to a Blob
+         const blob = await response.blob();
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to generate Form 137');
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `form137-${studentId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Detailed Error generating Form 137:', error);
-            setError(`Failed to generate Form 137: ${error.message}`);
+        // Save the file
+        saveAs(blob, filename);
+        toast.success('Form generated successfully!')
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to generate Form 137');
         }
-    };
 
-    // Handle Selecting a Student and Fetching Details
-    const handleSelectStudent = async (studentId) => {
-        try {
-            if (!studentId) throw new Error('Invalid Student ID');
+        console.log(`✅ Form 137 downloaded successfully as ${filename}`);
+    } catch (error) {
+        console.error("❌ Error downloading Form 137:", error);
 
-            // First fetch the student details
-            const response = await fetch(`/api/teacher/student/${studentId}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
+        setError(`Failed to generate Form 137: ${error.message}`);
+    }
+};
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch student details');
-            }
+const handleSelectStudent = async (studentId) => {
+    try {
+        if (!studentId) throw new Error('Invalid Student ID');
 
-            const data = await response.json();
-            console.log('Student data from API:', data);
+        // Fetch student details
+        const response = await fetch(`/api/teacher/student/${studentId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
 
-            // Now fetch the student's grades separately
-            const gradesResponse = await fetch(`/api/teacher/student-grades/${studentId}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-
-            let gradesData = [];
-            if (gradesResponse.ok) {
-                gradesData = await gradesResponse.json();
-                console.log('Grades data from API:', gradesData);
-            } else {
-                console.warn('Failed to fetch grades, but continuing with student data');
-            }
-
-            // Create the student object with personal info and academic details
-            const studentWithGrades = {
-                _id: data._id,
-                username: data.username,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                middleInitial: data.middleInitial,
-                section: data.section?.name || 'No Section',
-                yearLevel: data.yearLevel?.name || 'Not Set',
-                strand: data.strand?.name || 'Not Set',
-                gender: data.gender || 'Not Set',
-                birthdate: data.birthdate ? new Date(data.birthdate).toLocaleDateString() : 'Not Set',
-                address: data.address || 'Not Set',
-                guardian: data.guardian?.name || 'Not Set',
-                school: data.school?.name || 'Not Set',
-                // Add the separately fetched grades
-                grades: gradesData.map(grade => ({
-                    semester: grade.semester || 'No Semester',
-                    semesterId: grade.semesterId || null,
-                    subjects: grade.subjects.map(subject => ({
-                        subjectId: subject.subjectId || null,
-                        subjectName: subject.subjectName || 'No Subject',
-                        midterm: subject.midterm || 'N/A',
-                        finals: subject.finals || 'N/A',
-                        finalRating: subject.finalRating || 'N/A',
-                        action: subject.action || 'N/A',
-                    })),
-                })),
-            };
-
-            console.log('Setting selected student with grades:', studentWithGrades);
-            setSelectedStudent(studentWithGrades);
-        } catch (error) {
-            console.error('Error fetching student details:', error);
-            setError(`Failed to fetch student details: ${error.message}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch student details');
         }
-    };
+
+        const data = await response.json();
+
+        // Fetch grades with populated semester information
+        const gradesResponse = await fetch(`/api/teacher/student-grades/${studentId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+
+        let grades = [];
+        if (gradesResponse.ok) {
+            const gradesData = await gradesResponse.json();
+            console.log('Received grades data:', gradesData);
+            
+            // Group grades by year level and semester
+            const gradeBySemester = {};
+            
+            gradesData.forEach(grade => {
+                if (grade.semester && grade.semester._id) {
+                    const key = `${grade.yearLevel}-${grade.semester._id}`;
+                    if (!gradeBySemester[key]) {
+                        gradeBySemester[key] = {
+                            semesterInfo: grade.semester,
+                            yearLevel: grade.yearLevel,
+                            subjects: []
+                        };
+                    }
+                    gradeBySemester[key].subjects.push(...grade.subjects.map(subject => ({
+                        subject: subject.subject,
+                        subjectName: subject.subject?.name,
+                        midterm: subject.midterm,
+                        finals: subject.finals,
+                        finalRating: subject.finalRating,
+                        action: subject.action
+                    })));
+                }
+            });
+        
+            // Convert to array and sort by year level and semester name
+            grades = Object.values(gradeBySemester).sort((a, b) => {
+                // First sort by year level
+                const yearLevelA = a.yearLevel || '';
+                const yearLevelB = b.yearLevel || '';
+                if (yearLevelA !== yearLevelB) {
+                    return yearLevelA.localeCompare(yearLevelB);
+                }
+                // Then sort by semester name
+                return (a.semesterInfo?.name || '').localeCompare(b.semesterInfo?.name || '');
+            });
+        
+            console.log('Processed grades:', grades);
+        }
+
+        // Create the combined student object
+        const studentWithGrades = {
+            _id: data.data._id,
+            username: data.data.username,
+            firstName: data.data.firstName,
+            lastName: data.data.lastName,
+            middleInitial: data.data.middleInitial,
+            section: data.data.section,
+            yearLevel: data.data.yearLevel,
+            strand: data.data.strand,
+            gender: data.data.gender || 'Not Set',
+            birthdate: data.data.birthdate ? new Date(data.data.birthdate).toLocaleDateString() : 'Not Set',
+            address: data.data.address || 'Not Set',
+            guardian: data.data.guardian?.name || 'Not Set',
+            school: data.data.school?.name || 'Not Set',
+            grades: grades
+        };
+
+        setSelectedStudent(studentWithGrades);
+    } catch (error) {
+        console.error('Error fetching student details:', error);
+        setError(`Failed to fetch student details: ${error.message}`);
+    }
+};
 
     return (
         <TeacherUserContext.Provider

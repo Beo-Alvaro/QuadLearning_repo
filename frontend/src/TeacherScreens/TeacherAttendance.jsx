@@ -4,7 +4,7 @@ import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar'
 import TeacherAttendanceModal from '../TeacherComponents/TeacherAttendanceModal'
 import { useTeacherUserContext } from '../context/teacherUserContext'
 import axios from 'axios'
-
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherAttendance = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedSection, setSelectedSection] = useState('')
@@ -102,6 +102,7 @@ const TeacherAttendance = () => {
   return (
     <div>
       <TeacherDashboardNavbar />
+      <ToastContainer />
       <Container className="mt-4">
         <Card>
           <Card.Header as="h4">Attendance Management</Card.Header>

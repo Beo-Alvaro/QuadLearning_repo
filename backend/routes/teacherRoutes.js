@@ -1,7 +1,7 @@
 import express from 'express';
 
 import { addGrade, updateGrade,  generateForm137, getTeacherSections, fillOutStudentForm, getTeacherDashboard, getStudentData, getTeacherSubjects, getSubjectGrades, getSubjectStudents,
-     getTeacherAdvisoryClass, bulkAddGrades, getStudentGrades, getSectionById, getSectionStudents, getAttendanceData, saveAttendanceData, getAttendanceSummary, getTeacherSemesters} from '../controllers/teacherController.js';
+     getTeacherAdvisoryClass, bulkAddGrades, getStudentGrades, getSectionById, getSectionStudents, getAttendanceData, saveAttendanceData, getAttendanceSummary, getTeacherSemesters, getSectionAverages, getSubjectPerformance} from '../controllers/teacherController.js';
 import { protect, authorizeRoles, teacher } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -14,6 +14,8 @@ router.post('/add-grades', protect, authorizeRoles('teacher'), addGrade);
 router.post('/bulk-add-grades', protect, authorizeRoles('teacher'), bulkAddGrades);
 router.put('/grades/:id', protect, authorizeRoles('teacher'), updateGrade);
 router.get('/attendance/summary', protect, teacher, getAttendanceSummary);
+router.get('/section-averages', protect, teacher, getSectionAverages);
+router.get('/subject-performance', protect, teacher, getSubjectPerformance);
 
 router.get('/generate-form137/:studentId', protect, teacher, generateForm137);
 router.get('/sections', getTeacherSections);

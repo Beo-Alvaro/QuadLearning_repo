@@ -62,7 +62,7 @@ const ManageSections = () => {
             await contextDeleteHandler(id);  // Use the deleteHandler from context
             await fetchData(); // Refresh the list after deletion
             setShow(false); // Close the modal after successful deletion
-            toast.success('Section deleted successfully!')
+            toast.error('Section deleted successfully!')
         } catch (error) {
             console.error("Error deleting section:", error);
         }

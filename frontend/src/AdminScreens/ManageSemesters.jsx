@@ -117,7 +117,7 @@ const ManageSemesters = () => {
             await deleteSemester(id);
             fetchData(); // Refresh the list after deletion
             setShow(false);
-            toast.success('Semester deleted successfully!')
+            toast.error('Semester deleted successfully!')
         } catch (error) {
             console.error("Error deleting semester:", error);
         }

@@ -229,40 +229,58 @@ const StudModals = ({
                 </div>
             </div>
 
-            {/* Subjects Section */}
-            <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Subjects</h6>
-                {availableSubjects.length > 0 ? (
-                    <div className="subjects-grid" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '0.5rem' 
-                    }}>
-                        {availableSubjects.map(subject => (
-                            <Form.Check
-                                key={subject._id}
-                                type="checkbox"
-                                id={`add-${subject._id}`}
-                                label={subject.name}
-                                checked={newUser.subjects.includes(subject._id)}
-                                onChange={(e) => {
-                                    setNewUser(prev => ({
-                                        ...prev,
-                                        subjects: e.target.checked
-                                            ? [...prev.subjects, subject._id]
-                                            : prev.subjects.filter(id => id !== subject._id)
-                                    }));
-                                }}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-muted">
-                        Please select strand, year level, and semester to view available subjects
-                    </p>
-                )}
-            </div>
+          {/* Subjects Section */}
+<div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
+    <h6 className="mb-3">Subjects</h6>
 
+    {availableSubjects.length > 0 ? (
+        <>
+            {/* Select All Checkbox */}
+            <Form.Check
+                type="checkbox"
+                id="select-all-subjects"
+                label="Select All Subjects"
+                checked={newUser.subjects.length === availableSubjects.length}
+                onChange={(e) => {
+                    setNewUser(prev => ({
+                        ...prev,
+                        subjects: e.target.checked
+                            ? availableSubjects.map(subject => subject._id) // Select all
+                            : [] // Deselect all
+                    }));
+                }}
+            />
+
+            <div className="subjects-grid" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '0.5rem' 
+            }}>
+                {availableSubjects.map(subject => (
+                    <Form.Check
+                        key={subject._id}
+                        type="checkbox"
+                        id={`add-${subject._id}`}
+                        label={subject.name}
+                        checked={newUser.subjects.includes(subject._id)}
+                        onChange={(e) => {
+                            setNewUser(prev => ({
+                                ...prev,
+                                subjects: e.target.checked
+                                    ? [...prev.subjects, subject._id]
+                                    : prev.subjects.filter(id => id !== subject._id)
+                            }));
+                        }}
+                    />
+                ))}
+            </div>
+        </>
+    ) : (
+        <p className="text-muted">
+            Please select strand, year level, and semester to view available subjects
+        </p>
+    )}
+</div>
             {error && <div className="alert alert-danger mt-3">{error}</div>}
         </Form>
     </Modal.Body>

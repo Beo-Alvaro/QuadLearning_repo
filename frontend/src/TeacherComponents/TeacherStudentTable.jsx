@@ -40,15 +40,15 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
                                         </td>
                                     )}
                                     <td className="px-4 py-3 text-center">
-                                        <Button 
-                                            variant="outline-primary" 
-                                            size="sm"
-                                            onClick={() => handleViewStudent(student)}
-                                            className="action-button"
-                                        >
-                                            <i className="bi bi-eye me-1"></i>
-                                            View Details
-                                        </Button>
+                                    <Button 
+    variant="outline-primary" 
+    size="sm"
+    onClick={() => handleViewStudent(student.user || student._id)} // Update this line
+    className="action-button"
+>
+    <i className="bi bi-eye me-1"></i>
+    View Details
+</Button>
                                     </td>
                                 </tr>
                             ))}

@@ -6,10 +6,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { useState , useEffect } from 'react';
 import AdminSidebar from "../AdminComponents/AdminSidebar";
 import '../AdminComponents/AdminTableList.css';
-import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Header from '../components/Header';
-import '../AdminComponents/AdminTableList.css';
 import AdminResetPasswordModal from '../AdminComponents/AdminResetPasswordModal';
 import { useUsersDataContext } from '../hooks/useUsersDataContext';
 

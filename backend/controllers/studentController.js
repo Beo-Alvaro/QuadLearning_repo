@@ -58,7 +58,8 @@ const viewStudentProfile = asyncHandler(async (req, res) => {
                 address: student.address || '',
                 guardian: {
                     name: student.guardian?.name || '',
-                    occupation: student.guardian?.occupation || ''
+                    occupation: student.guardian?.occupation || '',
+                    contactNumber: student.guardian?.contactNumber || '',
                 },
                 yearLevel: student.yearLevel?.name || '',
                 section: student.section?.name || '',
@@ -181,4 +182,78 @@ const viewStudentGrades = asyncHandler(async (req, res) => {
 }
 });
 
-export { viewStudentProfile, viewStudentGrades };
+const updateStudentProfile = asyncHandler(async (req, res) => {
+    try {
+        // Get the authenticated student's ID from the request
+        const studentId = req.user._id;
+
+        // Find the student record
+        const student = await Student.findOne({ user: studentId });
+        if (!student) {
+            res.status(404);
+            throw new Error('Student record not found');
+        }
+
+        // Update fields based on the student model
+        const {
+            firstName,
+            lastName,
+            middleInitial,
+            gender,
+            birthdate,
+            birthplace,
+            address,
+            guardian,
+            contactNumber,
+        } = req.body;
+
+        // Update basic information
+        if (firstName) student.firstName = firstName;
+        if (lastName) student.lastName = lastName;
+        if (middleInitial) student.middleInitial = middleInitial;
+        if (gender) student.gender = gender;
+        if (birthdate) student.birthdate = birthdate;
+        if (birthplace) student.birthplace = birthplace;
+        if (address) student.address = address;
+        if (guardian) student.guardian = { ...student.guardian, ...guardian };
+        if (contactNumber) student.contactNumber = contactNumber;
+
+        // Save the student
+        await student.save();
+
+        // Fetch the updated student with populated fields
+        const updatedStudent = await Student.findOne({ user: studentId })
+            .populate('yearLevel')
+            .populate('section')
+            .populate('strand');
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            student: {
+                firstName: updatedStudent.firstName,
+                lastName: updatedStudent.lastName,
+                middleInitial: updatedStudent.middleInitial,
+                gender: updatedStudent.gender,
+                birthdate: updatedStudent.birthdate,
+                birthplace: updatedStudent.birthplace,
+                address: updatedStudent.address,
+                guardian: updatedStudent.guardian,
+                contactNumber: updatedStudent.contactNumber,
+                yearLevel: updatedStudent.yearLevel?.name,
+                section: updatedStudent.section?.name,
+                strand: updatedStudent.strand?.name,
+            }
+        });
+
+    } catch (error) {
+        console.error('Error updating student profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating profile',
+            error: error.message
+        });
+    }
+});
+
+export { viewStudentProfile, viewStudentGrades, updateStudentProfile };

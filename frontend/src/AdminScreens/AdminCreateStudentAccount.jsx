@@ -83,7 +83,7 @@ const AdminCreateStudentAccount = () => {
             if (response.ok) {
                 handleClose(); // Close the modal after deletion
                 fetchData(); // Refresh the user list after deletion
-                toast.success('User deleted successfully!');
+                toast.error('User deleted successfully!');
             } else {
                 const json = await response.json();
                 console.error('Error response:', json);
