@@ -23,41 +23,52 @@ const getAdminId = async (req, res) => {
 // route    POST /api/users/auth
 // @access  Public
 
-
 const authUser = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
-    console.log('Input password:', password.trim());
-
-    // Check if user exists by username
     const user = await User.findOne({ username });
+
     if (!user) {
-
-        return res.status(401).json({ message: "Invalid username" });
+        res.status(401);
+        throw new Error('Invalid username or password');
     }
 
-    console.log('Stored password:', user.password);
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+        const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+        res.status(423);
+        throw new Error(`Account is locked. Try again in ${minutesLeft} minutes`);
+    }
 
-    // Check if password matches
+    // Verify password
     const isMatch = await bcrypt.compare(password.trim(), user.password);
-    console.log('Password match result:', isMatch);
+
     if (!isMatch) {
+        await user.incrementLoginAttempts();
+        
+        // Check if this attempt caused a lock
+        if (user.loginAttempts + 1 >= 5) {
+            res.status(423);
+            throw new Error('Account is now locked for 15 minutes due to too many failed attempts');
+        }
 
-        //console.log('Invalid credentials for username:', username);
-
-        return res.status(401).json({ message: "Invalid password" });
+        res.status(401);
+        throw new Error(`Invalid password. ${4 - user.loginAttempts} attempts remaining`);
     }
 
-    // If credentials are valid, create a token and set it in a cookie
-    const token = generateToken(user._id, res); // Pass the user ID to generateToken
+    // Reset attempts on successful login
+    await user.resetLoginAttempts();
 
+    // Generate token and send response
+    const token = generateToken(user._id, res);
     res.json({
-        token: token, // Ensure the token is included
-        user: {      // Wrap user details in a user object
+        success: true,
+        token,
+        user: {
             _id: user._id,
             username: user.username,
-            role: user.role,
-        },
+            role: user.role
+        }
     });
 });
 

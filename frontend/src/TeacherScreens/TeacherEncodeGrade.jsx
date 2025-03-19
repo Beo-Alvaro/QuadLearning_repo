@@ -38,29 +38,31 @@ const TeacherEncodeGrade = () => {
         });
     };
 
-    // Handle grade changes locally before saving
-    const handleGradeChange = (e, studentId, gradeType) => {
-        const value = e.target.value !== '' ? parseFloat(e.target.value) : '';
+// Update the handleGradeChange function
+const handleGradeChange = (e, studentId, gradeType) => {
+    const value = e.target.value !== '' ? parseFloat(e.target.value) : '';
 
-        setLocalGrades(prevGrades => {
-            const updatedGrades = { ...prevGrades };
-            if (!updatedGrades[studentId]) updatedGrades[studentId] = {};
-            
-            updatedGrades[studentId][gradeType] = value;
+    setLocalGrades(prevGrades => {
+        const updatedGrades = { ...prevGrades };
+        if (!updatedGrades[studentId]) updatedGrades[studentId] = {};
+        
+        updatedGrades[studentId][gradeType] = value;
 
-            // Calculate final rating if both grades exist
-            const midterm = updatedGrades[studentId].midterm ?? 
-                (studentGrades[studentId]?.[selectedSubject]?.midterm ?? 0);
-            const finals = updatedGrades[studentId].finals ?? 
-                (studentGrades[studentId]?.[selectedSubject]?.finals ?? 0);
+        // Calculate final rating if both grades exist
+        const midterm = updatedGrades[studentId].midterm ?? 
+            (studentGrades[studentId]?.[selectedSubject]?.midterm ?? 0);
+        const finals = updatedGrades[studentId].finals ?? 
+            (studentGrades[studentId]?.[selectedSubject]?.finals ?? 0);
 
-            if (midterm !== '' && finals !== '') {
-                updatedGrades[studentId].finalRating = (midterm * 0.4 + finals * 0.6).toFixed(2);
-            }
+        if (midterm !== '' && finals !== '') {
+            // Round to nearest whole number
+            const finalRating = Math.round((midterm * 0.4 + finals * 0.6));
+            updatedGrades[studentId].finalRating = finalRating.toString();
+        }
 
-            return updatedGrades;
-        });
-    };
+        return updatedGrades;
+    });
+};
 
     // Save a single student's grade
     const addGrade = async (studentId) => {
@@ -221,7 +223,7 @@ const TeacherEncodeGrade = () => {
                 // Calculate final rating
                 const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
                 const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
-                const finalRating = (midtermValue * 0.4 + finalsValue * 0.6).toFixed(2);
+                const finalRating = Math.round(midtermValue * 0.4 + finalsValue * 0.6);
                 const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
                 
                 // Update the grades for this student and subject
@@ -452,26 +454,40 @@ const TeacherEncodeGrade = () => {
                                                 <td>{student.sectionName}</td>
                                                 <td>
                                                     {isEditing ? (
-                                                        <input 
-                                                            type="number" 
-                                                            min="0" 
-                                                            max="100"
-                                                            value={getGradeDisplayValue(student._id, 'midterm')} 
-                                                            onChange={(e) => handleGradeChange(e, student._id, 'midterm')} 
-                                                        />
+                                                   <input 
+                                                   type="number" 
+                                                   min="0" 
+                                                   max="100"
+                                                   step="0.01" // Allows decimal values
+                                                   value={getGradeDisplayValue(student._id, 'midterm')} 
+                                                   onChange={(e) => handleGradeChange(e, student._id, 'midterm')}
+                                                   onBlur={(e) => {
+                                                       // Clean up the value on blur
+                                                       if (e.target.value === '') return;
+                                                       const value = Math.min(100, Math.max(0, parseFloat(e.target.value)));
+                                                       handleGradeChange({ target: { value } }, student._id, 'midterm');
+                                                   }}
+                                               />
                                                     ) : (
                                                         <span>{getGradeDisplayValue(student._id, 'midterm') || 'N/A'}</span>
                                                     )}
                                                 </td>
                                                 <td>
                                                     {isEditing ? (
-                                                        <input 
-                                                            type="number" 
-                                                            min="0" 
-                                                            max="100"
-                                                            value={getGradeDisplayValue(student._id, 'finals')} 
-                                                            onChange={(e) => handleGradeChange(e, student._id, 'finals')} 
-                                                        />
+                                                      <input 
+                                                      type="number" 
+                                                      min="0" 
+                                                      max="100"
+                                                      step="0.01" // Allows decimal values
+                                                      value={getGradeDisplayValue(student._id, 'finals')} 
+                                                      onChange={(e) => handleGradeChange(e, student._id, 'finals')}
+                                                      onBlur={(e) => {
+                                                          // Clean up the value on blur
+                                                          if (e.target.value === '') return;
+                                                          const value = Math.min(100, Math.max(0, parseFloat(e.target.value)));
+                                                          handleGradeChange({ target: { value } }, student._id, 'finals');
+                                                      }}
+                                                  />
                                                     ) : (
                                                         <span>{getGradeDisplayValue(student._id, 'finals') || 'N/A'}</span>
                                                     )}

@@ -477,13 +477,15 @@ const StudentProfile = () => {
                                   <FaPhone className="text-success me-1" size={12} /> Contact Number
                                 </label>
                                 {isEditing ? (
-                                  <Form.Control
-                                    type="text"
-                                    name="contactNumber"
-                                    value={formData.contactNumber || ""}
-                                    onChange={handleChange}
-                                    className="border-success-subtle"
-                                  />
+                               <Form.Control
+                               type="text"
+                               name="contactNumber"
+                               value={formData.contactNumber || ""}
+                               onChange={(e) => handleChange(e, 'contactNumber')}
+                               placeholder="09XXXXXXXXX"
+                               maxLength={11}
+                               className="border-success-subtle"
+                           />
                                 ) : (
                                   <p className="fw-medium mb-0 p-2 bg-light rounded">
                                     {studentData.contactNumber || "N/A"}
@@ -816,13 +818,15 @@ const StudentProfile = () => {
                                           <FaPhone className="text-success me-1" size={12} /> Contact Number
                                         </label>
                                         {isEditing ? (
-                                          <Form.Control
-                                            type="text"
-                                            name="guardian.contactNumber"
-                                            value={formData.guardian?.contactNumber || ""}
-                                            onChange={handleChange}
-                                            className="border-success-subtle bg-white"
-                                          />
+                                         <Form.Control
+                                         type="text"
+                                         name="guardian.contactNumber"
+                                         value={formData.guardian?.contactNumber || ""}
+                                         onChange={(e) => handleChange(e, 'guardian.contactNumber')}
+                                         placeholder="09XXXXXXXXX"
+                                         maxLength={11}
+                                         className="border-success-subtle bg-white"
+                                     />
                                         ) : (
                                           <p className="fw-medium mb-0 p-2 bg-white rounded shadow-sm">
                                             {studentData.guardian?.contactNumber || "N/A"}

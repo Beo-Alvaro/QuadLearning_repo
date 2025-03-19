@@ -1090,68 +1090,68 @@ const getTeacherSubjects = asyncHandler(async (req, res) => {
 // @route   GET /api/teacher/subject-students
 // @access  Private (teacher only)
 const getSubjectStudents = asyncHandler(async (req, res) => {
-    const { subjectId, semesterId } = req.query;
+  const { subjectId, semesterId } = req.query;
 
-    if (!subjectId || !semesterId) {
-        res.status(400);
-        throw new Error('Subject ID and Semester ID are required');
-    }
+  if (!subjectId || !semesterId) {
+      res.status(400);
+      throw new Error('Subject ID and Semester ID are required');
+  }
 
-    try {
-        // Get the teacher's advisory section
-        const teacher = await User.findById(req.user._id)
-            .populate('advisorySection')
-            .lean();
+  try {
+      // First get the teacher's sections
+      const teacherSections = await Section.find({ teacher: req.user._id })
+          .select('_id')
+          .lean();
 
-        const advisorySectionId = teacher.advisorySection?._id;
+      const teacherSectionIds = teacherSections.map(section => section._id);
 
-        // Find the subject
-        const subject = await Subject.findById(subjectId)
-            .populate('strand')
-            .populate('yearLevel');
+      // Find students who:
+      // 1. Have the subject
+      // 2. Are in the semester
+      // 3. Are in one of the teacher's sections
+      const students = await Student.find({
+          section: { $in: teacherSectionIds }
+      })
+      .populate({
+          path: 'user',
+          match: { 
+              subjects: subjectId,
+              semester: semesterId 
+          },
+          select: 'firstName lastName'
+      })
+      .populate('section', 'name')
+      .populate('yearLevel', 'name')
+      .populate('strand', 'name')
+      .lean();
 
-        if (!subject) {
-            res.status(404);
-            throw new Error('Subject not found');
-        }
+      // Filter out students whose user field didn't populate (not enrolled in subject)
+      const validStudents = students.filter(student => student.user);
 
-        // Get students
-        const students = await User.find({
-            role: 'student',
-            subjects: subjectId,
-            semester: semesterId,
-            strand: subject.strand._id,
-            yearLevel: subject.yearLevel._id
-        })
-        .populate({
-            path: 'sections',
-            select: 'name _id'
-        })
-        .populate('strand')
-        .populate('yearLevel')
-        .select('username sections strand yearLevel');
+      // Format student data
+      const formattedStudents = validStudents.map(student => ({
+          _id: student.user._id,
+          username: `${student.firstName} ${student.lastName}`,
+          sections: [{
+              _id: student.section?._id,
+              name: student.section?.name || 'No Section'
+          }],
+          strand: {
+              name: student.strand?.name || 'Not Set'
+          },
+          yearLevel: {
+              name: student.yearLevel?.name || 'Not Set'
+          }
+      }));
 
-        // Map students with advisory information
-        const studentsWithAdvisory = students.map(student => ({
-            _id: student._id,
-            username: student.username,
-            sections: student.sections,
-            strand: student.strand,
-            yearLevel: student.yearLevel,
-            // Check if any of the student's sections match the teacher's advisory section
-            isAdvisory: student.sections.some(section => 
-                section._id.toString() === advisorySectionId?.toString()
-            )
-        }));
+      console.log(`Found ${formattedStudents.length} students in teacher's sections`);
+      res.json(formattedStudents);
 
-        console.log('Students with advisory:', studentsWithAdvisory); // Debug log
-        res.json(studentsWithAdvisory);
-
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500);
-        throw new Error('Error fetching subject students: ' + error.message);
-    }
+  } catch (error) {
+      console.error('Error:', error);
+      res.status(500);
+      throw new Error('Error fetching subject students: ' + error.message);
+  }
 });
 
 

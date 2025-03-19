@@ -8,6 +8,7 @@ const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -25,11 +26,15 @@ const LoginScreen = () => {
             body: JSON.stringify({ username, password }),
         });
 
-        if (!response.ok) {
-            throw new Error('Invalid credentials');
-        }
-
         const data = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 423) {
+                // Handle account lockout
+                throw new Error(data.message || 'Account is locked. Please try again later.');
+            }
+            throw new Error(data.message || 'Invalid credentials');
+        }
 
         // Debugging: Log data to verify the response structure
         console.log('Response data:', data);
@@ -38,20 +43,32 @@ const LoginScreen = () => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('userInfo', JSON.stringify(data.user));
 
-      setLoading(false);
+        setLoading(false);
         // Navigate to dashboard based on role
-    if (data.user.role === 'student') {
-        navigate('./StudentScreens/StudentHomeScreen');
-    } else if (data.user.role === 'teacher') {
-        navigate('./TeacherScreens/TeacherHomeScreen');
-    } else if (data.user.role === 'admin') {
-        navigate('./AdminScreens/AdminHomeScreen');
-    }
+        if (data.user.role === 'student') {
+            navigate('./StudentScreens/StudentHomeScreen');
+        } else if (data.user.role === 'teacher') {
+            navigate('./TeacherScreens/TeacherHomeScreen');
+        } else if (data.user.role === 'admin') {
+            navigate('./AdminScreens/AdminHomeScreen');
+        }
     } catch (err) {
-      setLoading(false);
-      setError(err.message);
+        setLoading(false);
+        setError(err.message);
+        
+        // Add visual feedback for remaining attempts
+        if (err.message.includes('attempts remaining')) {
+            setError(
+                <div>
+                    <p>{err.message}</p>
+                    <small className="text-danger mb-5">
+                        Warning: Your account will be locked for 15 minutes after 5 failed attempts
+                    </small>
+                </div>
+            );
+        }
     }
-  };
+};
 
   return (
     <div 
@@ -77,12 +94,12 @@ const LoginScreen = () => {
               TVNHS Access Portal
             </h1>
             <p className="text-muted">
-              Secure login for administrators, teachers, and students
+            Your Gateway to Academic Success!
             </p>
           </div>
 
       {error && (
-        <Alert variant="danger" className="text-center">
+        <Alert variant="danger" className="text-center mb-4">
           <i className="bi bi-exclamation-triangle-fill me-2"></i>
           {error}
         </Alert>
@@ -107,21 +124,28 @@ const LoginScreen = () => {
         </Form.Group>
 
         <Form.Group className='mb-3' controlId='password'>
-          <Form.Label className="fw-semibold">Password</Form.Label>
-          <InputGroup>
-            <InputGroup.Text>
-              <i className="bi bi-lock-fill"></i>
-            </InputGroup.Text>
-            <Form.Control
-              type='password'
-              placeholder='Enter password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border-start-0"
-              required
-            />
-          </InputGroup>
-        </Form.Group>
+  <Form.Label className="fw-semibold">Password</Form.Label>
+  <InputGroup>
+    <InputGroup.Text>
+      <i className="bi bi-lock-fill"></i>
+    </InputGroup.Text>
+    <Form.Control
+      type={showPassword ? 'text' : 'password'}
+      placeholder='Enter password'
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      className="border-start-0"
+      required
+    />
+    <Button
+      variant="outline-success"
+      onClick={() => setShowPassword(!showPassword)}
+      type="button"
+    >
+      <i className={`bi ${showPassword ? 'bi-eye-slash-fill' : 'bi-eye-fill'}`}></i>
+    </Button>
+  </InputGroup>
+</Form.Group>
 
         <Button 
           type='submit' 

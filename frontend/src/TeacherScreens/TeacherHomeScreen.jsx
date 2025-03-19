@@ -473,8 +473,17 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
                                       <BarChart data={attendanceData}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="name" />
-                                        <YAxis domain={[0, 'auto']} /> {/* Add domain to better handle zero values */}
-                                        <Tooltip formatter={(value, name) => [`${value} students`, name]} />
+                                        <YAxis domain={[0, 'auto']} 
+                                        allowDecimals={false} // This prevents decimal values
+                                        tickFormatter={(value) => Math.round(value)} // Rounds the tick values
+                                        /> {/* Add domain to better handle zero values */}
+                                        
+                                        <Tooltip 
+                                        formatter={(value, name) => [
+                                          `${Math.round(value)} students`, // Rounds the tooltip values
+                                          name
+                                        ]} 
+                                      />
                                         <Legend />
                                         <Bar dataKey="present" fill="#4CAF50" name="Present" minPointSize={3} /> {/* Add minPointSize */}
                                         <Bar dataKey="absent" fill="#FF5252" name="Absent" minPointSize={3} />
