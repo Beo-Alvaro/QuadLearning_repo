@@ -41,7 +41,7 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
                                     )}
                                     <td className="px-4 py-3 text-center">
                                     <Button 
-    variant="outline-primary" 
+    variant="outline-success" 
     size="sm"
     onClick={() => handleViewStudent(student.user || student._id)} // Update this line
     className="action-button"

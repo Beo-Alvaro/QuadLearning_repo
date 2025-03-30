@@ -32,6 +32,7 @@ const StudentProfile = () => {
     firstName: "",
     lastName: "",
     middleInitial: "",
+    suffix: "",
     gender: "",
     birthdate: "",
     contactNumber: "",
@@ -45,6 +46,8 @@ const StudentProfile = () => {
       name: "",
       occupation: "",
       contactNumber: "", // Added guardian contact number
+      fatherFullName: "",
+      motherFullName: "",
     },
     yearLevel: "",
     section: "",
@@ -108,11 +111,12 @@ const StudentProfile = () => {
 
   const getFullName = () => {
     const middle = studentData.middleInitial ? `${studentData.middleInitial} ` : ""
-    return `${studentData.firstName} ${middle}${studentData.lastName}`
+    return `${studentData.firstName} ${middle}${studentData.lastName} ${studentData.suffix}`
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
+
     if (name.includes(".")) {
       const [parent, child] = name.split(".")
       setFormData((prev) => ({
@@ -428,6 +432,32 @@ const StudentProfile = () => {
                                 )}
                               </div>
                             </Col>
+                            <Col md={6}>
+                              <div className="mb-3 position-relative">
+                                  <label className="text-muted small mb-1 d-flex align-items-center">
+                                      <FaUser className="text-success me-1" size={12} /> Suffix
+                                  </label>
+                                  {isEditing ? (
+                                      <Form.Select
+                                          name="suffix"
+                                          value={formData.suffix || ''}
+                                          onChange={handleChange}
+                                          className="border-success-subtle"
+                                      >
+                                          <option value="">No Suffix</option>
+                                          {['Jr', 'Sr', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].map((suffix) => (
+                                              <option key={suffix} value={suffix}>
+                                                  {suffix}
+                                              </option>
+                                          ))}
+                                      </Form.Select>
+                                  ) : (
+                                      <p className="fw-medium mb-0 p-2 bg-light rounded">
+                                          {studentData.suffix || 'N/A'}
+                                      </p>
+                                  )}
+                              </div>
+                          </Col>
                             <Col md={6}>
                               <div className="mb-3 position-relative">
                                 <label className="text-muted small mb-1 d-flex align-items-center">
@@ -842,6 +872,46 @@ const StudentProfile = () => {
                                         <p className="fw-medium mb-0 p-2 bg-white rounded shadow-sm">
                                           Primary Guardian
                                         </p>
+                                      </div>
+                                    </Col>
+                                    <Col md={6}>
+                                      <div className="mb-3 position-relative">
+                                        <label className="text-muted small mb-1 d-flex align-items-center">
+                                          <FaUser className="text-success me-1" size={12} />Mother's Full Name
+                                        </label>
+                                        {isEditing ? (
+                                          <Form.Control
+                                            type="text"
+                                            name="guardian.motherFullName"
+                                            value={formData.guardian?.motherFullName || ""}
+                                            onChange={handleChange}
+                                            className="border-success-subtle bg-white"
+                                          />
+                                        ) : (
+                                          <p className="fw-medium mb-0 p-2 bg-white rounded shadow-sm">
+                                            {studentData.guardian?.motherFullName || "N/A"}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </Col>
+                                    <Col md={6}>
+                                      <div className="mb-3 position-relative">
+                                        <label className="text-muted small mb-1 d-flex align-items-center">
+                                          <FaUser className="text-success me-1" size={12} />Father's Full Name
+                                        </label>
+                                        {isEditing ? (
+                                          <Form.Control
+                                            type="text"
+                                            name="guardian.fatherFullName"
+                                            value={formData.guardian?.fatherFullName || ""}
+                                            onChange={handleChange}
+                                            className="border-success-subtle bg-white"
+                                          />
+                                        ) : (
+                                          <p className="fw-medium mb-0 p-2 bg-white rounded shadow-sm">
+                                            {studentData.guardian?.fatherFullName || "N/A"}
+                                          </p>
+                                        )}
                                       </div>
                                     </Col>
                                   </Row>

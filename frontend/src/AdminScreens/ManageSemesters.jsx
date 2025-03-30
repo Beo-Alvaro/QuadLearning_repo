@@ -36,9 +36,10 @@ const ManageSemesters = () => {
             });
     
             const data = await response.json();
-            toast.success('Semester ended successfully!')
+            
             if (response.ok) {
                 fetchData(); // Refresh the list after ending the semester
+                toast.success('Semester ended successfully!')
             } else {
                 toast.error(data.message);
             }

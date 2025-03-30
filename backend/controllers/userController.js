@@ -2,8 +2,7 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import generateToken from '../utils/generateToken.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-
+import CryptoJS from 'crypto-js';
 
 const getAdminId = async (req, res) => {
     try {
@@ -24,7 +23,17 @@ const getAdminId = async (req, res) => {
 // @access  Public
 
 const authUser = asyncHandler(async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password: encryptedPassword, isEncrypted } = req.body;
+    const ENCRYPTION_KEY = process.env.VITE_ENCRYPTION_KEY
+
+    let password;
+    if (isEncrypted) {
+        // Decrypt the password
+        const bytes = CryptoJS.AES.decrypt(encryptedPassword, ENCRYPTION_KEY);
+        password = bytes.toString(CryptoJS.enc.Utf8);
+    } else {
+        password = encryptedPassword;
+    }
 
     const user = await User.findOne({ username });
 

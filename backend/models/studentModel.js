@@ -24,6 +24,10 @@ const studentSchema = mongoose.Schema(
             type: String,
             maxlength: 1,
         },
+        suffix: {
+            type: String,
+            enum: ['Jr', 'Sr', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'], 
+        },
         gender: {
             type: String,
             enum: ['Male', 'Female', 'male', 'female'], // Allow both cases
@@ -49,6 +53,8 @@ const studentSchema = mongoose.Schema(
             },
             occupation: String,
             contactNumber: String,
+            fatherFullName: String,
+            motherFullName: String,
         },
         yearLevel: {
             type: mongoose.Schema.Types.ObjectId,

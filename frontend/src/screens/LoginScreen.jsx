@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/authContext';
-import FormContainer from '../components/FormContainer';
+import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
@@ -11,19 +10,26 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+
+      // Encrypt password before sending
+      const encryptedPassword = CryptoJS.AES.encrypt(
+        password,
+        ENCRYPTION_KEY
+    ).toString();
+
         const response = await fetch('/api/users/auth', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
         });
 
         const data = await response.json();
