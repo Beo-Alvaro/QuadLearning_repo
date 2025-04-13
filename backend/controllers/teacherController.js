@@ -1227,64 +1227,61 @@ const getSubjectGrades = asyncHandler(async (req, res) => {
 });
 
 const getTeacherAdvisoryClass = asyncHandler(async (req, res) => {
-    try {
-        // Get the teacher user with populated advisorySection
-        const teacher = await User.findById(req.user._id)
-            .populate({
-                path: 'advisorySection',
-                populate: [
-                    { path: 'yearLevel', select: 'name' },
-                    { path: 'strand', select: 'name' }
-                ]
-            })
-            .lean();
+  try {
+      // Get the teacher user with populated advisorySection.section
+      const teacher = await User.findById(req.user._id)
+          .populate({
+              path: 'advisorySection.section',
+              populate: [
+                  { 
+                      path: 'yearLevel',
+                      select: 'name' 
+                  },
+                  { 
+                      path: 'strand',
+                      select: 'name' 
+                  }
+              ]
+          });
 
-        console.log('Teacher data from DB:', {
-            id: teacher._id,
-            username: teacher.username,
-            advisorySection: teacher.advisorySection
-        });
+      console.log('Teacher data:', JSON.stringify(teacher, null, 2)); // Debug log
 
-        if (!teacher || !teacher.advisorySection) {
-            return res.status(404).json({
-                success: false,
-                message: 'No advisory section found for this teacher'
-            });
-        }
+      if (!teacher.advisorySection?.section) {
+          return res.status(404).json({
+              success: false,
+              message: 'No advisory section assigned'
+          });
+      }
 
-        // Get students in this advisory section
-        const section = await Section.findById(teacher.advisorySection._id)
-            .populate('students')
-            .lean();
+      // Get the section with populated students
+      const section = await Section.findById(teacher.advisorySection.section._id)
+          .populate('yearLevel', 'name')
+          .populate('strand', 'name')
+          .populate('students');
 
-        const advisoryStudents = section?.students || [];
-        
-        console.log(`Found ${advisoryStudents.length} students in advisory section`);
+      const response = {
+          success: true,
+          advisorySection: {
+              _id: section._id,
+              name: section.name,
+              yearLevel: section.yearLevel?.name || 'Not Set',
+              strand: section.strand?.name || 'Not Set',
+              status: teacher.advisorySection.status,
+              studentCount: section.students?.length || 0
+          }
+      };
 
-        res.status(200).json({
-            success: true,
-            advisorySection: {
-                _id: teacher.advisorySection._id,
-                name: teacher.advisorySection.name,
-                yearLevel: teacher.advisorySection.yearLevel?.name || 'Not Set',
-                strand: teacher.advisorySection.strand?.name || 'Not Set',
-                studentCount: advisoryStudents.length
-            },
-            students: advisoryStudents.map(student => ({
-                _id: student._id,
-                username: student.username,
-                // Add other student fields as needed
-                isAdvisory: true // These students are definitely in the advisory section
-            }))
-        });
-    } catch (error) {
-        console.error('Error fetching teacher advisory class:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching advisory class information',
-            errorDetails: error.message
-        });
-    }
+      console.log('Response:', JSON.stringify(response, null, 2)); // Debug log
+      res.json(response);
+
+  } catch (error) {
+      console.error('Error fetching advisory class:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching advisory section',
+          error: error.message
+      });
+  }
 });
 
 
@@ -1500,62 +1497,58 @@ const getSectionStudents = asyncHandler(async (req, res) => {
  * @route   GET /api/teacher/attendance
  * @access  Private/Teacher
  */
-const getAttendanceData = async (req, res) => {
-  try {
-    const { section, month } = req.query;
+const getAttendanceData = asyncHandler(async (req, res) => {
+  const { section, month } = req.query;
 
-    if (!section || !month) {
-      return res.status(400).json({ message: 'Section and month are required' });
+  try {
+    // Check if the teacher has an advisory section
+    const teacher = await User.findById(req.user._id)
+      .populate({
+        path: 'advisorySection.section',
+        select: 'name yearLevel strand'
+      });
+
+    console.log('Teacher advisory data:', teacher.advisorySection); // Debug log
+
+    if (!teacher.advisorySection?.section) {
+      res.status(403);
+      throw new Error('Only advisory teachers can manage attendance');
     }
 
-    // Get all students in the section
-    const students = await Student.find({ section }).populate('user', 'username');
+    // Check if the requested section matches teacher's advisory section
+    if (teacher.advisorySection.section._id.toString() !== section) {
+      res.status(403);
+      throw new Error('You can only manage attendance for your advisory section');
+    }
 
-    // Get attendance data for the section and month
-    let attendanceData = await Attendance.findOne({ section, month }).populate('records.student');
+    // Find attendance records
+    const attendance = await Attendance.findOne({
+      section: section,
+      month: month,
+      teacher: req.user._id
+    }).populate('records.student');
 
-    // Create a map of existing attendance records for quick access
-    const attendanceMap = new Map(
-      attendanceData?.records.map(record => [record.student._id.toString(), record]) || []
-    );
+    if (!attendance) {
+      // Return empty records if no attendance found
+      return res.json({
+        success: true,
+        data: {
+          records: []
+        }
+      });
+    }
 
-    // Combine students with their attendance — keep existing records, add blanks for new students
-   const combinedData = students.map(student => {
-  const existingRecord = attendanceMap.get(student._id.toString());
-
-  return existingRecord
-    ? existingRecord
-    : {
-        student: {
-          _id: student._id,
-          username: student.user?.username, // Make sure 'user' is populated
-          firstName: student.firstName,
-          lastName: student.lastName
-        },
-        weeks: { week1: {}, week2: {}, week3: {}, week4: {}, week5: {} },
-        absent: 0,
-        tardy: 0,
-        remarks: ''
-      };
-});
-
-
-    // If no attendance data exists yet, create an empty structure for the response
-    const response = {
-      section,
-      month,
-      records: combinedData
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Error fetching attendance data:', error);
-    res.status(500).json({
-      message: `Error fetching attendance data: ${error.message}`,
-      stack: process.env.NODE_ENV === 'production' ? null : error.stack
+    res.json({
+      success: true,
+      data: attendance
     });
+
+  } catch (error) {
+    console.error('Error in getAttendanceData:', error);
+    res.status(error.status || 500);
+    throw new Error(error.message || 'Error fetching attendance data');
   }
-};
+});
 
 /**
  * @desc    Save attendance data for a section
@@ -1563,80 +1556,57 @@ const getAttendanceData = async (req, res) => {
  * @access  Private/Teacher
  */
 const saveAttendanceData = asyncHandler(async (req, res) => {
-    const { section, month, schoolYear, semester, records } = req.body;
-    
-    if (!section || !month || !records) {
-      res.status(400);
-      throw new Error('Section ID, month, and records are required');
-    }
-    
-    try {
-      // Check if the teacher is authorized to access this section
-      const teacherSections = await Section.find({ teacher: req.user._id });
-      const isAuthorized = teacherSections.some(s => s._id.toString() === section);
-      
-      if (!isAuthorized) {
-        res.status(403);
-        throw new Error('Not authorized to access this section');
-      }
-      
-      // Determine the correct school year
-      const currentDate = new Date();
-      const currentSchoolYear = currentDate.getMonth() >= 0
-        ? `${currentDate.getFullYear()}-${currentDate.getFullYear() + 1}`
-        : `${currentDate.getFullYear() - 1}-${currentDate.getFullYear()}`;
-      
-      // Find existing attendance data or create new
-      let attendance = await Attendance.findOne({ section, month });
-      
-      if (attendance) {
-        attendance.schoolYear = schoolYear || currentSchoolYear;
-        attendance.semester = semester || attendance.semester;
-        
-        // Merge existing records with new records
-        const updatedRecords = attendance.records.map(existingRecord => {
-          const updatedRecord = records.find(r => r.student.toString() === existingRecord.student.toString());
-          if (updatedRecord) {
-            // Merge weeks data
-            const mergedWeeks = { ...existingRecord.weeks, ...updatedRecord.weeks };
-            return { ...existingRecord, ...updatedRecord, weeks: mergedWeeks };
-          }
-          return existingRecord;
-        });
-        
-        // Add new records if they don’t exist yet
-        records.forEach(newRecord => {
-          if (!updatedRecords.some(r => r.student.toString() === newRecord.student.toString())) {
-            updatedRecords.push(newRecord);
-          }
-        });
-        
-        attendance.records = updatedRecords;
-      } else {
-        attendance = new Attendance({
-          section,
-          month,
-          schoolYear: schoolYear || currentSchoolYear,
-          semester,
-          records,
-          teacher: req.user._id
-        });
-      }
-      
-      await attendance.save();
-      
-      console.log('Saved attendance data:', attendance);
-  
-      res.status(201).json({
-        success: true,
-        message: 'Attendance data saved successfully'
+  const { section, month, records } = req.body;
+
+  try {
+    // Check if the teacher has an advisory section
+    const teacher = await User.findById(req.user._id)
+      .populate({
+        path: 'advisorySection.section',
+        select: 'name yearLevel strand'
       });
-    } catch (error) {
-      console.error('Error saving attendance data:', error);
-      res.status(500);
-      throw new Error('Error saving attendance data: ' + error.message);
+
+    console.log('Teacher advisory data:', teacher.advisorySection); // Debug log
+
+    if (!teacher.advisorySection?.section) {
+      res.status(403);
+      throw new Error('Only advisory teachers can manage attendance');
     }
-  });
+
+    // Check if the requested section matches teacher's advisory section
+    if (teacher.advisorySection.section._id.toString() !== section) {
+      res.status(403);
+      throw new Error('You can only manage attendance for your advisory section');
+    }
+
+    // Find or create attendance record
+    let attendance = await Attendance.findOneAndUpdate(
+      {
+        section: section,
+        month: month,
+        teacher: req.user._id
+      },
+      {
+        $set: { records: records }
+      },
+      {
+        new: true,
+        upsert: true
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Attendance saved successfully',
+      data: attendance
+    });
+
+  } catch (error) {
+    console.error('Error in saveAttendanceData:', error);
+    res.status(error.status || 500);
+    throw new Error(error.message || 'Error saving attendance data');
+  }
+});
 
   const getAttendanceSummary = async (req, res) => {
     try {
