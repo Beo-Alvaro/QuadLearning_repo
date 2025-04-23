@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
+import { testApiConnection } from '../diagnostics';
+
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
@@ -12,70 +14,92 @@ const LoginScreen = () => {
   const navigate = useNavigate();
   const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
   const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+  // Add a useEffect to run the API connection test when the component loads
+  useEffect(() => {
+    const runDiagnostics = async () => {
+      console.log('Running API connection diagnostics...');
+      const result = await testApiConnection();
+      console.log('Diagnostics result:', result);
+    };
+    
+    runDiagnostics();
+  }, []);
+
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    console.log('Using API URL:', API_URL);
 
     try {
-
       // Encrypt password before sending
       const encryptedPassword = CryptoJS.AES.encrypt(
         password,
         ENCRYPTION_KEY
-    ).toString();
+      ).toString();
 
-        const response = await fetch(`${API_URL}/users/auth`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            if (response.status === 423) {
-                // Handle account lockout
-                throw new Error(data.message || 'Account is locked. Please try again later.');
-            }
-            throw new Error(data.message || 'Invalid credentials');
-        }
-
-        // Debugging: Log data to verify the response structure
+      console.log('Sending login request to:', `${API_URL}/users/auth`);
+      
+      const response = await fetch(`${API_URL}/users/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers]));
+      
+      let data;
+      try {
+        data = await response.json();
         console.log('Response data:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        throw new Error('Server returned invalid JSON response');
+      }
 
-        // Save the token and user info to localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userInfo', JSON.stringify(data.user));
-
-        setLoading(false);
-        // Navigate to dashboard based on role
-        if (data.user.role === 'student') {
-            navigate('./StudentScreens/StudentHomeScreen');
-        } else if (data.user.role === 'teacher') {
-            navigate('./TeacherScreens/TeacherHomeScreen');
-        } else if (data.user.role === 'admin') {
-            navigate('./AdminScreens/AdminHomeScreen');
+      if (!response.ok) {
+        if (response.status === 423) {
+          // Handle account lockout
+          throw new Error(data.message || 'Account is locked. Please try again later.');
         }
+        throw new Error(data.message || 'Invalid credentials');
+      }
+
+      // Save the token and user info to localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify(data.user));
+
+      setLoading(false);
+      // Navigate to dashboard based on role
+      if (data.user.role === 'student') {
+        navigate('./StudentScreens/StudentHomeScreen');
+      } else if (data.user.role === 'teacher') {
+        navigate('./TeacherScreens/TeacherHomeScreen');
+      } else if (data.user.role === 'admin') {
+        navigate('./AdminScreens/AdminHomeScreen');
+      }
     } catch (err) {
-        setLoading(false);
-        setError(err.message);
-        
-        // Add visual feedback for remaining attempts
-        if (err.message.includes('attempts remaining')) {
-            setError(
-                <div>
-                    <p>{err.message}</p>
-                    <small className="text-danger mb-5">
-                        Warning: Your account will be locked for 15 minutes after 5 failed attempts
-                    </small>
-                </div>
-            );
-        }
+      setLoading(false);
+      setError(err.message);
+      
+      // Add visual feedback for remaining attempts
+      if (err.message.includes('attempts remaining')) {
+        setError(
+          <div>
+            <p>{err.message}</p>
+            <small className="text-danger mb-5">
+              Warning: Your account will be locked for 15 minutes after 5 failed attempts
+            </small>
+          </div>
+        );
+      }
     }
-};
+  };
 
   return (
     <div 
