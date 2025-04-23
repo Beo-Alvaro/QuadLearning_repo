@@ -15,6 +15,37 @@ const port = process.env.PORT || 5000;
 
 const app = express();
 
+// CORS configuration
+app.use((req, res, next) => {
+    // Allow requests from Vercel frontend and local development
+    const allowedOrigins = [
+        'https://quadlearning-frontend.vercel.app',
+        'http://localhost:3000',
+        // Add any other origins as needed
+    ];
+    
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    // Allow credentials
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
+    // Allow specific headers
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    // Allow specific methods
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    
+    next();
+});
+
 // Middleware setup
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(express.json()); // For parsing application/json
