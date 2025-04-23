@@ -8,6 +8,8 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext'; 
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 const AdminSidebar = () => {
     const [loading, setLoading] = useState(false); // Define loading state
     const [error, setError] = useState('');
@@ -20,7 +22,7 @@ const AdminSidebar = () => {
         setError('');       // Clear any previous errors
     
         try {
-            const response = await fetch('/api/users/logout', {
+            const response = await fetch(`${API_URL}/users/logout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

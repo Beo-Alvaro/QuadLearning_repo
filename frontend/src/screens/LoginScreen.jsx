@@ -11,6 +11,7 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -24,7 +25,7 @@ const LoginScreen = () => {
         ENCRYPTION_KEY
     ).toString();
 
-        const response = await fetch('/api/users/auth', {
+        const response = await fetch(`${API_URL}/users/auth`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

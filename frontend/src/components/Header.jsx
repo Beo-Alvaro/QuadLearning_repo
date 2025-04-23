@@ -8,7 +8,7 @@ const Header = () => {
   const [error, setError] = useState('');
   const [userName, setUserName] = useState(''); // State for username
   const navigate = useNavigate(); // Define navigate
-
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
 
   useEffect(() => {
     // Retrieve user info from localStorage when the component mounts
@@ -26,7 +26,7 @@ const Header = () => {
     setError('');       // Clear any previous errors
 
     try {
-        const response = await fetch('/api/users/logout', {
+        const response = await fetch(`${API_URL}/users/logout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
