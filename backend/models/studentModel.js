@@ -24,9 +24,9 @@ const studentSchema = mongoose.Schema(
             type: String,
             maxlength: 1,
         },
-        middleInitial: {
-            type: String, // Middle initial is optional
-            maxlength: 1,
+        suffix: {
+            type: String,
+            enum: ['Jr', 'Sr', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'], 
         },
         gender: {
             type: String,
@@ -52,6 +52,9 @@ const studentSchema = mongoose.Schema(
                 // required: true removed
             },
             occupation: String,
+            contactNumber: String,
+            fatherFullName: String,
+            motherFullName: String,
         },
         yearLevel: {
             type: mongoose.Schema.Types.ObjectId,
@@ -89,12 +92,13 @@ const studentSchema = mongoose.Schema(
     { timestamps: true } // Add createdAt and updatedAt fields
 );
 
-// Add virtual for grades
+// Update the grades virtual to include proper population
 studentSchema.virtual('grades', {
     ref: 'Grade',
     localField: '_id',
     foreignField: 'student',
-    justOne: false // This is a one-to-many relationship
+    justOne: false, // This is a one-to-many relationship
+    options: { sort: { 'semester.startDate': -1 } } // Sort by semester start date
 });
 
 // Add virtual population for user data

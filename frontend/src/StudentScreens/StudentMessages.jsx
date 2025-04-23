@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { sendMessage, fetchAdminId } from "../services/messageService"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import { Container, Row, Col, Form, Button, Alert, Card } from "react-bootstrap"
-
+import { ToastContainer, toast } from 'react-toastify';
 const StudentMessages = () => {
   const [adminId, setAdminId] = useState(null)
   const [message, setMessage] = useState("")
@@ -43,7 +43,7 @@ const StudentMessages = () => {
       await sendMessage(message, adminId, token)
       setSuccess(true)
       setMessage("")
-      setTimeout(() => setSuccess(false), 3000)
+      toast.success('Message sent successfully!')
     } catch (error) {
       console.error("Error sending message:", error)
     }
@@ -52,6 +52,7 @@ const StudentMessages = () => {
   return (
     <>
       <StudentDashboardNavbar />
+      <ToastContainer />
       <Container className="py-5">
         <Row className="justify-content-center">
           <Col md={8} lg={6}>
@@ -65,12 +66,6 @@ const StudentMessages = () => {
   🚨 Warning: Misuse of this feature, including sending inappropriate or joke messages, 
   may result in disciplinary action.
 </Alert>
-                {success && (
-                  <Alert variant="success" className="mb-4 text-center">
-                    <i className="bi bi-check-circle-fill me-2"></i>
-                    Message sent successfully!
-                  </Alert>
-                )}
                 <Form onSubmit={handleSendMessage}>
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-bold">Your Message</Form.Label>

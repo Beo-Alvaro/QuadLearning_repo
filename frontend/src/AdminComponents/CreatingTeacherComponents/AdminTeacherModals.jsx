@@ -82,7 +82,7 @@ const AdminTeacherModals = ({
                             <h6 className="mb-3">Basic Information</h6>
                             <div style={modalStyles.formGrid}>
                                 <Form.Group>
-                                    <Form.Label>Username*</Form.Label>
+                                    <Form.Label>Username</Form.Label>
                                     <Form.Control
                                         type="text"
                                         value={newUser.username}
@@ -92,7 +92,7 @@ const AdminTeacherModals = ({
                                     />
                                 </Form.Group>
                                 <Form.Group>
-                                    <Form.Label>Password*</Form.Label>
+                                    <Form.Label>Password</Form.Label>
                                     <Form.Control
                                         type="password"
                                         value={newUser.password}
@@ -116,7 +116,7 @@ const AdminTeacherModals = ({
 
                         
 
-            <Form.Label>Sections*</Form.Label>
+            <Form.Label>Sections</Form.Label>
             {sections.map((section) => (
               <Form.Check
                 key={section._id}
@@ -133,16 +133,19 @@ const AdminTeacherModals = ({
                         gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                         gap: '0.5rem' 
                     }}>
-            <Form.Label>Semesters*</Form.Label>
-            {semesters.map((semester) => (
-              <Form.Check
-                key={semester._id}
-                type="checkbox"
-                label={`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
-                checked={newUser.semesters?.includes(semester._id)}
-                onChange={(e) => handleCheckboxChange(e, 'semesters', semester._id)}
-              />
-            ))}
+            <Form.Label>Semesters</Form.Label>
+            {semesters
+                .filter(semester => semester.status === 'active')
+                .map((semester) => (
+                    <Form.Check
+                        key={semester._id}
+                        type="checkbox"
+                        label={`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
+                        checked={newUser.semesters?.includes(semester._id)}
+                        onChange={(e) => handleCheckboxChange(e, 'semesters', semester._id)}
+                    />
+                ))
+            }
           </div>
                                     <Form.Label>Advisory Section</Form.Label>
                                     <Form.Select
@@ -163,32 +166,49 @@ const AdminTeacherModals = ({
 
                         
 
-                        {/* Subjects Section */}
-                        <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-                            <h6 className="mb-3">Subject Assignment</h6>
-                            <div className="subjects-grid" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '0.5rem' 
-                    }}>
-            {availableSubjects.length > 0 ? (
-              availableSubjects.map((subject) => (
-                <Form.Check
-                  key={subject._id}
-                  type="checkbox"
-                  label={subject.name}
-                  checked={newUser.subjects?.includes(subject._id)}
-                  onChange={(e) => handleCheckboxChange(e, 'subjects', subject._id)}
-                  disabled={!newUser.sections.length || !newUser.semesters.length}
-                />
-              ))
-            ) : (
-              <p className="text-muted">
-                Please select sections and semesters to view available subjects
-              </p>
-            )}
-          </div>
-                        </div>
+                      {/* Subjects Section */}
+ <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
+     <h6 className="mb-3">Subject Assignment</h6>
+     {availableSubjects.length > 0 && (
+         <Form.Check
+             type="checkbox"
+             label="Select All"
+             onChange={(e) => {
+                 const allSubjects = availableSubjects.map(subject => subject._id);
+                 setNewUser({
+                     ...newUser,
+                     subjects: e.target.checked ? allSubjects : []
+                 });
+             }}
+             checked={
+                 availableSubjects.length > 0 &&
+                 newUser.subjects.length === availableSubjects.length
+             }
+         />
+     )}
+     <div className="subjects-grid" style={{ 
+         display: 'grid', 
+         gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+         gap: '0.5rem' 
+     }}>
+         {availableSubjects.length > 0 ? (
+             availableSubjects.map((subject) => (
+                 <Form.Check
+                     key={subject._id}
+                     type="checkbox"
+                     label={subject.name}
+                     checked={newUser.subjects?.includes(subject._id)}
+                     onChange={(e) => handleCheckboxChange(e, 'subjects', subject._id)}
+                     disabled={!newUser.sections.length || !newUser.semesters.length}
+                 />
+             ))
+         ) : (
+             <p className="text-muted">
+                 Please select sections and semesters to view available subjects
+             </p>
+         )}
+     </div>
+ </div>
 
                         {error && <div className="alert alert-danger mt-3">{error}</div>}
                     </Form>
@@ -234,7 +254,7 @@ const AdminTeacherModals = ({
                             <h6 className="mb-3">Teaching Assignment</h6>
                             <div style={modalStyles.formGrid}>
                                 <Form.Group>
-                                    <Form.Label>Sections*</Form.Label>
+                                    <Form.Label>Sections</Form.Label>
                                     <Form.Select
                                         multiple
                                         value={editUser.sections}
@@ -271,7 +291,7 @@ const AdminTeacherModals = ({
                                 </Form.Group>
 
                                 <Form.Group>
-                                    <Form.Label>Semesters*</Form.Label>
+                                    <Form.Label>Semesters</Form.Label>
                                     <Form.Select
                                         multiple
                                         value={editUser.semesters}
@@ -281,48 +301,71 @@ const AdminTeacherModals = ({
                                         })}
                                         required
                                     >
-                                        {semesters.map((semester) => (
-                                            <option key={semester._id} value={semester._id}>
-                                                {semester.name}
-                                            </option>
-                                        ))}
+                                        {semesters
+                                            .filter(semester => semester.status === 'active')
+                                            .map((semester) => (
+                                                <option key={semester._id} value={semester._id}>
+                                            {`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
+                                                </option>
+                                            ))
+                                        }
                                     </Form.Select>
                                 </Form.Group>
                             </div>
                         </div>
 
                         {/* Subjects Section */}
-                        <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-                            <h6 className="mb-3">Subject Assignment</h6>
-                            <Form.Group>
-                                <Form.Label>Subjects*</Form.Label>
-                                {loading ? (
-                                    <p>Loading subjects...</p>
-                                ) : availableSubjects.length > 0 ? (
-                                    <Form.Select
-                                        multiple
-                                        value={editUser.subjects}
-                                        onChange={(e) => setEditUser({
-                                            ...editUser,
-                                            subjects: Array.from(e.target.selectedOptions, option => option.value)
-                                        })}
-                                        required
-                                    >
-                                        {availableSubjects.map((subject) => (
-                                            <option key={subject._id} value={subject._id}>
-                                                {subject.name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                ) : (
-                                    <p className="text-muted">
-                                        {editUser.sections.length === 0 || editUser.semesters.length === 0
-                                            ? "Please select sections and semesters to view available subjects"
-                                            : "No subjects available for the selected sections and semesters"}
-                                    </p>
-                                )}
-                            </Form.Group>
-                        </div>
+ <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
+     <h6 className="mb-3">Subject Assignment</h6>
+     <Form.Group>
+         <Form.Label>Subjects*</Form.Label>
+         {loading ? (
+             <p>Loading subjects...</p>
+         ) : availableSubjects.length > 0 ? (
+             <>
+                 <div className="mb-2">
+                     <Form.Check 
+                         type="checkbox"
+                         label="Select All"
+                         onChange={(e) => {
+                             setEditUser({
+                                 ...editUser,
+                                 subjects: e.target.checked
+                                     ? availableSubjects.map(subject => subject._id)
+                                     : []
+                             });
+                         }}
+                         checked={
+                             availableSubjects.length > 0 &&
+                             editUser.subjects.length === availableSubjects.length
+                         }
+                     />
+                 </div>
+                 <Form.Select
+                     multiple
+                     value={editUser.subjects}
+                     onChange={(e) => setEditUser({
+                         ...editUser,
+                         subjects: Array.from(e.target.selectedOptions, option => option.value)
+                     })}
+                     required
+                 >
+                     {availableSubjects.map((subject) => (
+                         <option key={subject._id} value={subject._id}>
+                             {subject.name}
+                         </option>
+                     ))}
+                 </Form.Select>
+             </>
+         ) : (
+             <p className="text-muted">
+                 {editUser.sections.length === 0 || editUser.semesters.length === 0
+                     ? "Please select sections and semesters to view available subjects"
+                     : "No subjects available for the selected sections and semesters"}
+             </p>
+         )}
+     </Form.Group>
+ </div>
 
                         {error && <div className="alert alert-danger mt-3">{error}</div>}
                     </Form>

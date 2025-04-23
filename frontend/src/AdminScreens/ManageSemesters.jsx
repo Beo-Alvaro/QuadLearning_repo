@@ -10,6 +10,8 @@ import { useSemesterDataContext } from '../hooks/useSemesterDataContext'
 import SemesterForm from '../AdminComponents/CreateSemesterComponents/SemesterForm';
 import SemesterTable from '../AdminComponents/CreateSemesterComponents/SemesterTable';
 import SemesterModal from '../AdminComponents/CreateSemesterComponents/SemesterModal';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ManageSemesters = () => {
     const navigate = useNavigate();
@@ -35,10 +37,21 @@ const ManageSemesters = () => {
         setSemesters
     } = useSemesterDataContext();
 
+    const {
+        semesters,
+        fetchData,
+        addSemester,
+        updateSemester,
+        deleteSemester,
+        loading,
+        error,
+        strands,
+        yearLevels,
+        setSemesters
+    } = useSemesterDataContext();
+
     const endSemester = async (semesterId) => {
         const token = localStorage.getItem('token')
-        if (!window.confirm('Are you sure you want to end this semester?')) return;
-        
         try {
             const response = await fetch(`/api/admin/endSemester/${semesterId}`, {
                 method: 'PUT',
@@ -50,11 +63,12 @@ const ManageSemesters = () => {
     
             const data = await response.json();
             
+            
             if (response.ok) {
-                alert(data.message);
                 fetchData(); // Refresh the list after ending the semester
+                toast.success('Semester ended successfully!')
             } else {
-                alert(data.message);
+                toast.error(data.message);
             }
         } catch (error) {
             console.error('Error ending semester:', error);
@@ -77,6 +91,7 @@ const ManageSemesters = () => {
             });
             fetchData(); // Refresh the list after submission
             resetFormState();
+            toast.success('Semester created successfully!');
             alert('Semester created successfully!');
         } catch (error) {
             console.error("Error adding semester:", error);
@@ -98,6 +113,7 @@ const ManageSemesters = () => {
             await updateSemester(updatedSemester, selectedSemesterId);
             
             setEditModalShow(false);
+            toast.success('Semester updated successfully!')
             alert('Semester updated successfully!');
         } catch (error) {
             console.error("Error updating semester:", error);
@@ -117,6 +133,7 @@ const ManageSemesters = () => {
             await deleteSemester(id);
             fetchData(); // Refresh the list after deletion
             setShow(false);
+            toast.error('Semester deleted successfully!')
             alert('Semester deleted successfully!');
         } catch (error) {
             console.error("Error deleting semester:", error);
@@ -132,6 +149,7 @@ const ManageSemesters = () => {
     const handleShow = (semesterId) => {
         setselectedSemesterId(semesterId);
         setShow(true);
+        toast.warn('Are you sure you want to delete this semester? This action is permanent and cannot be undone.')
     };
 
     const handleEdit = (semester) => {
@@ -156,6 +174,7 @@ const ManageSemesters = () => {
             <AdminSidebar />
             <div className="d-flex">
                 <main className="main-content flex-grow-1">
+                <ToastContainer />
                     <Container>
                         <Card className="mt-4">
                             <Card.Header>

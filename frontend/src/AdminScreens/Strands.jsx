@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from 'react';
-import { Container, Card, Form, Button } from 'react-bootstrap';
+import { Container, Card, Form, Button, Toast } from 'react-bootstrap';
 import AdminSidebar from "../AdminComponents/AdminSidebar";
 import { useNavigate } from 'react-router-dom';
 import StrandModal from '../AdminComponents/CreateStrandsComponents/StrandModal';
 import Header from '../components/Header';
 import StrandTable from '../AdminComponents/CreateStrandsComponents/StrandTable';
 import { useStrandsDataContext } from '../hooks/useStrandsDataContext';
-
+import { ToastContainer, toast } from 'react-toastify';
 const AdminCreateStrand = () => {
     const navigate = useNavigate();
     const {
@@ -33,6 +33,7 @@ const AdminCreateStrand = () => {
     const handleDeleteShow = (strandId) => {
         setSelectedStrandId(strandId);
         setShow(true); // Show the delete confirmation modal
+        toast.warn('Are you sure you want to delete this strand? This action is permanent and cannot be undone.')
     };
 
     const handleDelete = () => {
@@ -80,6 +81,7 @@ const AdminCreateStrand = () => {
         <>
             <Header />
             <AdminSidebar />
+            <ToastContainer />
             <div className="d-flex">
                 <main className="main-content flex-grow-1">
                     <Container>

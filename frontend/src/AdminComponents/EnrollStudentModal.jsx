@@ -1,5 +1,6 @@
 import { Modal, Button, Form } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, strands, filteredSections, semesters, error, subjects, setPendingStudents, pendingStudents, setError}) => {
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const modalStyles = {
@@ -54,6 +55,7 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                     setPendingStudents(pendingStudents.filter(pending => pending._id !== userId));
                 }
                 onClose(); // Close modal
+                toast.success('Student enrolled successfully!')
             } else {
                 setError(data.message || 'Failed to enroll student');
             }
@@ -180,8 +182,8 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                     (typeof semester.yearLevel === 'object' 
                         ? semester.yearLevel._id === newUser.yearLevel 
                         : semester.yearLevel === newUser.yearLevel);
-                
-                return hasValidStrand && hasValidYearLevel;
+                const isActive = semester.status === 'active' || semester.isActive === true;
+                return hasValidStrand && hasValidYearLevel && isActive;
             })
             .map(semester => {
                 // Safely extract strand and year level names

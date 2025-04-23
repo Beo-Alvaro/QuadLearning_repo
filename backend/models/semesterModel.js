@@ -29,7 +29,7 @@ const semesterSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    status: { type: String, enum: ['active', 'pending'], default: 'active' }
+    status: { type: String, enum: ['active', 'inactive'], default: 'active' }
 }, { 
     timestamps: true 
 });

@@ -58,7 +58,7 @@ const SemesterForm = ({
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Semester Name</Form.Label>
+          <Form.Label>Semester Period</Form.Label>
           <Form.Control
             as="select"
             value={name}

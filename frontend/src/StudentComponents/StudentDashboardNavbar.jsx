@@ -68,13 +68,14 @@ function StudentDashboardNavbar() {
                 className="d-inline-block align-top"
               />{' '}
             </Navbar.Brand>
-    <Navbar.Brand href="/login/TeacherScreens/TeacherHomeScreen" className="text-white me-4">TVNHS</Navbar.Brand>
+    <Navbar.Brand className="text-white me-4">TVNHS</Navbar.Brand>
     <Navbar.Toggle aria-controls="basic-navbar-nav" />
     <Navbar.Collapse id="basic-navbar-nav">
       <Nav className="mx-auto">
               <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentHomeScreen">Home</Nav.Link>
               <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentProfile">Profile</Nav.Link>
               <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentViewGrades">Grades</Nav.Link>
+              <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentMessages">Contact Admin</Nav.Link>
             </Nav>
             <Nav>
             <Nav.Link 

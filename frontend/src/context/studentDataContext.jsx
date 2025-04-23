@@ -61,9 +61,7 @@ export const StudentDataProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+
   
 
   return (

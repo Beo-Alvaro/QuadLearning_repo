@@ -20,19 +20,27 @@ const sectionSchema = new mongoose.Schema({
         ref: 'Strand',
         required: true 
     }, // Reference to the strand
-
     yearLevel: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'YearLevel',
         required: true 
     }, // Reference to the year level
-
     advisoryClass: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Link to a teacher who is assigned as the advisor
-        required: false, // Advisory class is optional, can be updated later
-        default: null, // Default is null
-      },
+        teacher: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        status: {
+            type: String,
+            enum: ['active', 'inactive'],
+            default: 'active'
+        }
+    },    
+    status: {
+        type: String,
+        default: 'active',
+        enum: ['active', 'inactive'],
+    }
 }, { 
     timestamps: true 
 });

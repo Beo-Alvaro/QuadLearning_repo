@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useState, useMemo } from 'react';
 // Create Context
 export const GradeDataContext = createContext();
 
@@ -300,53 +300,59 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
       };
   
       const fetchData = async () => {
-          try {
-              const token = localStorage.getItem('token');
-              if (!token) throw new Error('No authentication token found');
-              if (!currentSemester) return;
-  
-              const [sectionsResponse, subjectsResponse] = await Promise.all([
-                  fetch('/api/teacher/sections', {
-                      headers: { Authorization: `Bearer ${token}` },
-                  }),
-                  fetch(`/api/teacher/subjects?semesterId=${currentSemester}`, {
-                      headers: { Authorization: `Bearer ${token}` },
-                  })
-              ]);
-  
-              if (!sectionsResponse.ok) throw new Error(`Sections fetch failed: ${sectionsResponse.statusText}`);
-              if (!subjectsResponse.ok) throw new Error(`Subjects fetch failed: ${subjectsResponse.statusText}`);
-  
-              const sectionsData = await sectionsResponse.json();
-              const subjectsData = await subjectsResponse.json();
-  
-              console.log('Fetched Sections:', sectionsData);
-  
-              const advisorySection = sectionsData.find(section => section.advisoryClass);
-              setTeacherAdvisoryClassId(advisorySection?.advisoryClass || '');
-  
-              const uniqueStrands = [...new Set(sectionsData
-                  .filter(section => section.strand?.name)
-                  .map(section => section.strand.name))];
-  
-              const uniqueYearLevels = [...new Set(sectionsData
-                  .filter(section => section.yearLevel?.name)
-                  .map(section => section.yearLevel.name))];
-  
-              const uniqueSections = [...new Set(sectionsData.map(section => section.name))];
-  
-              setStrands(uniqueStrands);
-              setYearLevels(uniqueYearLevels);
-              setSections(sectionsData);
-              setAvailableSections(uniqueSections); // Set available sections for the filter
-              setSubjects(subjectsData);
-          } catch (error) {
-              console.error('Error fetching data:', error);
-              setError(error.message);
-          } finally {
-              setLoading(false);
-          }
-      };  
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('No authentication token found');
+            if (!currentSemester) return;
+    
+            const [sectionsResponse, subjectsResponse] = await Promise.all([
+                fetch('/api/teacher/sections', {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`/api/teacher/subjects?semesterId=${currentSemester}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            ]);
+    
+            const sectionsData = await sectionsResponse.json();
+            const subjectsData = await subjectsResponse.json();
+    
+            if (!sectionsData || !Array.isArray(sectionsData)) {
+                throw new Error('Invalid sections data received');
+            }
+    
+            if (!subjectsData || !Array.isArray(subjectsData)) {
+                throw new Error('Invalid subjects data received');
+            }
+    
+            console.log('Fetched Sections:', sectionsData);
+    
+            const advisorySection = sectionsData.find(section => section.advisoryClass);
+            setTeacherAdvisoryClassId(advisorySection?.advisoryClass || '');
+    
+            const uniqueStrands = [...new Set(sectionsData
+                .filter(section => section.strand?.name)
+                .map(section => section.strand.name))];
+    
+            const uniqueYearLevels = [...new Set(sectionsData
+                .filter(section => section.yearLevel?.name)
+                .map(section => section.yearLevel.name))];
+    
+            const uniqueSections = [...new Set(sectionsData.map(section => section.name))];
+    
+            setStrands(uniqueStrands);
+            setYearLevels(uniqueYearLevels);
+            setSections(sectionsData);
+            setAvailableSections(uniqueSections); // Set available sections for the filter
+            setSubjects(subjectsData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
 
       const value = {
         selectedSubject,
@@ -398,6 +404,7 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
         bulkSaveGrades,
         saveStudentGrade,
         isBulkSaving,
+        setShowAdvisoryOnly
     };
 
 

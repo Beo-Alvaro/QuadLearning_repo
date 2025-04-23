@@ -98,11 +98,13 @@ const SubjectForm = () => {
                     >
                         <option value="">Select Term</option>
                         {filteredSemesters && filteredSemesters.length > 0 ? (
-                            filteredSemesters.map((semester) => (
-                                <option key={semester._id} value={semester._id}>
-                                    {`${semester.name} - ${semester.strand.name}`}
-                                </option>
-                            ))
+                            filteredSemesters
+                                .filter(semester => semester.status === 'active')
+                                .map((semester) => (
+                                    <option key={semester._id} value={semester._id}>
+                                        {`${semester.name} - ${semester.strand.name}`}
+                                    </option>
+                                ))
                         ) : (
                             <option value="">No semesters available</option>
                         )}

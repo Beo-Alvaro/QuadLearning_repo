@@ -67,5 +67,8 @@ const gradeSchema = mongoose.Schema(
     { timestamps: true }
 );
 
+// Add this index for better query performance
+gradeSchema.index({ student: 1, yearLevel: 1, 'semester.status': 1 });
+
 const Grade = mongoose.model("Grade", gradeSchema);
 export default Grade;
