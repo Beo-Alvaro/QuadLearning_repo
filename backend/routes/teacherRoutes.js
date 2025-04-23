@@ -59,4 +59,3 @@ router.get('/subjects/semester/:semesterId', protect, teacher, (req, res) => {
 router.get('/getSemesters', getTeacherSemesters);
 
 export default router;
-

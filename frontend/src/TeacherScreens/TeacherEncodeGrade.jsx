@@ -412,6 +412,7 @@ const handleGradeChange = (e, studentId, gradeType) => {
                     setSelectedYearLevel={setSelectedYearLevel}
                     setSelectedSection={setSelectedSection}
                     setCurrentSemester={setCurrentSemester}
+                    setCurrentSemester={setCurrentSemester}
                 />
 
                 {!selectedSubject ? (

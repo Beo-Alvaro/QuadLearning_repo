@@ -4,9 +4,7 @@ import { /* createAdmin, */ updateUserAccount, resetUserPassword, initializeYear
 
 
 const router = express.Router();
-/* router.route('/users').get(protect, authorizeRoles('admin'), getUserList); */
-/* router.route('/:id').put(protect, authorizeRoles('admin'), updateUserAccount); */
-/* router.route('/assign-student/:studentId').put(protect, authorizeRoles('admin'), assignStudentToTeacher); */
+
 router.route('/users/:id').delete(protect, authorizeRoles('admin'), deleteUserAccount);
 router.route('/addUsers').post(protect, authorizeRoles('admin'), createUserAccount);
 router.route('/getUsers').get(protect, authorizeRoles('admin'), getAllUsers);

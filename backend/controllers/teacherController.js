@@ -27,12 +27,11 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
     const { studentId } = req.params;
     const teacherId = req.user._id; // Authenticated teacher's ID
 
-
-      // First get the user to get their section
-      const user = await User.findById(studentId)
-      .populate('sections')
-      .populate('strand')
-      .populate('yearLevel')
+    // First get the user to get their section
+    const user = await User.findById(studentId)
+        .populate('sections')
+        .populate('strand')
+        .populate('yearLevel');
 
     if (!user) {
         res.status(404);
@@ -48,26 +47,24 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
 
     // Fetch teacher's assigned sections
     const teacherSections = await Section.find({ teacher: teacherId });
-    
+
     // Check if teacher is authorized for this section
-    const isAuthorized = teacherSections.some(section => 
+    const isAuthorized = teacherSections.some(section =>
         section._id.toString() === userSection._id.toString()
     );
-
 
     if (!isAuthorized) {
         res.status(403);
         throw new Error('Not authorized to update this student');
     }
 
-
+    
     // Find the student record
-    const student = await Student.findOne({ user: studentId });
+    const student = await findOne({ user: studentId });
     if (!student) {
         res.status(404);
         throw new Error('Student record not found');
     }
-
 
     // Update fields based on the student model
     const {
@@ -86,7 +83,6 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Update basic information
-
     if (firstName) student.firstName = firstName;
     if (lastName) student.lastName = lastName;
     if (middleInitial) student.middleInitial = middleInitial;
@@ -134,10 +130,8 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
             section: updatedStudent.section?.name,
             strand: updatedStudent.strand?.name,
         }
-
     });
 });
-
 
 // @desc    Get grades for a specific student
 // @route   GET /api/grades/student/:studentId
@@ -1158,7 +1152,6 @@ const getSubjectStudents = asyncHandler(async (req, res) => {
   }
 });
 
-
 // @desc    Get grades for students in a subject
 // @route   GET /api/teacher/grades/:subjectId
 // @access  Private (teacher only)
@@ -1283,7 +1276,6 @@ const getTeacherAdvisoryClass = asyncHandler(async (req, res) => {
       });
   }
 });
-
 
 // @desc    Get teacher dashboard data
 // @route   GET /api/teacher/dashboard

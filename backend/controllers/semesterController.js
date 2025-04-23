@@ -7,9 +7,6 @@ import mongoose from 'mongoose';
 // @desc    Get all semesters
 // @route   GET /api/semesters
 // @access  Private
-// semesterController.js or in your existing route file
-// In your semesterController or routes file
-// controllers/semesterController.js
 const getSemesters = asyncHandler(async (req, res) => {
     try {
         const semesters = await Semester.find({})
