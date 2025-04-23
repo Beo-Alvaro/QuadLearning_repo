@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "serve -s dist"
   },
   "dependencies": {
     "bootstrap": "^5.3.3",
@@ -22,7 +23,8 @@
     "react-router-bootstrap": "^0.26.3",
     "react-router-dom": "^6.27.0",
     "react-toastify": "^11.0.5",
-    "recharts": "^2.13.3"
+    "recharts": "^2.13.3",
+    "serve": "^14.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
