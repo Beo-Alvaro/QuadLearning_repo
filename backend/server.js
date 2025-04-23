@@ -48,7 +48,11 @@ app.get('/health', (req, res) => {
     message: 'Server started',
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection ? mongoose.connection.readyState : 'not initialized'
+    mongodb: mongoose.connection ? mongoose.connection.readyState : 'not initialized',
+    routes: {
+      auth: ['/api/users/auth', '/api/auth'],
+      note: 'Route /api/auth is redirected to /api/users/auth for compatibility'
+    }
   });
 });
 
@@ -79,6 +83,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// Add redirect for incorrect route
+app.use('/api/auth', (req, res, next) => {
+  console.log('Redirecting from /api/auth to /api/users/auth');
+  // Change the URL path
+  req.url = '/auth';
+  // Forward to the correct route
+  return userRoutes(req, res, next);
+});
+
 // Start server immediately without waiting for DB
 const server = app.listen(port, () => {
   console.log(`Server started on port ${port}`);
@@ -108,7 +121,11 @@ connectDB()
         message: 'Server is healthy',
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
-        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        routes: {
+          auth: ['/api/users/auth', '/api/auth'],
+          note: 'Route /api/auth is redirected to /api/users/auth for compatibility'
+        }
       });
     });
 
