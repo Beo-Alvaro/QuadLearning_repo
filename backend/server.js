@@ -21,12 +21,18 @@ app.use((req, res, next) => {
     const allowedOrigins = [
         'https://quadlearning-frontend.vercel.app',
         'http://localhost:3000',
-        // Add any other origins as needed
+        'https://quadlearningrepo-production.up.railway.app',
+        'https://quadlearningrepo-frontend-production.up.railway.app',
+        // Allow any Railway subdomain
+        /\.railway\.app$/
     ];
     
     const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
+    if (origin) {
+        // Check if origin is in allowedOrigins or matches the Railway domain pattern
+        if (allowedOrigins.includes(origin) || /\.railway\.app$/.test(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+        }
     }
     
     // Allow credentials
