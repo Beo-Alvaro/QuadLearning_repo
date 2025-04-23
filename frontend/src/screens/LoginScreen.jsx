@@ -3,7 +3,7 @@ import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
-import api from '../utils/api';
+import { loginUser } from '../utils/directApi';
 
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
@@ -26,13 +26,13 @@ const LoginScreen = () => {
         ENCRYPTION_KEY
       ).toString();
 
-      // Use our API utility instead of fetch
-      const { data } = await api.post('/users/auth', { 
+      // Use the direct login utility instead of fetch
+      const data = await loginUser({
         username, 
         password: encryptedPassword, 
         isEncrypted: true 
       });
-
+      
       // Debugging: Log data to verify the response structure
       console.log('Response data:', data);
 

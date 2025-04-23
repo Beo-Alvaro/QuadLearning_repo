@@ -26,9 +26,8 @@
       "dest": "/img/$1"
     },
     {
-      "src": "/api/users/auth",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "https://147.93.29.231:5000/api/users/auth"
+      "src": "/api/auth",
+      "dest": "/api/auth.js"
     },
     { 
       "src": "/api/(.*)", 

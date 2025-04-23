@@ -1,0 +1,10 @@
+{
+  "name": "quadlearning-api",
+  "version": "1.0.0",
+  "description": "API functions for QuadLearning",
+  "main": "index.js",
+  "dependencies": {
+    "http-proxy-middleware": "^2.0.6",
+    "node-fetch": "^2.6.7"
+  }
+} 
