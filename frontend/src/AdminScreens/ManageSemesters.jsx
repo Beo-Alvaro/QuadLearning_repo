@@ -22,6 +22,19 @@ const ManageSemesters = () => {
     const [editModalShow, setEditModalShow] = useState(false);
     const [selectedYearLevel, setSelectedYearLevel] = useState('');
 
+    const {
+        semesters,
+        fetchData,
+        addSemester,
+        updateSemester,
+        deleteSemester,
+        loading,
+        error,
+        strands,
+        yearLevels,
+        setSemesters
+    } = useSemesterDataContext();
+
     const endSemester = async (semesterId) => {
         const token = localStorage.getItem('token')
         if (!window.confirm('Are you sure you want to end this semester?')) return;
@@ -36,7 +49,7 @@ const ManageSemesters = () => {
             });
     
             const data = await response.json();
-    
+            
             if (response.ok) {
                 alert(data.message);
                 fetchData(); // Refresh the list after ending the semester
@@ -47,34 +60,6 @@ const ManageSemesters = () => {
             console.error('Error ending semester:', error);
         }
     };
-    
-
-    const {
-        semesters,
-        fetchData,
-        addSemester,
-        updateSemester, // Use this directly from context
-        deleteSemester,
-        loading,
-        error,
-        strands,
-        yearLevels,
-        setSemesters
-    } = useSemesterDataContext();
-    
-
-    const {
-        semesters,
-        fetchData,
-        addSemester,
-        updateSemester, // Use this directly from context
-        deleteSemester,
-        loading,
-        error,
-        strands,
-        yearLevels,
-        setSemesters
-    } = useSemesterDataContext();
     
     useEffect(() => {
         fetchData(); 
@@ -92,6 +77,7 @@ const ManageSemesters = () => {
             });
             fetchData(); // Refresh the list after submission
             resetFormState();
+            alert('Semester created successfully!');
         } catch (error) {
             console.error("Error adding semester:", error);
         }
@@ -112,6 +98,7 @@ const ManageSemesters = () => {
             await updateSemester(updatedSemester, selectedSemesterId);
             
             setEditModalShow(false);
+            alert('Semester updated successfully!');
         } catch (error) {
             console.error("Error updating semester:", error);
         }
@@ -130,6 +117,7 @@ const ManageSemesters = () => {
             await deleteSemester(id);
             fetchData(); // Refresh the list after deletion
             setShow(false);
+            alert('Semester deleted successfully!');
         } catch (error) {
             console.error("Error deleting semester:", error);
         }
