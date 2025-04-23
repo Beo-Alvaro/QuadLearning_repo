@@ -50,8 +50,8 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     mongodb: mongoose.connection ? mongoose.connection.readyState : 'not initialized',
     routes: {
-      auth: ['/api/users/auth', '/api/auth'],
-      note: 'Route /api/auth is redirected to /api/users/auth for compatibility'
+      auth: ['/api/users/auth', '/api/auth', '/api/auth/login'],
+      note: 'Multiple auth routes available for compatibility'
     }
   });
 });
@@ -83,13 +83,53 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Add redirect for incorrect route
-app.use('/api/auth', (req, res, next) => {
-  console.log('Redirecting from /api/auth to /api/users/auth');
-  // Change the URL path
-  req.url = '/auth';
-  // Forward to the correct route
-  return userRoutes(req, res, next);
+// Remove the previous redirect middleware
+// Add explicit handler for /api/auth
+app.post('/api/auth', async (req, res) => {
+  try {
+    console.log('Handling POST request to /api/auth');
+    console.log('Request body:', req.body);
+    
+    // Import the authUser controller function directly
+    const { authUser } = await import('./controllers/userController.js');
+    
+    // Call the controller function directly
+    await authUser(req, res);
+    
+  } catch (error) {
+    console.error('Error in /api/auth handler:', error);
+    res.status(500).json({ 
+      message: 'Internal server error in auth handler', 
+      error: error.message 
+    });
+  }
+});
+
+// Add OPTIONS handler for CORS preflight requests
+app.options('/api/auth', (req, res) => {
+  console.log('Handling OPTIONS request to /api/auth');
+  res.status(200).end();
+});
+
+// Add a fallback login handler for /api/auth/login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    console.log('Handling fallback login request to /api/auth/login');
+    console.log('Request body:', req.body);
+    
+    // Import needed modules
+    const { authUser } = await import('./controllers/userController.js');
+    
+    // Call the controller function directly
+    await authUser(req, res);
+    
+  } catch (error) {
+    console.error('Error in fallback login handler:', error);
+    res.status(500).json({ 
+      message: 'Internal server error in login handler', 
+      error: error.message 
+    });
+  }
 });
 
 // Start server immediately without waiting for DB
@@ -123,8 +163,8 @@ connectDB()
         timestamp: new Date().toISOString(),
         mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
         routes: {
-          auth: ['/api/users/auth', '/api/auth'],
-          note: 'Route /api/auth is redirected to /api/users/auth for compatibility'
+          auth: ['/api/users/auth', '/api/auth', '/api/auth/login'],
+          note: 'Multiple auth routes available for compatibility'
         }
       });
     });
