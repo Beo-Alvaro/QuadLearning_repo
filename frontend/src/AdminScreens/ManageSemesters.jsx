@@ -24,6 +24,19 @@ const ManageSemesters = () => {
     const [editModalShow, setEditModalShow] = useState(false);
     const [selectedYearLevel, setSelectedYearLevel] = useState('');
 
+    const {
+        semesters,
+        fetchData,
+        addSemester,
+        updateSemester,
+        deleteSemester,
+        loading,
+        error,
+        strands,
+        yearLevels,
+        setSemesters
+    } = useSemesterDataContext();
+
     const endSemester = async (semesterId) => {
         const token = localStorage.getItem('token')
         try {
@@ -47,20 +60,6 @@ const ManageSemesters = () => {
             console.error('Error ending semester:', error);
         }
     };
-    
-
-    const {
-        semesters,
-        fetchData,
-        addSemester,
-        updateSemester, // Use this directly from context
-        deleteSemester,
-        loading,
-        error,
-        strands,
-        yearLevels,
-        setSemesters
-    } = useSemesterDataContext();
     
     useEffect(() => {
         fetchData(); 
