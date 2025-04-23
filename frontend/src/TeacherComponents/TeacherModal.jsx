@@ -1,4 +1,5 @@
 import { Table, Button,  Card, Modal, Badge } from 'react-bootstrap';
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherModal = ({
     showModal,
     setShowModal,
@@ -82,6 +83,16 @@ const TeacherModal = ({
                 <h4 className="mb-0 text-muted">Academic Performance</h4>
             </div>
         
+            {selectedStudent.grades && selectedStudent.grades.length > 0 ? (
+    selectedStudent.grades.map((semesterGrades, index) => (
+        <div key={index} className="mb-4">
+            <div className="d-flex align-items-center mb-2">
+                <i className="bi bi-calendar-event text-primary me-2"></i>
+                <h5 className="mb-0">
+                    {semesterGrades.yearLevel} - {semesterGrades.semesterInfo?.name || 'Unknown Semester'}
+                </h5>
+            </div>
+            
             <Card className="border shadow-sm">
                 <Table responsive hover className='mb-0 text-center'>
                     <thead className="table-light">
@@ -94,28 +105,34 @@ const TeacherModal = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {selectedStudent.grades.map((grade, index) => (
-                            grade.subjects.map((subject, idx) => (
-                                <tr key={`${index}-${idx}`} 
-                                    className={subject.finalRating < 75 ? 'table-warning' : ''}>
-                                    <td>{subject.subjectName}</td>
-                                    <td>{subject.midterm}</td>
-                                    <td>{subject.finals}</td>
-                                    <td>{subject.finalRating}</td>
-                                    <td>
-                                        <Badge 
-                                            bg={subject.finalRating >= 75 ? 'success' : 'danger'}
-                                            className="px-2 py-1"
-                                        >
-                                            {subject.finalRating >= 75 ? 'Passed' : 'Failed'}
-                                        </Badge>
-                                    </td>
-                                </tr>
-                            ))
+                        {semesterGrades.subjects.map((subject, idx) => (
+                            <tr key={idx} 
+                                className={subject.finalRating < 75 ? 'table-warning' : ''}>
+                                <td>{subject.subject?.name || subject.subjectName || 'Unknown Subject'}</td>
+                                <td>{subject.midterm || '-'}</td>
+                                <td>{subject.finals || '-'}</td>
+                                <td>{subject.finalRating || '-'}</td>
+                                <td>
+                                    <Badge 
+                                        bg={subject.finalRating >= 75 ? 'success' : 'danger'}
+                                        className="px-2 py-1"
+                                    >
+                                        {subject.action || (subject.finalRating >= 75 ? 'PASSED' : 'FAILED')}
+                                    </Badge>
+                                </td>
+                            </tr>
                         ))}
                     </tbody>
                 </Table>
             </Card>
+        </div>
+    ))
+) : (
+    <div className="text-center p-4 border rounded-3">
+        <i className="bi bi-exclamation-circle text-muted fs-1"></i>
+        <p className="mt-2">No grades available for this student.</p>
+    </div>
+)}
         </div>
 
         <div className="text-center mt-4">

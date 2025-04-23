@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-
+import { toast } from 'react-toastify';
 export const SubjectDataContext = createContext();
 
 export const SubjectDataProvider = ({ children }) => {
@@ -73,6 +73,7 @@ export const SubjectDataProvider = ({ children }) => {
             } else {
                 fetchAllData();
                 console.log('Subject created successfully');
+                toast.success('Subject created successfully!')
             }
         } catch (error) {
             setError('An error occurred while creating the subject');
@@ -113,6 +114,7 @@ export const SubjectDataProvider = ({ children }) => {
           setError('An error occurred while updating the subject');
         }
         fetchAllData();
+        toast.success('Subject updated successfully!')
       };
       
       

@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import Semester from '../models/semesterModel.js';
+import Section from '../models/sectionModel.js'
 import User from '../models/userModel.js';
 import mongoose from 'mongoose';
 
@@ -71,16 +72,28 @@ const endSemester = async (req, res) => {
 
         // Update students' status to pending
         const updatedStudents = await User.updateMany(
-            { yearLevel: new mongoose.Types.ObjectId(semester.yearLevel), status: 'active' },
+            { yearLevel: semester.yearLevel, semester: semester._id, status: 'active' }, 
             { status: 'pending' }
         );
+    
+       // Update sections' status to inactive (if sections belong to this year level)
+       const updatedSections = await Section.updateMany(
+        { yearLevel: semester.yearLevel, status: 'active' }, // <- Fixed this
+        { status: 'inactive' }
+    );
+
+    // Update advisory sections' status to inactive
+    const updatedAdvisorySections = await User.updateMany(
+        { advisoryClass: { $exists: true }, yearLevel: semester.yearLevel, status: 'active' },
+        { status: 'inactive' }
+    );
 
         // Update semester status to pending
-        semester.status = 'pending';
+        semester.status = 'inactive';
         await semester.save();
 
-        console.log(updatedStudents);
-        res.status(200).json({ message: 'Semester ended, students set to pending, and semester marked as pending' });
+        console.log(updatedStudents, updatedSections, updatedAdvisorySections);
+        res.status(200).json({ message: 'Semester ended, students set to pending, and semester marked as inactive' });
     } catch (error) {
         console.error('Error in endSemester:', error);
         res.status(500).json({ message: 'Failed to end semester', error: error.message });

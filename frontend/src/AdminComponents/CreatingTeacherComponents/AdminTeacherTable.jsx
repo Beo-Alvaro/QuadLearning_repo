@@ -45,7 +45,7 @@ const AdminTeacherTable = ({
                                 </td>
                                 <td>
                                     <span className="text-muted">
-                                        {user.advisorySection?.name || 'Not Assigned'}
+                                        {user.advisorySection?.section?.name || 'Not Assigned'}
                                     </span>
                                 </td>
                                 <td>

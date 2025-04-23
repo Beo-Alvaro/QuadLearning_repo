@@ -1,33 +1,40 @@
-import React from "react";
-import { Table, Button, Form, InputGroup } from "react-bootstrap";
+import React, { useState } from "react";
+import { Table, Button, Form, InputGroup, Modal } from "react-bootstrap";
 import { FaSearch } from "react-icons/fa";
-import { useState } from "react";
-const SemesterTable = ({
-  handleEdit,
-  handleShow,
-  semesters,
-  endSemester
-}) => {
+import { toast } from 'react-toastify';
+const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [endShow, setEndShow] = useState(false);
+  const [selectedSemesterId, setSelectedSemesterId] = useState(null);
 
-        const [searchTerm, setSearchTerm] = useState('');
-        const [entriesPerPage, setEntriesPerPage] = useState(10);
-        const [currentPage, setCurrentPage] = useState(1);
-    // Filtering and Pagination
-    const filteredSemesters = semesters
+  // Filtering and Pagination
+  const filteredSemesters = semesters
     .filter((semester) => semester.status?.trim().toLowerCase() === "active")
     .filter((semester) => semester?.name?.toLowerCase().includes(searchTerm.toLowerCase()));
-  
-    const indexOfLastEntry = currentPage * entriesPerPage;
-    const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-    const currentEntries = filteredSemesters.slice(indexOfFirstEntry, indexOfLastEntry);
-    console.log(currentEntries)
-    const totalPages = Math.ceil(filteredSemesters.length / entriesPerPage);
 
-    const handlePageChange = (direction) => {
-        if (direction === 'prev' && currentPage > 1) setCurrentPage(currentPage - 1);
-        if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = filteredSemesters.slice(indexOfFirstEntry, indexOfLastEntry);
 
+  const totalPages = Math.ceil(filteredSemesters.length / entriesPerPage);
+
+  const handlePageChange = (direction) => {
+    if (direction === 'prev' && currentPage > 1) setCurrentPage(currentPage - 1);
+    if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handleEndShow = (semesterId) => {
+    setSelectedSemesterId(semesterId);
+    setEndShow(true);
+    toast.warn('Are you sure you want to end the semester? All students will be set to pending, and this action cannot be undone.');
+  };
+
+  const handleEndClose = () => {
+    setEndShow(false);
+    setSelectedSemesterId(null);
+  };
 
   return (
     <div>
@@ -105,9 +112,14 @@ const SemesterTable = ({
                     <i className="bi bi-trash me-1"></i>
                     Delete
                   </Button>
-                  <Button variant="outline-danger"
+                  <Button
+                    variant="outline-danger"
                     size="sm"
-                    className="btn-action" onClick={() => endSemester(semester._id)}>End</Button>
+                    className="btn-action"
+                    onClick={() => handleEndShow(semester._id)}
+                  >
+                    End
+                  </Button>
                 </div>
               </td>
             </tr>
@@ -135,6 +147,33 @@ const SemesterTable = ({
           Next
         </Button>
       </div>
+
+      {/* End Semester Confirmation Modal */}
+      <Modal show={endShow} onHide={handleEndClose}>
+        <Modal.Header closeButton>
+          <Modal.Title className='text-center w-100'>END SEMESTER CONFIRMATION</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className='text-center w-100'>
+          Are you sure you want to end this semester? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer className="justify-content-center">
+          <Button variant="outline-secondary" className="px-4" onClick={handleEndClose}>
+            Cancel
+          </Button>
+          <Button
+          variant="outline-danger"
+          className="px-4"
+          onClick={() => {
+            if (selectedSemesterId) {
+              endSemester(selectedSemesterId);
+              handleEndClose(); // Close the modal after ending the semester
+            }
+          }}
+        >
+          End Semester
+        </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

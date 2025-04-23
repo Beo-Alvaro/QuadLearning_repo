@@ -51,9 +51,6 @@
 }
 
 .status-badge {
-    position: absolute;
-    bottom: 0;
-    right: 0;
     background: #22c55e;
     color: white;
     padding: 0.25rem 0.75rem;
@@ -232,6 +229,15 @@
     color: var(--text-primary);
     font-weight: 500;
 }
+
+.custom-nav .nav-link {
+    color: green !important; /* Inactive tab text color */
+  }
+  
+  .custom-nav .nav-link.active {
+    color: black !important; /* Active tab text color */
+  }
+  
 
 /* Responsive Design */
 @media (max-width: 768px) {

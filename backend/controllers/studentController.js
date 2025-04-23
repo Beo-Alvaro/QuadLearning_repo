@@ -1,177 +1,263 @@
 import asyncHandler from 'express-async-handler';
-import User from '../models/userModel.js';
 import Student from '../models/studentModel.js'; 
-import Subject from '../models/subjectModel.js'; // Import Subject model
-import Section from '../models/sectionModel.js';
-import Strand from '../models/strandModel.js';
+import Grade from '../models/gradeModel.js';
 
 // @desc    Get logged-in student's profile
 // @route   GET /api/student/profile
 // @access  Private/Student
 const viewStudentProfile = asyncHandler(async (req, res) => {
     try {
-        // Debug logs
-        console.log('User ID:', req.user._id);
-  
+        // Find the student with populated fields including subjects
         const student = await Student.findOne({ user: req.user._id })
-        .populate('section')
-        .populate('strand')
-        .populate('yearLevel')
-        .populate({
-            path: 'grades.semester',
-            model: 'Semester'
-        })
-        .populate({
-            path: 'grades.subjects.subject',
-            model: 'Subject',
-            populate: {
-                path: 'teachers', // Assuming your Subject model has a 'teachers' field
-                model: 'User',
-                select: 'username' // Select specific fields you want to show
+            .populate('section', 'name')
+            .populate('strand', 'name')
+            .populate('yearLevel', 'name')
+            .populate({
+                path: 'userData',
+                select: 'subjects',
+                populate: {
+                    path: 'subjects',
+                    select: 'name code'
+                }
+            })
+            .lean();
+            
+            if (!student) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Student profile not found'
+                });
             }
+
+        // Separately fetch grades with proper population
+        const grades = await Grade.find({ 
+            student: student._id,
+            'semester.status': 'active' 
         })
+        .populate('semester', 'name status startDate')
+        .populate('subjects.subject', 'name code')
         .lean();
-     
-         console.log('Raw student data:', student); // Add this debug log
-     
-         if (!student) {
-             return res.status(404).json({
-                 success: false,
-                 message: 'Student profile not found'
-             });
-         }
-     
-         const formattedData = {
-             success: true,
-             data: {
-                 firstName: student.firstName || '',
-                 lastName: student.lastName || '',
-                 middleInitial: student.middleInitial || '',
-                 gender: student.gender || '',
-                 birthdate: student.birthdate ? new Date(student.birthdate).toISOString().split('T')[0] : '',
-                 contactNumber: student.contactNumber || '',
-                 birthplace: {
-                     province: student.birthplace?.province || '',
-                     municipality: student.birthplace?.municipality || '',
-                     barrio: student.birthplace?.barrio || ''
-                 },
-                 address: student.address || '',
-                 guardian: {
-                     name: student.guardian?.name || '',
-                     occupation: student.guardian?.occupation || ''
-                 },
-                 yearLevel: student.yearLevel?.name || '',
-                 section: student.section?.name || '',
-                 strand: student.strand?.name || '',
-                 school: {
-                     name: 'Tropical Village National Highschool',
-                     year: student.school?.year || ''
-                 },
-                 grades: {
-                     subjects: student.grades && student.grades.length > 0 
-                         ? student.grades[0].subjects.map(subj => ({
-                             name: subj.subject?.name || '',
-                             code: subj.subject?.code || '',
-                             semester: {
-                                name: subj.semester?.name || 
-                                       student.grades[0].semester?.name || 
-                                       'Not Specified'
-                            },
-                             midterm: subj.midterm || 0,
-                             finals: subj.finals || 0,
-                             finalRating: subj.finalRating || 0,
-                             action: subj.action || ''
-                         })) 
-                         : [],
-                     semester: student.grades && student.grades.length > 0 
-                         ? student.grades[0].semester?.name || '' 
-                         : ''
-                 }
-             }
-         };
-     
-         console.log('Formatted data:', formattedData); // Add this debug log
-         res.status(200).json(formattedData);
-     
-     } catch (error) {
-         console.error('Error in viewStudentProfile:', error);
-         res.status(500).json({
-             success: false,
-             message: 'Error fetching student profile',
-             error: error.message
-         });
-     }
+
+        // Get current semester grades
+        const currentSemesterGrades = grades[0] || { subjects: [] };
+
+        const formattedData = {
+            success: true,
+            data: {
+                firstName: student.firstName || '',
+                lastName: student.lastName || '',
+                middleInitial: student.middleInitial || '',
+                suffix: student.suffix || '',
+                gender: student.gender || '',
+                birthdate: student.birthdate || '',
+                contactNumber: student.contactNumber || '',
+                birthplace: {
+                    province: student.birthplace?.province || '',
+                    municipality: student.birthplace?.municipality || '',
+                    barrio: student.birthplace?.barrio || ''
+                },
+                address: student.address || '',
+                guardian: {
+                    name: student.guardian?.name || '',
+                    occupation: student.guardian?.occupation || '',
+                    contactNumber: student.guardian?.contactNumber || '',
+                },
+                yearLevel: student.yearLevel?.name || '',
+                section: student.section?.name || '',
+                strand: student.strand?.name || '',
+                school: {
+                    name: student.school?.name || 'Tropical Village National Highschool',
+                    year: student.school?.year || ''
+                },
+                grades: {
+                    subjects: student.userData?.subjects?.map(subject => ({
+                        name: subject.name || 'Unknown Subject',
+                        code: subject.code || 'N/A',
+                        section: student.section?.name || 'N/A',
+                        yearLevel: student.yearLevel?.name || 'N/A'
+                    })) || [],
+                    semester: grades?.semester?.name || ''
+                }
+            }
+        };
+
+        // Add debug logs
+        console.log('Found grades:', {
+            count: grades.length,
+            subjects: currentSemesterGrades.subjects?.length
+        });
+
+        res.status(200).json(formattedData);
+    } catch (error) {
+        console.error('Error in viewStudentProfile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching student profile',
+            error: error.message
+        });
+    }
 });
 
 // @desc    Get student grades
 // @route   GET /api/student/grades
 // @access  Private/Student
 const viewStudentGrades = asyncHandler(async (req, res) => {
-  try {
-      console.log('User ID:', req.user._id);
+    try {
+        // Find student and populate necessary fields
+        const student = await Student.findOne({ user: req.user._id })
+            .populate('strand', 'name')
+            .populate('yearLevel', 'name')
+            .lean();
 
-      // Find the student and populate necessary fields
-      const student = await Student.findOne({ user: req.user._id })
-          .select('grades')
-          .populate({
-              path: 'grades.subjects.subject',
-              select: 'name code'
-          })
-          .populate({
-              path: 'grades.semester',
-              select: 'name'
-          })
-          .populate('strand', 'name')
-          .lean();
+        if (!student) {
+            console.log('No student found for user:', req.user._id);
+            return res.status(404).json({
+                success: false,
+                message: 'Student not found'
+            });
+        }
 
-      console.log('Found student:', student); // Debug log
+        // Fetch grades with all necessary populations
+        const grades = await Grade.find({ 
+            student: student.user,
+            semester: { $exists: true }
+        })
+        .populate({
+            path: 'semester',
+            select: 'name status startDate yearLevel',
+            match: { status: { $in: ['active', 'completed', 'pending'] } },
+            populate: {
+                path: 'yearLevel',
+                select: 'name'
+            }
+        })
+        .populate('subjects.subject', 'name code')
+        .populate('strand', 'name')
+        .populate('yearLevel', 'name')
+        .sort({ 'semester.yearLevel': 1, 'semester.startDate': 1 })
+        .lean();
 
-      if (!student) {
-          return res.status(404).json({
-              success: false,
-              message: 'Student not found'
-          });
-      }
+     // Group grades by year level
+     const groupedGrades = grades.reduce((acc, grade) => {
+        const yearLevel = grade.semester?.yearLevel?.name || "Unspecified Year";
+        
+        if (!acc[yearLevel]) {
+            acc[yearLevel] = [];
+        }
 
-      // Check if grades exist
-      if (!student.grades || student.grades.length === 0) {
-          return res.status(200).json({
-              success: true,
-              data: [],
-              message: 'No grades available'
-          });
-      }
+        acc[yearLevel].push({
+            name: grade.semester?.name || 'Unknown Semester',
+            strand: grade.strand?.name || student.strand?.name,
+            yearLevel: yearLevel,
+            subjects: grade.subjects.map(subj => ({
+                name: subj.subject?.name || 'Unknown Subject',
+                code: subj.subject?.code || 'N/A',
+                midterm: subj.midterm || 0,
+                finals: subj.finals || 0,
+                finalRating: subj.finalRating || 0,
+                action: subj.action || (subj.finalRating >= 75 ? 'PASSED' : 'FAILED')
+            }))
+        });
 
-      // Format grades by semester
-      const formattedGrades = student.grades.map(grade => ({
-          name: grade.semester?.name || 'Unknown Semester',
-          strand: student.strand?.name || 'Unknown Strand',
-          subjects: grade.subjects.map(subj => ({
-              name: subj.subject?.name || 'Unknown Subject',
-              code: subj.subject?.code || 'N/A',
-              midterm: subj.midterm,
-              finals: subj.finals,
-              finalRating: subj.finalRating
-          }))
-      }));
+        return acc;
+    }, {});
 
-      console.log('Formatted grades:', formattedGrades); // Debug log
+    // Convert to array format
+    const formattedData = Object.entries(groupedGrades).map(([yearLevel, semesters]) => ({
+        yearLevel,
+        semesters: semesters.sort((a, b) => a.name.localeCompare(b.name))
+    }));
 
-      res.status(200).json({
-          success: true,
-          data: formattedGrades
-      });
+    return res.status(200).json({
+        success: true,
+        data: formattedData
+    });
 
-  } catch (error) {
-      console.error('Detailed error in viewStudentGrades:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Error fetching grades',
-          error: error.message,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
-  }
+} catch (error) {
+    console.error('Error in viewStudentGrades:', error);
+    return res.status(500).json({
+        success: false,
+        message: 'Error fetching grades',
+        error: error.message
+    });
+}
 });
 
+const updateStudentProfile = asyncHandler(async (req, res) => {
+    try {
+        // Get the authenticated student's ID from the request
+        const studentId = req.user._id;
 
-export { viewStudentProfile, viewStudentGrades };
+        // Find the student record
+        const student = await Student.findOne({ user: studentId });
+        if (!student) {
+            res.status(404);
+            throw new Error('Student record not found');
+        }
+
+        // Update fields based on the student model
+        const {
+            firstName,
+            lastName,
+            middleInitial,
+            suffix,
+            gender,
+            birthdate,
+            birthplace,
+            address,
+            guardian,
+            contactNumber,
+        } = req.body;
+
+        // Update basic information
+        if (firstName) student.firstName = firstName;
+        if (lastName) student.lastName = lastName;
+        if (middleInitial) student.middleInitial = middleInitial;
+        if (suffix) student.suffix = suffix;
+        if (gender) student.gender = gender;
+        if (birthdate) student.birthdate = birthdate;
+        if (birthplace) student.birthplace = birthplace;
+        if (address) student.address = address;
+        if (guardian) student.guardian = { ...student.guardian, ...guardian };
+        if (contactNumber) student.contactNumber = contactNumber;
+
+        // Save the student
+        await student.save();
+
+        // Fetch the updated student with populated fields
+        const updatedStudent = await Student.findOne({ user: studentId })
+            .populate('yearLevel')
+            .populate('section')
+            .populate('strand');
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            student: {
+                firstName: updatedStudent.firstName,
+                lastName: updatedStudent.lastName,
+                middleInitial: updatedStudent.middleInitial,
+                suffix: updatedStudent.suffix,
+                gender: updatedStudent.gender,
+                birthdate: updatedStudent.birthdate,
+                birthplace: updatedStudent.birthplace,
+                address: updatedStudent.address,
+                guardian: updatedStudent.guardian,
+                contactNumber: updatedStudent.contactNumber,
+                yearLevel: updatedStudent.yearLevel?.name,
+                section: updatedStudent.section?.name,
+                strand: updatedStudent.strand?.name,
+            }
+        });
+
+    } catch (error) {
+        console.error('Error updating student profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating profile',
+            error: error.message
+        });
+    }
+});
+
+export { viewStudentProfile, viewStudentGrades, updateStudentProfile };

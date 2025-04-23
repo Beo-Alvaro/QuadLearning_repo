@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
+        const storedUser = localStorage.getItem('userInfo');
 
         if (storedToken) {
             setToken(storedToken);
@@ -27,9 +27,13 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const getAdmin = async () => {
-            if (token && user && !adminId) { // Making sure user and token are both set
-                const id = await fetchAdminId();
-                if (id) setAdminId(id);
+            if (token && user && !adminId) { // Ensure token and user are both set
+                try {
+                    const id = await fetchAdminId();
+                    if (id) setAdminId(id);
+                } catch (error) {
+                    console.error('Failed to fetch admin ID:', error);
+                }
             }
         };
         getAdmin();

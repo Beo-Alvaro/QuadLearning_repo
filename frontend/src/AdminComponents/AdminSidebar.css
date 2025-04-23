@@ -98,6 +98,10 @@
     margin-right: 10px; /* Add right margin to icons */
 }
 
+.icon{
+    margin-right: 10px;
+}
+
 .sidebar-dropdown-content.show {
     max-height: 500px;
     opacity: 1;

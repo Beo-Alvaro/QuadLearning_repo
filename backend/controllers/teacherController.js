@@ -4,6 +4,7 @@ import Section from '../models/sectionModel.js';
 import Student from '../models/studentModel.js';
 import Subject from '../models/subjectModel.js';
 import Semester from '../models/semesterModel.js';
+import YearLevel from '../models/yearLevelModel.js';
 import Grade from '../models/gradeModel.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
@@ -11,6 +12,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
 import mongoose from 'mongoose';
+import Attendance from '../models/attendanceModel.js';
+import dayjs from 'dayjs';
+
 // Derive __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename)
@@ -67,6 +71,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
         firstName,
         lastName,
         middleInitial,
+        suffix,
         gender,
         birthdate,
         birthplace,
@@ -81,6 +86,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
     if (firstName) student.firstName = firstName;
     if (lastName) student.lastName = lastName;
     if (middleInitial) student.middleInitial = middleInitial;
+    if (suffix) student.suffix = suffix;
     if (gender) student.gender = gender;
     if (birthdate) student.birthdate = birthdate;
     if (birthplace) student.birthplace = birthplace;
@@ -111,6 +117,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
             firstName: updatedStudent.firstName,
             lastName: updatedStudent.lastName,
             middleInitial: updatedStudent.middleInitial,
+            suffix: updatedStudent.suffix,
             gender: updatedStudent.gender,
             birthdate: updatedStudent.birthdate,
             birthplace: updatedStudent.birthplace,
@@ -243,19 +250,34 @@ const importStudents = asyncHandler(async (req, res) => {
 
 
 const addGrade = asyncHandler(async (req, res) => {
-    const { studentId, subjectId, semesterId, midterm, finals } = req.body;
+  const { studentId, subjectId, semesterId, midterm, finals, section, yearLevel } = req.body;
 
-    // Validate required fields
-    if (!studentId || !subjectId || !semesterId) {
+  if (!studentId || !subjectId || !semesterId || !section || !yearLevel) {
     res.status(400);
-        throw new Error('Student ID, Subject ID, and Semester ID are required');
-  }
+    throw new Error('Student ID, Subject ID, Semester ID, Section, and Year Level are required');
+}
+
 
   try {
         // Convert IDs to ObjectId
         const objectIdStudent = new mongoose.Types.ObjectId(studentId);
         const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
         const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
+
+        const sectionRecord = await Section.findOne({ name: section }); // Assuming section name is unique
+        if (!sectionRecord) {
+            res.status(400);
+            throw new Error("Section not found");
+        }
+        const objectIdSection = sectionRecord._id;
+        
+        const yearLevelREcord = await YearLevel.findOne({ name: yearLevel }); // Assuming section name is unique
+        if (!yearLevelREcord) {
+            res.status(400);
+            throw new Error("Section not found");
+        }
+        const objectIdYearLevel = yearLevelREcord._id;
+
 
         // Calculate final rating (40% midterm, 60% finals)
         const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
@@ -267,9 +289,12 @@ const addGrade = asyncHandler(async (req, res) => {
 
         // Find existing grade for this student, semester, and subject
     let grade = await Grade.findOne({
-            student: objectIdStudent,
-            semester: objectIdSemester,
-            'subjects.subject': objectIdSubject
+      student: objectIdStudent,
+      semester: objectIdSemester,
+      schoolYear: req.body.schoolYear, // Include schoolYear if needed
+      yearLevel: objectIdYearLevel,   // Include yearLevel if needed
+      section: objectIdSection,       // Include section if needed
+      strand: req.body.strand ,         // Include strand if needed
         });
 
         let result;
@@ -301,19 +326,22 @@ const addGrade = asyncHandler(async (req, res) => {
         } else {
             // Create new grade
             grade = new Grade({
-                student: objectIdStudent,
-                semester: objectIdSemester,
-                subjects: [{
-                    subject: objectIdSubject,
-                    midterm: midtermValue,
-                    finals: finalsValue,
-                    finalRating: parseFloat(finalRating),
-                    action
-                }]
-            });
+              student: objectIdStudent,
+              semester: objectIdSemester,
+              yearLevel: objectIdYearLevel,   // Save year level
+              section: objectIdSection,    // Save section
+              subjects: [{
+                  subject: objectIdSubject,
+                  midterm: midtermValue,
+                  finals: finalsValue,
+                  finalRating: parseFloat(finalRating),
+                  action
+              }]
+          });
 
             result = await grade.save();
         }
+        console.log('Received IDs:', { studentId, subjectId, semesterId, section, yearLevel });
 
         // Log the saved grade for debugging
         console.log('Saved grade:', {
@@ -340,7 +368,6 @@ const addGrade = asyncHandler(async (req, res) => {
   }
 });
 
-
 const bulkAddGrades = asyncHandler(async (req, res) => {
     try {
         const updates = req.body.updates;
@@ -356,7 +383,7 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
         let updatedGrades = [];
 
         for (const update of updates) {
-            const { studentId, subjectId, semesterId, midterm, finals } = update;
+          const { studentId, subjectId, semesterId, midterm, finals, schoolYear, yearLevel, section, strand } = update;
             
             if (!studentId || !subjectId || !semesterId) {
                 console.warn('Skipping update with missing required fields:', update);
@@ -368,32 +395,53 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
             const objectIdSubject = new mongoose.Types.ObjectId(subjectId);
             const objectIdSemester = new mongoose.Types.ObjectId(semesterId);
 
+            const sectionRecord = await Section.findOne({ name: section }); // Assuming section name is unique
+            if (!sectionRecord) {
+                res.status(400);
+                throw new Error("Section not found");
+            }
+            const objectIdSection = sectionRecord._id;
+            
+            const yearLevelREcord = await YearLevel.findOne({ name: yearLevel }); // Assuming section name is unique
+            if (!yearLevelREcord) {
+                res.status(400);
+                throw new Error("Section not found");
+            }
+            const objectIdYearLevel = yearLevelREcord._id;
+
             // Calculate final rating
             const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
             const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
             const finalRating = (midtermValue * 0.4 + finalsValue * 0.6).toFixed(2);
             const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
 
-            // Find existing grade for this student, semester, and subject
+            // Find existing grade including the new fields
             let grade = await Grade.findOne({
+              student: objectIdStudent,
+              semester: objectIdSemester,
+              schoolYear,
+              yearLevel: objectIdYearLevel,
+              section: objectIdSection,
+              strand
+          });
+
+          if (!grade) {
+            // Create new grade document
+            grade = new Grade({
                 student: objectIdStudent,
                 semester: objectIdSemester,
-                'subjects.subject': objectIdSubject
+                schoolYear,
+                yearLevel: objectIdYearLevel,
+                section: objectIdSection,
+                strand,
+                subjects: [{
+                    subject: objectIdSubject,
+                    midterm: midtermValue,
+                    finals: finalsValue,
+                    finalRating: parseFloat(finalRating),
+                    action
+                }]
             });
-
-            if (!grade) {
-                // Create new grade document
-                grade = new Grade({
-                    student: objectIdStudent,
-                    semester: objectIdSemester,
-                    subjects: [{
-                        subject: objectIdSubject,
-                        midterm: midtermValue,
-                        finals: finalsValue,
-                        finalRating: parseFloat(finalRating),
-                        action
-                    }]
-                });
             } else {
                 // Find the subject in the subjects array
                 const subjectIndex = grade.subjects.findIndex(
@@ -421,17 +469,20 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
             // Save the grade
             await grade.save();
             
-            // Add to updated grades
-            updatedGrades.push({
-                studentId,
-                subjectId,
-                midterm: midtermValue,
-                finals: finalsValue,
-                finalRating,
-                action
-            });
-        }
-
+           // Add to updated grades
+           updatedGrades.push({
+            studentId,
+            subjectId,
+            schoolYear,
+            yearLevel,
+            section,
+            strand,
+            midterm: midtermValue,
+            finals: finalsValue,
+            finalRating,
+            action
+        });
+    }
         console.log(`Successfully updated ${updatedGrades.length} grades`);
 
         // Send response
@@ -450,8 +501,7 @@ const bulkAddGrades = asyncHandler(async (req, res) => {
         });
     }
 });
-  
-// @desc    Update grade for a student
+
 // @route   PUT /api/grades/:id
 // @access  Private (teacher role)
 const updateGrade = async (req, res) => {
@@ -551,421 +601,555 @@ const deleteGrade = asyncHandler(async (req, res) => {
 // @route   GET /api/grades/form137/:studentId
 // @access  Private (teacher role)
 const generateForm137 = asyncHandler(async (req, res) => {
-    try {
-        const { studentId } = req.params;
+  try {
+      const { studentId } = req.params;
 
-        // Fetch student data with necessary relationships
-        const student = await Student.findById(studentId)
-            .populate([
-                { path: "user" },
-                { path: "yearLevel" },
-                { path: "section" },
-                { path: "strand" },
-                {
-                    path: "grades",
-                    populate: [
-                        { path: "semester" },
-                        { path: "subjects.subject", model: "Subject" }
-                    ]
-                }
-            ])
-            .lean();
+      // Fetch student data without grades
+      const student = await Student.findById(studentId)
+          .populate([
+              { path: "user" },
+              { path: "yearLevel" },
+              { path: "section" },
+              { path: "strand" }
+          ])
+          .lean(); // Convert to plain JSON for better performance
 
-        if (!student) {
-            res.status(404);
-            throw new Error("Student not found");
-        }
-        const admissionDate = dayjs(student.user.createdAt).format("MM/DD/YYYY");
+      if (!student) {
+          res.status(404);
+          throw new Error("Student not found");
+      }
 
-        // Format student's full name for the filename
-        const fullName = `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`;
-        const sanitizedFileName = fullName.replace(/[\/:*?"<>|]/g, '_');
+          const grades = await Grade.find({ student: student.user })
+          .populate({
+          path: "semester",
+          select: "name status startDate yearLevel",
+          populate: {
+              path: "yearLevel",
+              select: "name",
+          },
+          })
+          .populate("subjects.subject", "name code")
+          .lean();
+      
+      console.log("📌 Retrieved Grades (with Semester):", JSON.stringify(grades, null, 2));
+      
 
-        // Define file paths
-        const templatePath = path.resolve(__dirname, "../../frontend/src/assets/Form 137-SHS 2016.xlsx");
-        const outputExcelPath = path.resolve(__dirname, `../../frontend/src/output/Form137_${sanitizedFileName}.xlsx`);
+      const admissionDate = dayjs(student.user.createdAt).format("MM/DD/YYYY");
 
-        console.log(`📂 Loading template from: ${templatePath}`);
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(templatePath);
+      // Format student's full name for the filename
+      const fullName = `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`;
+      const sanitizedFileName = fullName.replace(/[\/:*?"<>|]/g, '_');
 
-        // Log available worksheets
-        console.log("✅ Available worksheets:", workbook.worksheets.map(ws => ws.name));
+      // Define file paths
+      const templatePath = path.resolve(__dirname, "../utils/Form 137-SHS 2016.xlsx");
+      const outputExcelPath = path.resolve(__dirname, `../output/Form137_${sanitizedFileName}.xlsx`);
+      const fileName = `Form137_${sanitizedFileName}.xlsx`;
 
-        // Access worksheets safely
-        const worksheetFront = workbook.getWorksheet("FRONT");
-        const worksheetBack = workbook.getWorksheet("BACK");
+      console.log(`📂 Loading template from: ${templatePath}`);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(templatePath);
 
-        if (!worksheetFront || !worksheetBack) {
-            throw new Error("❌ Worksheets not found in the template.");
-        }
-        
-        // Right image
-        if (fs.existsSync(rightImagePath)) {
-            doc.image(rightImagePath, 455, 20, { width: 65, height: 65 });
-        } else {
-            console.error('Right image not found:', rightImagePath);
-        }
-  
-        doc.fontSize(16).text('Republic of the Philippines', 50, 20, { align: 'center' });
-        doc.fontSize(14).text('Department of Education', 50, 40, { align: 'center' });
-        doc.fontSize(12).text('Senior High School Student Permanent Record', 50, 60, { align: 'center' });
-        doc.moveDown();
+      // Log available worksheets
+      console.log("✅ Available worksheets:", workbook.worksheets.map(ws => ws.name));
 
-        doc.fontSize(15).text('Learner Information', 225, 100, { underline: true });
-        doc.moveDown();
+      // Access worksheets safely
+      const worksheetFront = workbook.getWorksheet("FRONT");
+      const worksheetBack = workbook.getWorksheet("BACK");
 
-        const drawField = (label, value, x, y, width = 100) => {
-            doc.fontSize(9).text(label, x, y, { width });
-            doc.rect(x + width - 55, y - 2, 210, 12).stroke();
-            doc.text(value || '', x + width - 50, y, { width: 200 });
-        };
+      if (!worksheetFront || !worksheetBack) {
+          throw new Error("❌ Worksheets not found in the template.");
+      }
 
-        let startY = doc.y;
+      // 🔹 Insert student details in the FRONT worksheet
+      worksheetFront.getCell("F8").value = student.lastName || "N/A"; // Last Name
+      worksheetFront.getCell("Y8").value = student.firstName || "N/A"; // First Name
+      worksheetFront.getCell("AZ8").value = student.middleName || "N/A"; // Middle Name
+      worksheetFront.getCell("C9").value = student.user.username || "N/A"; // LRN
+      worksheetFront.getCell("AA9").value = student.birthdate || "N/A"; // Date of Birth
+      worksheetFront.getCell("AN9").value = student.gender || "N/A"; // Sex
+      worksheetFront.getCell("BH9").value = admissionDate || "N/A"; // Date of SHS Admission
 
-        // Replace LRN with user.username
-        drawField('LRN', student.user.username || 'N/A', 30, startY);
-        drawField('Name', fullName || 'N/A', 305, startY);
-        drawField('Strand', student.strand?.name || 'N/A', 30, startY + 20);
-        drawField('Year Level', student.yearLevel?.name || 'N/A', 305, startY + 20);
-        drawField('Section', student.section?.name || 'N/A', 30, startY + 40);
-        drawField('Address', student.address || 'N/A', 305, startY + 40);
+      console.log("✅ Student details inserted into the form.");
+       
+       /// Fetch Grade 11 grades from the database
+const grade11FirstSemester = await Grade.findOne({
+  student: student.user
+})
+.populate({
+  path: "semester",
+  select: "name yearLevel",
+  populate: {
+      path: "yearLevel",
+      select: "name"
+  }
+})
+.populate({
+  path: "subjects.subject",
+  select: "name"
+})
 
-        doc.fontSize(15).text('Scholastic Grades\n', 220, 285, { underline: true });
+// **3️⃣ Insert Student Information**
+      worksheetFront.getCell("E23").value = "Tropical Village National Highschool"; // School Name
+      worksheetFront.getCell("AF23").value = "330921"; // School ID
+      worksheetFront.getCell("AS23").value = "11"; // Grade Level
+      worksheetFront.getCell("BA23").value = "2022-2023"; // SY
+      worksheetFront.getCell("BK23").value = "1st"; // Semester
+      worksheetFront.getCell("G25").value = student.strand.name; // Strand
+      worksheetFront.getCell("AS25").value = "Current Section"; // Section
 
-        const drawSemesterTable = (semesterTitle, semesterGrades) => {
-            doc.moveDown();
+console.log("📄 Retrieved Grades:", grade11FirstSemester);
+if (!grade11FirstSemester) {
+  console.warn("⚠️ Warning: No grades found for the student.");
+} else if (
+  grade11FirstSemester.semester &&
+  grade11FirstSemester.semester.yearLevel?.name === "Grade 11" &&
+  grade11FirstSemester.semester.name === "1st Semester"
+) {
+  let rowIndex = 31; // Starting row for subjects
 
-            // Center the semester title
-            const titleWidth = doc.widthOfString(semesterTitle);
-            const xPosition = 225;
-            doc.fontSize(10).text(semesterTitle, xPosition, doc.y, { underline: true });
+  if (!grade11FirstSemester.subjects || grade11FirstSemester.subjects.length === 0) {
+      console.warn("⚠️ Warning: No subjects found for Grade 11 First Semester.");
+  } else {
+      grade11FirstSemester.subjects.forEach((subjectEntry) => {
+          if (!subjectEntry.subject || !subjectEntry.subject.name) {
+              console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+              return; // Skip this entry to prevent errors
+          }
 
-            const tableTop = doc.y + 10;
-            const tableWidth = 400;
-            const columnWidth = tableWidth / 4;
+          worksheetFront.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+          worksheetFront.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+          worksheetFront.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
 
-            // Draw table headers with centered alignment
-            doc.fontSize(9)
-                .text('Subject', 30, tableTop, { width: columnWidth, align: 'center' })
-                .text('Midterm', 30 + 2 * columnWidth, tableTop, { width: columnWidth, align: 'center' })
-                .text('Finals', 30 + 3 * columnWidth, tableTop, { width: columnWidth, align: 'center' })
-                .text('Final Rating', 30 + 4 * columnWidth, tableTop, { width: columnWidth, align: 'center' });
+          rowIndex++;
+      });
+  }
+} else {
+  console.warn("⚠️ Warning: No grades found for Grade 11 First Semester.");
+}
+      
 
-            let currentY = tableTop + 20;
+const grade11SecondSemester = await Grade.findOne({
+  student: student.user
+})
+.populate({
+  path: "semester",
+  select: "name yearLevel",
+  populate: {
+      path: "yearLevel",
+      select: "name"
+  }
+})
+.populate({
+  path: "subjects.subject",
+  select: "name"
+})
 
-            if (!semesterGrades || semesterGrades.length === 0) {
-                doc.fontSize(10).text('No grades available.', { align: 'center' });
-            } else {
-                // Loop through subjects and draw rows
-                semesterGrades.forEach((grade) => {
-                    grade.subjects.forEach((subject) => {
-                        doc.fontSize(9)
-                            .text(subject.subject.name || 'N/A', 30, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.midterm || 'N/A', 30 + 2 * columnWidth, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.finals || 'N/A', 30 + 3 * columnWidth, currentY, { width: columnWidth, align: 'center' })
-                            .text(subject.finalRating || 'N/A', 30 + 4 * columnWidth, currentY, { width: columnWidth, align: 'center' });
-                        currentY += 20;
-                    });
-                });
-            }
-            doc.moveDown();
-        };
+// **3️⃣ Insert Student Information**
+worksheetFront.getCell("E66").value = "Tropical Village National Highschool"; // School Name
+worksheetFront.getCell("AF66").value = "330921"; // School ID
+worksheetFront.getCell("AS66").value = "11"; // Grade Level
+worksheetFront.getCell("BA66").value = "2022-2023"; // SY
+worksheetFront.getCell("BK66").value = "2nd"; // Semester
+worksheetFront.getCell("G68").value = student.strand.name; // Strand
+worksheetFront.getCell("AS68").value = "Current Section"; // Section
 
-        // Filter grades by semester
-        const firstSemesterGrades = student.grades?.filter((grade) => grade.semester?.name === '1st Semester') || [];
-        const secondSemesterGrades = student.grades?.filter((grade) => grade.semester?.name === '2nd Semester') || [];
+console.log("📄 Retrieved Grades:", grade11SecondSemester);
+if (!grade11SecondSemester) {
+  console.warn("⚠️ Warning: No grades found for the student.");
+} else if (
+  grade11SecondSemester.semester &&
+  grade11SecondSemester.semester.yearLevel?.name === "Grade 11" &&
+  grade11SecondSemester.semester.name === "2nd Semester"
+) {
+  let rowIndex = 74; // Starting row for subjects
 
-        drawSemesterTable('Semester: 1st Semester', firstSemesterGrades);
-        drawSemesterTable('Semester: 2nd Semester', secondSemesterGrades);
+  if (!grade11SecondSemester.subjects || grade11SecondSemester.subjects.length === 0) {
+      console.warn("⚠️ Warning: No subjects found for Grade 11 Second Semester.");
+  } else {
+      grade11SecondSemester.subjects.forEach((subjectEntry) => {
+          if (!subjectEntry.subject || !subjectEntry.subject.name) {
+              console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+              return; // Skip this entry to prevent errors
+          }
 
-        doc.end();
+          worksheetFront.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+          worksheetFront.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+          worksheetFront.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
 
-        writeStream.on('finish', () => {
-            console.log(`Form 137 saved to: ${filePath}`);
-        });
+          rowIndex++;
+      });
+  }
+} else {
+  console.warn("⚠️ Warning: No grades found for Grade 11 Second Semester.");
+}         
+     console.log("✅ Grade 11 grades inserted.");
+     
+      /// Fetch Grade 12 grades from the database
+      const grade12FirstSemester = await Grade.findOne({
+          student: student.user
+      })
+      .populate({
+          path: "semester",
+          select: "name yearLevel",
+          populate: {
+              path: "yearLevel",
+              select: "name"
+          }
+      })
+      .populate({
+          path: "subjects.subject",
+          select: "name"
+      })
+      
+          // **3️⃣ Insert Student Information**
+          worksheetBack.getCell("E4").value = "Tropical Village National Highschool"; // School Name
+          worksheetBack.getCell("AF4").value = "330921"; // School ID
+          worksheetBack.getCell("AS4").value = "12"; // Grade Level
+          worksheetBack.getCell("BA4").value = "2023-2024"; // SY
+          worksheetBack.getCell("BK4").value = "1st"; // Semester
+          worksheetBack.getCell("G5").value = student.strand.name; // Strand
+          worksheetBack.getCell("AS5").value = "Current Section"; // Section
 
-        writeStream.on('error', (err) => {
-            console.error('Error writing PDF to file:', err);
-            res.status(500).send('Error generating the PDF.');
-        });
 
-    } catch (error) {
-        console.error("❌ Error generating Form 137:", error);
-        res.status(500);
-        throw new Error("Failed to generate Form 137: " + error.message);
-    }
+      console.log("📄 Retrieved Grades:", grade12FirstSemester);
+      if (!grade12FirstSemester) {
+          console.warn("⚠️ Warning: No grades found for the student.");
+      } else if (
+          grade12FirstSemester.semester &&
+          grade12FirstSemester.semester.yearLevel?.name === "Grade 12" &&
+          grade12FirstSemester.semester.name === "1st Semester"
+      ) {
+          let rowIndex = 11; // Starting row for subjects
+      
+          if (!grade12FirstSemester.subjects || grade12FirstSemester.subjects.length === 0) {
+              console.warn("⚠️ Warning: No subjects found for Grade 12 First Semester.");
+          } else {
+              grade12FirstSemester.subjects.forEach((subjectEntry) => {
+                  if (!subjectEntry.subject || !subjectEntry.subject.name) {
+                      console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+                      return; // Skip this entry to prevent errors
+                  }
+      
+                  worksheetBack.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+                  worksheetBack.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+                  worksheetBack.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
+      
+                  rowIndex++;
+              });
+          }
+      } else {
+          console.warn("⚠️ Warning: No grades found for Grade 12 First Semester.");
+      }
+      
+      const grade12SecondSemester = await Grade.findOne({
+          student: student.user
+      })
+      .populate({
+          path: "semester",
+          select: "name yearLevel",
+          populate: {
+              path: "yearLevel",
+              select: "name"
+          }
+      })
+      .populate({
+          path: "subjects.subject",
+          select: "name"
+      })
+
+      // **3️⃣ Insert Student Information**
+      worksheetBack.getCell("E46").value = "Tropical Village National Highschool"; // School Name
+      worksheetBack.getCell("AF46").value = "330921"; // School ID
+      worksheetBack.getCell("AS46").value = "12"; // Grade Level
+      worksheetBack.getCell("BA46").value = "2023-2024"; // SY
+      worksheetBack.getCell("BK46").value = "1st"; // Semester
+      worksheetBack.getCell("G48").value = student.strand.name; // Strand
+      worksheetBack.getCell("AS48").value = "Current Section"; // Section
+      
+      console.log("📄 Retrieved Grades:", grade12SecondSemester);
+      if (!grade12SecondSemester) {
+          console.warn("⚠️ Warning: No grades found for the student.");
+      } else if (
+          grade12SecondSemester.semester &&
+          grade12SecondSemester.semester.yearLevel?.name === "Grade 12" &&
+          grade12SecondSemester.semester.name === "2nd Semester"
+      ) {
+          let rowIndex = 74; // Starting row for subjects
+      
+          if (!grade12SecondSemester.subjects || grade12SecondSemester.subjects.length === 0) {
+              console.warn("⚠️ Warning: No subjects found for Grade 12 Second Semester.");
+          } else {
+              grade12SecondSemester.subjects.forEach((subjectEntry) => {
+                  if (!subjectEntry.subject || !subjectEntry.subject.name) {
+                      console.warn("⚠️ Warning: Missing subject name for a grade entry:", subjectEntry);
+                      return; // Skip this entry to prevent errors
+                  }
+      
+                  worksheetBack.getCell(`I${rowIndex}`).value = subjectEntry.subject.name; // Subject name
+                  worksheetBack.getCell(`AT${rowIndex}`).value = subjectEntry.midterm ?? "N/A"; // Midterm Grade
+                  worksheetBack.getCell(`AY${rowIndex}`).value = subjectEntry.finals ?? "N/A"; // Finals Grade
+      
+                  rowIndex++;
+              });
+          }
+      } else {
+          console.warn("⚠️ Warning: No grades found for Grade 12 Second Semester.");
+      }         
+     console.log("✅ Grade 12 grades inserted.");
+
+     // Instead of writing the file to disk, send it as a buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    res.setHeader("Content-Disposition", `attachment; filename=Form137_${student.lastName}.xlsx`);
+    res.setHeader("X-Filename", `Form137_${sanitizedFileName}.xlsx`); // Custom header for frontend
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+
+    res.send(Buffer.from(buffer)); // Convert to Buffer and send
+  } catch (error) {
+    console.error("❌ Error generating Form 137:", error);
+    res.status(500).json({ message: "Failed to generate Form 137" });
+  }
 });
 
+/**
+ * @desc    Get all sections assigned to the teacher
+ * @route   GET /api/teacher/sections
+ * @access  Private/Teacher
+ */
 const getTeacherSections = asyncHandler(async (req, res) => {
-    try {
-        const [sections, teacherData] = await Promise.all([
-            Section.find({ teacher: req.user._id })
-                .populate({
-                    path: 'students',
-                    model: 'User',
-                    select: 'username yearLevel strand sections'
-                })
-                .populate({
-                    path: 'yearLevel',
-                    select: 'name'
-                })
-                .populate({
-                    path: 'strand',
-                    select: 'name'
-                })
-                .lean(),
+  try {
+    // Find all sections where this teacher is assigned
+    const sections = await Section.find({ teacher: req.user._id })
+      .populate('yearLevel')
+      .populate('strand')
+      .populate('students')
+      .lean();
+    
+    // Get the teacher's advisory section
+    const teacher = await User.findById(req.user._id)
+      .select('advisorySection')
+      .lean();
+    
+    // Add debug logging
+    console.log('Teacher advisory section:', teacher.advisorySection);
+    console.log('Sections found:', sections.map(s => ({ 
+      id: s._id.toString(), 
+      name: s.name,
+      studentCount: s.students?.length || 0
+    })));
+    
+    // Format the response
+    const formattedSections = sections.map(section => {
+      const isAdvisory = teacher.advisorySection && 
+      section._id.toString() === teacher.advisorySection.section.toString();
 
-            User.findById(req.user._id)
-                .populate('advisorySection')
-                .lean()
-        ]);
-
-        // Check if sections exist
-        if (!sections || sections.length === 0) {
-            return res.status(200).json([]);
-        }
-
-        // Format the sections data
-        const formattedSections = sections.map(section => ({
-            ...section,
-            students: section.students.map(student => ({
-                _id: student._id,
-                username: student.username,
-                yearLevel: student.yearLevel || 'Not Set',
-                strand: section.strand?.name || 'Not Set',
-                sectionName: section.name,
-                isAdvisory: teacherData.advisorySection?._id.toString() === section._id.toString()
-            }))
-        }));
-
-        //console.log('Formatted sections:', JSON.stringify(formattedSections, null, 2)); // Debug log
-
-        res.status(200).json(formattedSections);
-    } catch (error) {
-        console.error('Error fetching teacher sections:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching sections',
-            error: error.message
-        });
-    }
+      // Mark students in advisory section
+      const studentsWithAdvisory = (section.students || []).map(student => ({
+        ...student,
+        isAdvisory: isAdvisory // If the section is advisory, all students in it are advisory students
+      }));
+      
+      return {
+        _id: section._id,
+        name: section.name,
+        yearLevel: section.yearLevel,
+        strand: section.strand,
+        students: studentsWithAdvisory,
+        isAdvisory: isAdvisory
+      };
+    });
+    
+    res.json(formattedSections);
+  } catch (error) {
+    console.error('Error fetching teacher sections:', error);
+    res.status(500);
+    throw new Error('Error fetching sections: ' + error.message);
+  }
 });
 
 const getStudentData = asyncHandler(async (req, res) => {
-    const { studentId } = req.params;
-    
-    try {
-        
-        const student = await Student.findOne({ user: studentId })
-            .populate('user')
-            .populate('yearLevel')
-            .populate('section')
-            .populate('strand')
-            .populate({
-                path: 'grades',
-                populate: { path: 'semester' },
-                populate: { path: 'subjects.subject', model: 'Subject' }
-            })
-            .lean();
+  const { studentId } = req.params;
+  console.log('Fetching student data for ID:', studentId); // Debug log
 
-        // Also get the user data to get yearLevel
-        const user = await User.findById(studentId)
-            .populate('yearLevel')
-            .populate('sections')
-            .populate('strand');
+  try {
+      // First, find the student record
+      const student = await Student.findOne({ user: studentId })
+          .populate({
+              path: 'user',
+              select: 'username sections strand yearLevel'
+          })
+          .populate('yearLevel')
+          .populate('section')
+          .populate('strand')
+          .lean();
 
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: 'Student not found'
-            });
-        }
-          // Combine User and Student profile data
-    const studentData = {
-        ...student,
-        ...student.studentProfile,
-        username: student.username
-    };
+      if (!student) {
+          console.log('No student found with user ID:', studentId); // Debug log
+          return res.status(404).json({
+              success: false,
+              message: 'Student not found'
+          });
+      }
 
-    res.json(studentData);
+      console.log('Found student:', student); // Debug log
 
-        // Format the date to YYYY-MM-DD for the input field
-        const formattedBirthdate = student.birthdate ? 
-            new Date(student.birthdate).toISOString().split('T')[0] : '';
+      const studentData = {
+          _id: student._id,
+          user: student.user._id,
+          username: student.user.username,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          middleInitial: student.middleInitial,
+          suffix: student.suffix,
+          gender: student.gender,
+          birthdate: student.birthdate,
+          birthplace: student.birthplace,
+          address: student.address,
+          guardian: student.guardian,
+          contactNumber: student.contactNumber,
+          yearLevel: student.yearLevel?.name,
+          section: student.section?.name,
+          strand: student.strand?.name,
+          school: student.school
+      };
 
-            res.status(200).json({
-                success: true,
-                student: {
-                    firstName: student.firstName,
-                    lastName: student.lastName,
-                    middleInitial: student.middleInitial,
-                    gender: student.gender || '',  // Ensure gender is included
-                    birthdate: formattedBirthdate,  // Format the date
-                    birthplace: {
-                        province: student.birthplace?.province || '',
-                        municipality: student.birthplace?.municipality || '',
-                        barrio: student.birthplace?.barrio || ''
-                    },
-                    address: student.address,
-                    guardian: {
-                        name: student.guardian?.name || '',
-                        occupation: student.guardian?.occupation || ''
-                    },
-                    school: {
-                        name: student.school?.name || '',
-                        year: student.school?.year || ''
-                    },
-                    attendance: {
-                        totalYears: student.attendance?.totalYears || ''
-                    },
-                    contactNumber: student.contactNumber,
-                    // Academic info
-                    yearLevel: 
-                    student.yearLevel?.name || 
-                    user?.yearLevel?.name || 
-                    student.yearLevel || 
-                    user?.yearLevel || 
-                    '',
-                section: 
-                    student.section?.name || 
-                    user?.sections?.[0]?.name || 
-                    student.section || 
-                    user?.sections?.[0] || 
-                    '',
-                strand: 
-                    student.strand?.name || 
-                    user?.strand?.name || 
-                    student.strand || 
-                    user?.strand || 
-                    '',
-                }
-            });
-        } catch (error) {
-            console.error('Error fetching student data:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error fetching student data',
-                error: error.message
-            });
-        }
-    });
+      res.status(200).json({
+          success: true,
+          data: studentData
+      });
+  } catch (error) {
+      console.error('Error fetching student data:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching student data',
+          error: error.message
+      });
+  }
+});
+
 
 // @desc    Get teacher's subjects
 // @route   GET /api/teacher/subjects
 // @access  Private (teacher only)
 const getTeacherSubjects = asyncHandler(async (req, res) => {
-    const { semesterId } = req.query; // Get semester from query params
+  const { semesterId } = req.query;
 
-    // Validate semesterId
-    if (!semesterId) {
-        return res.status(400).json({
-            success: false,
-            message: 'Semester ID is required'
-        });
+  if (!semesterId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Semester ID is required'
+    });
+  }
+
+  try {
+    // Get the teacher with populated subjects
+    const teacher = await User.findById(req.user._id)
+      .populate({
+        path: 'subjects',
+        match: { semester: semesterId },
+        select: 'name code strand yearLevel'
+      })
+      .lean();
+
+    console.log('Teacher data:', {
+      id: teacher._id,
+      subjectsCount: teacher.subjects?.length || 0
+    });
+
+    if (!teacher.subjects || teacher.subjects.length === 0) {
+      console.log('No subjects found for semester:', semesterId);
+      return res.json([]);
     }
 
-    try {
-        // Get teacher's subjects filtered by semester
-        const teacherData = await User.findById(req.user._id)
-            .populate({
-                path: 'subjects',
-                match: { semester: semesterId }, 
-                select: 'name semester _id'
-            })
-            .select('subjects')
-            .lean();
+    // Format subjects
+    const subjects = teacher.subjects.map(subject => ({
+      _id: subject._id,
+      name: subject.name,
+      code: subject.code,
+      strand: subject.strand,
+      yearLevel: subject.yearLevel
+    }));
 
-        if (!teacherData) {
-            return res.status(404).json({
-                success: false,
-                message: 'Teacher not found'
-            });
-        }
+    console.log(`Found ${subjects.length} subjects for teacher`);
+    return res.json(subjects);
 
-        // Return subjects or empty array
-        const subjects = teacherData.subjects || [];
-
-        console.log('Fetched Subjects:', subjects); // Debug log
-
-        res.status(200).json(subjects);
-        
-    } catch (error) {
-        console.error('Error in getTeacherSubjects:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching subjects',
-            error: error.message
-        });
-    }
+  } catch (error) {
+    console.error('Error in getTeacherSubjects:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching subjects',
+      error: error.message
+    });
+  }
 });
 
 // @desc    Get students for a specific subject and semester
 // @route   GET /api/teacher/subject-students
 // @access  Private (teacher only)
 const getSubjectStudents = asyncHandler(async (req, res) => {
-    const { subjectId, semesterId } = req.query;
+  const { subjectId, semesterId } = req.query;
 
-    if (!subjectId || !semesterId) {
-        res.status(400);
-        throw new Error('Subject ID and Semester ID are required');
-    }
+  if (!subjectId || !semesterId) {
+      res.status(400);
+      throw new Error('Subject ID and Semester ID are required');
+  }
 
-    try {
-        // Get the teacher's advisory section
-        const teacher = await User.findById(req.user._id)
-            .populate('advisorySection')
-            .lean();
+  try {
+      // First get the teacher's sections
+      const teacherSections = await Section.find({ teacher: req.user._id })
+          .select('_id')
+          .lean();
 
-        const advisorySectionId = teacher.advisorySection?._id;
+      const teacherSectionIds = teacherSections.map(section => section._id);
 
-        // Find the subject
-        const subject = await Subject.findById(subjectId)
-            .populate('strand')
-            .populate('yearLevel');
+      // Find students who:
+      // 1. Have the subject
+      // 2. Are in the semester
+      // 3. Are in one of the teacher's sections
+      const students = await Student.find({
+          section: { $in: teacherSectionIds }
+      })
+      .populate({
+          path: 'user',
+          match: { 
+              subjects: subjectId,
+              semester: semesterId 
+          },
+          select: 'firstName lastName'
+      })
+      .populate('section', 'name')
+      .populate('yearLevel', 'name')
+      .populate('strand', 'name')
+      .lean();
 
-        if (!subject) {
-            res.status(404);
-            throw new Error('Subject not found');
-        }
+      // Filter out students whose user field didn't populate (not enrolled in subject)
+      const validStudents = students.filter(student => student.user);
 
-        // Get students
-        const students = await User.find({
-            role: 'student',
-            subjects: subjectId,
-            semester: semesterId,
-            strand: subject.strand._id,
-            yearLevel: subject.yearLevel._id
-        })
-        .populate({
-            path: 'sections',
-            select: 'name _id'
-        })
-        .populate('strand')
-        .populate('yearLevel')
-        .select('username sections strand yearLevel');
+      // Format student data
+      const formattedStudents = validStudents.map(student => ({
+          _id: student.user._id,
+          username: `${student.firstName} ${student.lastName}`,
+          sections: [{
+              _id: student.section?._id,
+              name: student.section?.name || 'No Section'
+          }],
+          strand: {
+              name: student.strand?.name || 'Not Set'
+          },
+          yearLevel: {
+              name: student.yearLevel?.name || 'Not Set'
+          }
+      }));
 
-        // Map students with advisory information
-        const studentsWithAdvisory = students.map(student => ({
-            _id: student._id,
-            username: student.username,
-            sections: student.sections,
-            strand: student.strand,
-            yearLevel: student.yearLevel,
-            // Check if any of the student's sections match the teacher's advisory section
-            isAdvisory: student.sections.some(section => 
-                section._id.toString() === advisorySectionId?.toString()
-            )
-        }));
+      console.log(`Found ${formattedStudents.length} students in teacher's sections`);
+      res.json(formattedStudents);
 
-        console.log('Students with advisory:', studentsWithAdvisory); // Debug log
-        res.json(studentsWithAdvisory);
-
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500);
-        throw new Error('Error fetching subject students: ' + error.message);
-    }
+  } catch (error) {
+      console.error('Error:', error);
+      res.status(500);
+      throw new Error('Error fetching subject students: ' + error.message);
+  }
 });
 
 // @desc    Get grades for students in a subject
@@ -1036,171 +1220,747 @@ const getSubjectGrades = asyncHandler(async (req, res) => {
 });
 
 const getTeacherAdvisoryClass = asyncHandler(async (req, res) => {
-    try {
-        const teacher = await Teacher.findOne({ user: req.user._id })
-            .populate({
-                path: 'advisoryClass',
-                populate: {
-                    path: 'yearLevel',
-                    select: 'name'
-                }
-            })
-            .populate('yearLevel')
-            .lean();
+  try {
+      // Get the teacher user with populated advisorySection.section
+      const teacher = await User.findById(req.user._id)
+          .populate({
+              path: 'advisorySection.section',
+              populate: [
+                  { 
+                      path: 'yearLevel',
+                      select: 'name' 
+                  },
+                  { 
+                      path: 'strand',
+                      select: 'name' 
+                  }
+              ]
+          });
 
-        if (!teacher || !teacher.advisoryClass) {
-            return res.status(404).json({
-                success: false,
-                message: 'No advisory class found for this teacher'
-            });
-        }
+      console.log('Teacher data:', JSON.stringify(teacher, null, 2)); // Debug log
 
-        // Add more detailed logging
-        console.log('Teacher Advisory Class:', {
-            advisoryClass: teacher.advisoryClass,
-            yearLevel: teacher.advisoryClass?.yearLevel
-        });
+      if (!teacher.advisorySection?.section) {
+          return res.status(404).json({
+              success: false,
+              message: 'No advisory section assigned'
+          });
+      }
 
-        res.status(200).json({
-            success: true,
-            advisoryClassId: teacher.advisoryClass._id,
-            advisoryClassName: teacher.advisoryClass.name,
-            yearLevel: teacher.advisoryClass.yearLevel?.name
-        });
-    } catch (error) {
-        console.error('Error fetching teacher advisory class:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching advisory class information',
-            errorDetails: error.message
-        });
-    }
+      // Get the section with populated students
+      const section = await Section.findById(teacher.advisorySection.section._id)
+          .populate('yearLevel', 'name')
+          .populate('strand', 'name')
+          .populate('students');
+
+      const response = {
+          success: true,
+          advisorySection: {
+              _id: section._id,
+              name: section.name,
+              yearLevel: section.yearLevel?.name || 'Not Set',
+              strand: section.strand?.name || 'Not Set',
+              status: teacher.advisorySection.status,
+              studentCount: section.students?.length || 0
+          }
+      };
+
+      console.log('Response:', JSON.stringify(response, null, 2)); // Debug log
+      res.json(response);
+
+  } catch (error) {
+      console.error('Error fetching advisory class:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching advisory section',
+          error: error.message
+      });
+  }
 });
 
 // @desc    Get teacher dashboard data
 // @route   GET /api/teacher/dashboard
 // @access  Private (teacher only)
 const getTeacherDashboard = asyncHandler(async (req, res) => {
-    try {
-        // Get teacher data with populated fields
-        const teacherData = await User.findById(req.user._id)
-            .populate('subjects')
-            .populate('sections')
-            .populate('advisorySection')
-            .populate('semesters')
-            .lean();
+  try {
+      // Fetch teacher data with proper population
+      const teacherData = await User.findById(req.user._id)
+          .populate('subjects')
+          .populate('sections')
+          .populate({
+              path: 'advisorySection.section',
+              select: 'name yearLevel strand',
+              populate: [
+                  { path: 'yearLevel', select: 'name' },
+                  { path: 'strand', select: 'name' }
+              ]
+          })
+          .populate('semesters')
+          .lean();
 
-        if (!teacherData) {
-            return res.status(404).json({
-                success: false,
-                message: 'Teacher not found'
-            });
-        }
+      if (!teacherData) {
+          return res.status(404).json({
+              success: false,
+              message: 'Teacher not found'
+          });
+      }
 
-        // Get all students from teacher's sections
-        const sections = await Section.find({ 
-            _id: { $in: teacherData.sections }
-        }).populate('students');
+      // Get all students from teacher's sections
+      const sections = await Section.find({ 
+          _id: { $in: teacherData.sections }
+      }).populate('students');
 
-        // Calculate total unique students
-        const uniqueStudents = new Set();
-        sections.forEach(section => {
-            section.students.forEach(student => {
-                uniqueStudents.add(student._id.toString());
-            });
-        });
+      // Calculate total unique students
+      const uniqueStudents = new Set();
+      sections.forEach(section => {
+          section.students.forEach(student => {
+              uniqueStudents.add(student._id.toString());
+          });
+      });
 
-        // Get today's schedule
-        const today = new Date();
-        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      // Format the dashboard data
+      const dashboardData = {
+          username: teacherData.username,
+          totalStudents: uniqueStudents.size,
+          totalSubjects: teacherData.subjects?.length || 0,
+          totalSections: teacherData.sections?.length || 0,
+          advisorySection: teacherData.advisorySection?.section ? {
+              name: teacherData.advisorySection.section.name,
+              yearLevel: teacherData.advisorySection.section.yearLevel?.name,
+              strand: teacherData.advisorySection.section.strand?.name,
+              status: teacherData.advisorySection.status
+          } : null,
+          sections: sections.map(section => ({
+              name: section.name,
+              studentCount: section.students.length,
+              isAdvisory: section._id.toString() === teacherData.advisorySection?.section?._id?.toString()
+          })),
+          subjects: teacherData.subjects.map(subject => ({
+              name: subject.name,
+              section: subject.section?.name,
+              schedule: subject.schedule
+          })),
+          currentSemester: teacherData.semesters?.[teacherData.semesters.length - 1]?.name
+      };
 
-        // Format the dashboard data
-        const dashboardData = {
-            username: teacherData.username,
-            totalStudents: uniqueStudents.size,
-            totalSubjects: teacherData.subjects?.length || 0,
-            totalSections: teacherData.sections?.length || 0,
-            advisorySection: teacherData.advisorySection?.name || 'None',
-            sections: sections.map(section => ({
-                name: section.name,
-                studentCount: section.students.length,
-                isAdvisory: section._id.equals(teacherData.advisorySection?._id)
-            })),
-            subjects: teacherData.subjects.map(subject => ({
-                name: subject.name,
-                section: subject.section?.name,
-                schedule: subject.schedule // Assuming you have schedule in your subject model
-            })),
-            currentSemester: teacherData.semesters?.[teacherData.semesters.length - 1]?.name
-        };
+      res.json({
+          success: true,
+          data: dashboardData
+      });
 
-        res.json({
-            success: true,
-            data: dashboardData
-        });
-
-    } catch (error) {
-        console.error('Error fetching teacher dashboard:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching dashboard data',
-            error: error.message
-        });
-    }
+  } catch (error) {
+      console.error('Error fetching teacher dashboard:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error fetching dashboard data',
+          error: error.message
+      });
+  }
 });
   
 
 // Add this new controller function
 const getStudentGrades = asyncHandler(async (req, res) => {
-    const { studentId } = req.params;
-    
-    if (!studentId) {
-        res.status(400);
-        throw new Error('Student ID is required');
-    }
-    
-    try {
-        // Convert studentId to ObjectId
-        const objectIdStudent = new mongoose.Types.ObjectId(studentId);
-        
-        // Find all grades for this student
-        const grades = await Grade.find({ student: objectIdStudent })
-            .populate('semester')
-            .populate({
-                path: 'subjects.subject',
-                model: 'Subject',
-                select: 'name'
-            })
-            .lean();
-        
-        console.log(`Found ${grades.length} grade records for student ${studentId}`);
-        
-        // Format the grades for easier consumption by the frontend
-        const formattedGrades = grades.map(grade => {
-            return {
-                _id: grade._id,
-                semester: grade.semester?.name || 'Unknown Semester',
-                semesterId: grade.semester?._id || null,
-                subjects: grade.subjects.map(subject => ({
-                    subjectId: subject.subject?._id || null,
-                    subjectName: subject.subject?.name || 'Unknown Subject',
-                    midterm: subject.midterm,
-                    finals: subject.finals,
-                    finalRating: subject.finalRating,
-                    action: subject.action
-                }))
-            };
-        });
-        
-        res.json(formattedGrades);
-    } catch (error) {
-        console.error('Error fetching student grades:', error);
-        res.status(500);
-        throw new Error('Error fetching student grades: ' + error.message);
-    }
+  const { studentId } = req.params;
+  
+  try {
+      const objectIdStudent = new mongoose.Types.ObjectId(studentId);
+      
+      // Populate subject details, semester, and year level information
+      const grades = await Grade.find({ student: objectIdStudent })
+          .populate({
+              path: 'semester',
+              select: 'name status'
+          })
+          .populate('yearLevel', 'name') // Add year level population
+          .populate({
+              path: 'subjects.subject',
+              select: 'name code'
+          })
+          .lean();
+      
+      console.log('Raw grades from database:', grades);
+      
+      // Format grades with proper subject and year level information
+      const formattedGrades = grades.map(grade => ({
+          semester: grade.semester,
+          yearLevel: grade.yearLevel?.name || 'Unknown Year Level',
+          subjects: grade.subjects.map(subject => ({
+              subject: {
+                  _id: subject.subject?._id,
+                  name: subject.subject?.name || 'Unknown Subject'
+              },
+              midterm: subject.midterm,
+              finals: subject.finals,
+              finalRating: subject.finalRating,
+              action: subject.action
+          }))
+      }));
+
+      console.log('Formatted grades:', formattedGrades);
+      res.json(formattedGrades);
+  } catch (error) {
+      console.error('Error fetching student grades:', error);
+      res.status(500);
+      throw new Error('Error fetching student grades: ' + error.message);
+  }
 });
 
-export { 
+/**
+ * @desc    Get a specific section by ID
+ * @route   GET /api/teacher/sections/:id
+ * @access  Private/Teacher
+ */
+const getSectionById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Check if the teacher is authorized to access this section
+    const teacherSections = await Section.find({ teacher: req.user._id });
+    const isAuthorized = teacherSections.some(s => s._id.toString() === id);
+    
+    if (!isAuthorized) {
+      res.status(403);
+      throw new Error('Not authorized to access this section');
+    }
+    
+    // Get the section details
+    const section = await Section.findById(id)
+      .populate('yearLevel')
+      .populate('strand');
+    
+    if (!section) {
+      res.status(404);
+      throw new Error('Section not found');
+    }
+    
+    res.json({
+      _id: section._id,
+      name: section.name,
+      yearLevel: section.yearLevel,
+      strand: section.strand,
+      adviser: req.user.username // Assuming the teacher is the adviser
+    });
+  } catch (error) {
+    console.error('Error fetching section:', error);
+    res.status(500);
+    throw new Error('Error fetching section: ' + error.message);
+  }
+});
+
+/**
+ * @desc    Get students for a section
+ * @route   GET /api/teacher/students
+ * @access  Private/Teacher
+ */
+const getSectionStudents = asyncHandler(async (req, res) => {
+  const { section } = req.query;
+
+  if (!section) {
+    res.status(400);
+    throw new Error('Section ID is required');
+  }
+
+  try {
+    // Check if the teacher is authorized to access this section
+    const teacherSections = await Section.find({ teacher: req.user._id });
+    const isAuthorized = teacherSections.some(s => s._id.toString() === section);
+
+    if (!isAuthorized) {
+      res.status(403);
+      throw new Error('Not authorized to access this section');
+    }
+
+    // Get all students in this section — convert section to ObjectId
+    const students = await Student.find({ section: new mongoose.Types.ObjectId(section) })
+      .select('firstName lastName middleInitial _id')
+      .sort({ lastName: 1, firstName: 1 });
+      console.log(students);
+
+    res.json(students);
+  } catch (error) {
+    console.error('Error fetching section students:', error);
+    res.status(500);
+    throw new Error('Error fetching students: ' + error.message);
+  }
+});
+
+/**
+ * @desc    Get attendance data for a section and month
+ * @route   GET /api/teacher/attendance
+ * @access  Private/Teacher
+ */
+const getAttendanceData = asyncHandler(async (req, res) => {
+  const { section, month } = req.query;
+
+  try {
+    // Check if the teacher has an advisory section
+    const teacher = await User.findById(req.user._id)
+      .populate({
+        path: 'advisorySection.section',
+        select: 'name yearLevel strand'
+      });
+
+    console.log('Teacher advisory data:', teacher.advisorySection); // Debug log
+
+    if (!teacher.advisorySection?.section) {
+      res.status(403);
+      throw new Error('Only advisory teachers can manage attendance');
+    }
+
+    // Check if the requested section matches teacher's advisory section
+    if (teacher.advisorySection.section._id.toString() !== section) {
+      res.status(403);
+      throw new Error('You can only manage attendance for your advisory section');
+    }
+
+    // Find attendance records
+    const attendance = await Attendance.findOne({
+      section: section,
+      month: month,
+      teacher: req.user._id
+    }).populate('records.student');
+
+    if (!attendance) {
+      // Return empty records if no attendance found
+      return res.json({
+        success: true,
+        data: {
+          records: []
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: attendance
+    });
+
+  } catch (error) {
+    console.error('Error in getAttendanceData:', error);
+    res.status(error.status || 500);
+    throw new Error(error.message || 'Error fetching attendance data');
+  }
+});
+
+/**
+ * @desc    Save attendance data for a section
+ * @route   POST /api/teacher/attendance
+ * @access  Private/Teacher
+ */
+const saveAttendanceData = asyncHandler(async (req, res) => {
+  const { section, month, records } = req.body;
+
+  try {
+    // Check if the teacher has an advisory section
+    const teacher = await User.findById(req.user._id)
+      .populate({
+        path: 'advisorySection.section',
+        select: 'name yearLevel strand'
+      });
+
+    console.log('Teacher advisory data:', teacher.advisorySection); // Debug log
+
+    if (!teacher.advisorySection?.section) {
+      res.status(403);
+      throw new Error('Only advisory teachers can manage attendance');
+    }
+
+    // Check if the requested section matches teacher's advisory section
+    if (teacher.advisorySection.section._id.toString() !== section) {
+      res.status(403);
+      throw new Error('You can only manage attendance for your advisory section');
+    }
+
+    // Find or create attendance record
+    let attendance = await Attendance.findOneAndUpdate(
+      {
+        section: section,
+        month: month,
+        teacher: req.user._id
+      },
+      {
+        $set: { records: records }
+      },
+      {
+        new: true,
+        upsert: true
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Attendance saved successfully',
+      data: attendance
+    });
+
+  } catch (error) {
+    console.error('Error in saveAttendanceData:', error);
+    res.status(error.status || 500);
+    throw new Error(error.message || 'Error saving attendance data');
+  }
+});
+
+  const getAttendanceSummary = async (req, res) => {
+    try {
+      const { week = 'current', semester } = req.query;
+      const teacherId = req.user._id;
+
+      
+    if (!semester) {
+        return res.status(400).json({
+          success: false,
+          message: 'Semester ID is required'
+        });
+      }
+  
+      // Calculate date range based on the selected week
+      const today = new Date();
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1); // Always the 1st day of the month
+
+      let startDate, endDate;
+  
+   // Determine the correct start date based on the week requested
+switch (week) {
+  case 'current':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() + 1); // Start on Monday
+      break;
+  case 'previous':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() - 6); // Previous Monday
+      break;
+  case 'twoWeeksAgo':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() - 13); // Two Mondays ago
+      break;
+  default:
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - today.getDay() + 1); // Fallback to current week
+}
+
+endDate = new Date(startDate);
+endDate.setDate(startDate.getDate() + 6); // Always end on Sunday
+
+
+        // Ensure endDate is always 6 days after startDate
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+  
+      console.log(`Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  
+      const sections = await Section.find({ teacher: teacherId }).populate('students');
+      const sectionIds = sections.map(section => section._id);
+  
+      const totalStudents = sections.reduce((count, section) => count + (section.students?.length || 0), 0);
+      console.log(`Teacher sections: ${sections.length}, Total students: ${totalStudents}`);
+  
+      const dailyCounts = {
+        mon: { present: 0, absent: 0 },
+        tue: { present: 0, absent: 0 },
+        wed: { present: 0, absent: 0 },
+        thu: { present: 0, absent: 0 },
+        fri: { present: 0, absent: 0 },
+        sat: { present: 0, absent: 0 }
+      };
+  
+      const weekNumber = getWeekNumberInMonth(startDate);
+      const weekKey = `week${weekNumber}`;
+      console.log('Week key:', weekKey);
+  
+      const currentMonth = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`;
+      const currentSchoolYear = startDate.getMonth() >= 0 // Assuming school year starts in July
+        ? `${startDate.getFullYear()}-${startDate.getFullYear() + 1}`
+        : `${startDate.getFullYear() - 1}-${startDate.getFullYear()}`;
+  
+      console.log('Query parameters:', {
+        month: currentMonth,
+        schoolYear: currentSchoolYear,
+        semester: semester,
+        teacher: teacherId,
+        section: { $in: sectionIds }
+      });
+  
+    // Find attendance records with semester ObjectId
+    const attendanceRecords = await Attendance.find({
+        month: currentMonth,
+        schoolYear: currentSchoolYear,
+        semester: new mongoose.Types.ObjectId(semester), // Convert string to ObjectId
+        teacher: teacherId,
+        section: { $in: sectionIds }
+      }).populate('records.student');
+
+      console.log('All attendance records in DB:', await Attendance.find({}));
+      console.log(`Found ${attendanceRecords.length} attendance records for ${currentMonth}`);
+      console.log('Section IDs:', sectionIds);
+      console.log('Current month:', currentMonth);
+  
+      if (attendanceRecords.length > 0) {
+        attendanceRecords.forEach(record => {
+          record.records.forEach(studentRecord => {
+            const weekData = studentRecord.weeks[weekKey];
+            console.log(`Processing student record for weekKey: ${weekKey}`, weekData);
+  
+            if (weekData) {
+              Object.entries(weekData).forEach(([day, status]) => {
+                const dayKey = convertDayToKey(day);
+                console.log(`Day: ${day}, Status: ${status}, DayKey: ${dayKey}`);
+                if (dayKey && dailyCounts[dayKey]) {
+                  if (status === 'Present') {
+                    dailyCounts[dayKey].present++;
+                  } else if (status === 'Absent') {
+                    dailyCounts[dayKey].absent++;
+                  }
+                }
+              });
+            }
+          });
+        });
+  
+        console.log('Processed attendance data:', dailyCounts);
+      } else {
+        console.log('No attendance records found');
+      }
+  
+      return res.json({
+        success: true,
+        data: {
+          days: dailyCounts,
+          dateRange: { start: startDate, end: endDate },
+          totalStudents
+        }
+      });
+    } catch (error) {
+      console.error('Error getting attendance summary:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get attendance summary',
+        error: error.message
+      });
+    }
+  };
+  
+  // Helper function to get the week number in the month (1-5)
+  function getWeekNumberInMonth(date) {
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const dayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 6 = Saturday
+    const dayOfMonth = date.getDate();
+  
+    // Calculate adjusted start of the week (so the first week isn’t cut off)
+    const adjustedDay = dayOfMonth + dayOfWeek - 1;
+  
+    // Calculate the week number (1-indexed)
+    return Math.floor(adjustedDay / 7) + 1;
+  }
+  
+  // Helper function to convert day abbreviation to key
+  const convertDayToKey = (day) => {
+    switch (day) {
+      case 'M':
+        return 'mon';
+      case 'T':
+        return 'tue';
+      case 'W':
+        return 'wed';
+      case 'TH':
+        return 'thu';
+      case 'F':
+        return 'fri';
+      case 'S':
+        return 'sat';
+      default:
+        return null;
+    }
+  };
+  
+  const getTeacherSemesters = asyncHandler(async (req, res) => {
+    try {
+      const teacherId = req.user._id;
+  
+      // Find teacher's sections to get associated strands and year levels
+      const teacherSections = await Section.find({ teacher: teacherId })
+        .populate('strand')
+        .populate('yearLevel');
+  
+      // Get unique strand and yearLevel IDs from teacher's sections
+      const strandIds = [...new Set(teacherSections.map(section => section.strand?._id))];
+      const yearLevelIds = [...new Set(teacherSections.map(section => section.yearLevel?._id))];
+  
+      // Find semesters with populated data
+      const semesters = await Semester.find({
+        $or: [
+          { 
+            status: 'active',
+            strand: { $in: strandIds },
+            yearLevel: { $in: yearLevelIds }
+          },
+          {
+            subjects: { $in: teacherSections.flatMap(section => section.subjects) }
+          }
+        ]
+      })
+      .populate('strand', 'name')
+      .populate('yearLevel', 'name')
+      .sort({ startDate: -1 });
+  
+      // Format the response
+      const formattedSemesters = semesters.map(semester => ({
+        _id: semester._id,
+        name: `${semester.name} - ${semester.yearLevel?.name || ''} ${semester.strand?.name || ''}`.trim(),
+        status: semester.status,
+        startDate: semester.startDate,
+        endDate: semester.endDate,
+        isActive: semester.status === 'active'
+      }));
+  
+      console.log('Formatted semesters:', formattedSemesters);
+      res.status(200).json(formattedSemesters);
+  
+    } catch (error) {
+      console.error('Error in getTeacherSemesters:', error);
+      res.status(500).json({
+        message: 'Error fetching semesters',
+        error: error.message
+      });
+    }
+  });
+
+  const getSectionAverages = asyncHandler(async (req, res) => {
+    try {
+      const teacherId = req.user._id;
+  
+      // Get all sections taught by this teacher
+      const sections = await Section.find({ teacher: teacherId })
+        .select('name _id')
+        .lean();
+  
+      const sectionAverages = await Promise.all(sections.map(async (section) => {
+        // Get all grades for students in this section
+        const grades = await Grade.find({
+          section: section._id,
+          semester: req.query.semester // Add semester filter
+        }).populate('subjects.subject', 'name');
+  
+        // Calculate average final rating for the section
+        let totalRating = 0;
+        let totalSubjects = 0;
+  
+        grades.forEach(grade => {
+          grade.subjects.forEach(subject => {
+            if (subject.finalRating) {
+              totalRating += subject.finalRating;
+              totalSubjects++;
+            }
+          });
+        });
+  
+        const average = totalSubjects > 0 ? (totalRating / totalSubjects).toFixed(2) : 0;
+  
+        return {
+          name: section.name,
+          average: parseFloat(average),
+          studentCount: grades.length
+        };
+      }));
+  
+      // Sort sections by average
+      sectionAverages.sort((a, b) => b.average - a.average);
+  
+      res.json({
+        success: true,
+        data: sectionAverages
+      });
+  
+    } catch (error) {
+      console.error('Error getting section averages:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error calculating section averages'
+      });
+    }
+  });
+
+  const getSubjectPerformance = asyncHandler(async (req, res) => {
+    try {
+        const { semesterId } = req.query;
+        if (!semesterId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Semester ID is required' 
+            });
+        }
+
+        // Get teacher's sections
+        const sections = await Section.find({ teacher: req.user._id });
+        const sectionIds = sections.map(section => section._id);
+
+        console.log('Fetching grades for sections:', sectionIds);
+        console.log('Semester ID:', semesterId);
+
+        // Find all grades for these sections in the specified semester
+        const grades = await Grade.find({
+            semester: semesterId,
+            section: { $in: sectionIds }
+        })
+        .populate({
+            path: 'subjects.subject',
+            select: 'name'
+        })
+        .lean();
+
+        console.log('Found grades:', grades.length);
+
+        // Calculate averages for each subject
+        const subjectAverages = {};
+
+        grades.forEach(grade => {
+            grade.subjects.forEach(subject => {
+                if (subject.subject && subject.subject.name) {
+                    if (!subjectAverages[subject.subject.name]) {
+                        subjectAverages[subject.subject.name] = {
+                            sum: 0,
+                            count: 0
+                        };
+                    }
+                    
+                    if (subject.finalRating) {
+                        subjectAverages[subject.subject.name].sum += subject.finalRating;
+                        subjectAverages[subject.subject.name].count += 1;
+                    }
+                }
+            });
+        });
+
+        // Format the data for the chart
+        const performanceData = Object.entries(subjectAverages)
+            .map(([name, data]) => ({
+                name,
+                average: data.count > 0 ? Number((data.sum / data.count).toFixed(2)) : 0
+            }))
+            .filter(subject => subject.average > 0); // Remove subjects with no grades
+
+        // Sort by average descending
+        performanceData.sort((a, b) => b.average - a.average);
+
+        console.log('Performance data:', performanceData);
+
+        res.json({
+            success: true,
+            data: performanceData
+        });
+
+    } catch (error) {
+        console.error('Error getting subject performance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching subject performance data'
+        });
+    }
+});
+  
+  export { 
+    getTeacherSemesters,
+    getSubjectPerformance,
+    getSectionAverages,
     getGradesByStudent, 
     addGrade, 
     updateGrade, 
@@ -1217,4 +1977,11 @@ export {
     getTeacherAdvisoryClass,
     bulkAddGrades, 
     getStudentGrades,
-};
+    getSectionStudents,
+    getSectionById,
+    getAttendanceData,
+    saveAttendanceData,
+    getAttendanceSummary,
+    convertDayToKey,
+    getWeekNumberInMonth
+  };

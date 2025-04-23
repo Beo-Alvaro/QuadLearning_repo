@@ -108,10 +108,10 @@ const createUserAccount = asyncHandler(async (req, res) => {
                 // Update advisory section
             if (advisorySection) {
                 await Section.findByIdAndUpdate(
-                    advisorySection,
-                    { advisoryClass: user._id }, // Matches the model field name 'advisoryClass'
+                    advisorySection.section, // <- Use the section ID here
+                    { advisoryClass: user._id },
                     { new: true }
-                );
+                );                
                 console.log('Updated advisory section:', advisorySection);
             }
 
@@ -256,7 +256,7 @@ const getUserListByRole = asyncHandler(async (req, res) => {
                     select: 'name'
                 }]
             })
-            .populate('advisorySection', 'name')  // Add this for teachers
+            .populate('advisorySection.section', 'name') 
             .select('-password');
         
         console.log('Fetched Users:', users); // Debug log
@@ -341,9 +341,10 @@ const updateUserAccount = asyncHandler(async (req, res) => {
             // Set new advisory section if provided
             if (advisorySection) {
                 await Section.findByIdAndUpdate(
-                    advisorySection,
-                    { advisoryClass: user._id }
-                );
+                    advisorySection.section,
+                    { advisoryClass: user._id },
+                    { new: true }
+                );                
             }
 
             updateData = {
@@ -378,6 +379,19 @@ const updateUserAccount = asyncHandler(async (req, res) => {
                 sections: sections ? [sections[0]] : user.sections,
                 subjects: subjects || user.subjects
             };
+
+            // Update the Student schema
+            const studentUpdate = {
+                section: sections ? sections[0] : undefined,
+                strand: strand || undefined,
+                yearLevel: yearLevel || undefined
+            };
+
+            await Student.findOneAndUpdate(
+                { user: user._id }, // Match by user ID
+                { $set: studentUpdate },
+                { new: true }
+            );
         }
 
         // Update user with new data
@@ -406,6 +420,7 @@ const updateUserAccount = asyncHandler(async (req, res) => {
         throw new Error(`Failed to update user: ${error.message}`);
     }
 });
+
 
 // @desc    Delete user account
 // @route   DELETE /api/admin/users/:id
@@ -494,12 +509,13 @@ const getAllStrands = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/sections
 // @access  Private (admin role)
 const getAllSections = asyncHandler(async (req, res) => {
-    const sections = await Section.find()
+    const sections = await Section.find({ status: 'active' }) // Only get active sections
         .populate('strand', 'name') // Populate strand name
-        .populate('yearLevel', 'name') // Add this line to populate year level name
+        .populate('yearLevel', 'name') // Populate year level name
         .populate('advisoryClass', 'username'); // If you need advisor info
     res.json(sections);
 });
+
 
 // @desc    Get all subjects
 // @route   GET /api/admin/subjects
@@ -695,13 +711,13 @@ const deleteSection = asyncHandler(async (req, res) => {
 // @access  Private (admin role)
 const createSubject = asyncHandler(async (req, res) => {
     const { name, code, strand, semester, yearLevel } = req.body;
+    let newSubject = null; // Initialize variable outside try block
 
     // Validate required fields
     if (!name || !code || !strand || !semester || !yearLevel) {
         res.status(400);
         throw new Error('Please provide all required fields');
     }
-
 
     // Find the semester and strand documents
     const semesterDoc = await Semester.findById(semester).populate('strand');
@@ -714,7 +730,7 @@ const createSubject = asyncHandler(async (req, res) => {
 
     try {
         // Create subject
-        const subject = await Subject.create({
+        newSubject = await Subject.create({
             name,
             code,
             strand,
@@ -726,10 +742,10 @@ const createSubject = asyncHandler(async (req, res) => {
         // Update semester with new subject
         await Semester.findByIdAndUpdate(
             semester,
-            { $push: { subjects: subject._id } }
+            { $push: { subjects: newSubject._id } }
         );
         // Populate the references for response
-        const populatedSubject = await Subject.findById(subject._id)
+        const populatedSubject = await Subject.findById(newSubject._id)
             .populate('strand', 'name')
             .populate({
                 path: 'semester',
@@ -748,8 +764,8 @@ const createSubject = asyncHandler(async (req, res) => {
 
     } catch (error) {
         // If something goes wrong, we should clean up any partial creation
-        if (subject) {
-            await Subject.findByIdAndDelete(subject._id);
+        if (newSubject) {
+            await Subject.findByIdAndDelete(newSubject._id);
         }
         res.status(400);
         throw new Error(`Failed to create subject: ${error.message}`);

@@ -1,6 +1,6 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 import { useAuth } from './authContext';
-
+import { ToastContainer, toast } from 'react-toastify';
 export const StrandDataContext = createContext();
 
 export const StrandDataProvider = ({ children }) => {
@@ -34,6 +34,7 @@ export const StrandDataProvider = ({ children }) => {
 
   // Create a new strand
   const addStrand = async (newStrand) => {
+    const token = localStorage.getItem('token');
     setLoading(true);
     try {
       const response = await fetch('/api/admin/addStrands', {
@@ -49,6 +50,7 @@ export const StrandDataProvider = ({ children }) => {
         throw new Error(json.message || 'Failed to create strand');
       }
       await fetchStrands();
+      toast.success('Strand created successfully!')
     } catch (err) {
       setError(err.message);
     } finally {
@@ -74,6 +76,7 @@ export const StrandDataProvider = ({ children }) => {
       }
 
       await fetchStrands();
+      toast.success('Strand updated successfully!')
     } catch (err) {
       setError(err.message);
     }
@@ -92,6 +95,7 @@ export const StrandDataProvider = ({ children }) => {
       if (!response.ok) throw new Error('Failed to delete strand');
 
       setStudStrands((prevStrands) => prevStrands.filter((strand) => strand._id !== id));
+      toast.error('Strand deleted successfully!')
     } catch (err) {
       setError(err.message);
     }

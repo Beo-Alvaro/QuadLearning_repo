@@ -5,14 +5,15 @@ import './TeacherViewStudent.css';
 import TeacherGradeHeader from '../TeacherComponents/TeacherGradeHeader';
 import TeacherEncodeGradeFilter from '../TeacherComponents/TeacherEncodeFilter';
 import { useGradeDataContext } from '../hooks/useGradeDataContext';
-
+import { ToastContainer, toast } from 'react-toastify';
 const TeacherEncodeGrade = () => {
     const [error, setError] = useState(null);
-    const { selectedSubject, currentSemester, setCurrentSemester, studentGrades, setStudentGrades,
-        subjects, successMessage, setSuccessMessage, filteredStudents,
-        showAdvisoryOnly, selectedStrand, selectedYearLevel, selectedSection,
+    const { selectedSubject, currentSemester, studentGrades, setStudentGrades,
+        subjects, successMessage, setSuccessMessage, filteredStudents, setCurrentSemester,
+        selectedStrand, selectedYearLevel, selectedSection,
         semesters, fetchSubjectStudents, fetchSubjects, fetchData, fetchSemesters, loading,
-        yearLevels, availableSections, setEditedGrades, strands, setSelectedSubject, setSelectedStrand, setSelectedYearLevel, setSelectedSection } = useGradeDataContext();
+        yearLevels, availableSections, setEditedGrades, strands, setSelectedSubject, setSelectedStrand,
+         setSelectedYearLevel, setSelectedSection } = useGradeDataContext();
 
     const [localGrades, setLocalGrades] = useState({});
     const [isSaving, setIsSaving] = useState(false);
@@ -37,51 +38,70 @@ const TeacherEncodeGrade = () => {
         });
     };
 
-    // Handle grade changes locally before saving
-    const handleGradeChange = (e, studentId, gradeType) => {
-        const value = e.target.value !== '' ? parseFloat(e.target.value) : '';
+// Update the handleGradeChange function
+const handleGradeChange = (e, studentId, gradeType) => {
+    const value = e.target.value !== '' ? parseFloat(e.target.value) : '';
 
-        setLocalGrades(prevGrades => {
-            const updatedGrades = { ...prevGrades };
-            if (!updatedGrades[studentId]) updatedGrades[studentId] = {};
-            
-            updatedGrades[studentId][gradeType] = value;
+    setLocalGrades(prevGrades => {
+        const updatedGrades = { ...prevGrades };
+        if (!updatedGrades[studentId]) updatedGrades[studentId] = {};
+        
+        updatedGrades[studentId][gradeType] = value;
 
-            // Calculate final rating if both grades exist
-            const midterm = updatedGrades[studentId].midterm ?? 
-                (studentGrades[studentId]?.[selectedSubject]?.midterm ?? 0);
-            const finals = updatedGrades[studentId].finals ?? 
-                (studentGrades[studentId]?.[selectedSubject]?.finals ?? 0);
+        // Calculate final rating if both grades exist
+        const midterm = updatedGrades[studentId].midterm ?? 
+            (studentGrades[studentId]?.[selectedSubject]?.midterm ?? 0);
+        const finals = updatedGrades[studentId].finals ?? 
+            (studentGrades[studentId]?.[selectedSubject]?.finals ?? 0);
 
-            if (midterm !== '' && finals !== '') {
-                updatedGrades[studentId].finalRating = (midterm * 0.4 + finals * 0.6).toFixed(2);
-            }
+        if (midterm !== '' && finals !== '') {
+            // Round to nearest whole number
+            const finalRating = Math.round((midterm * 0.4 + finals * 0.6));
+            updatedGrades[studentId].finalRating = finalRating.toString();
+        }
 
-            return updatedGrades;
-        });
-    };
+        return updatedGrades;
+    });
+};
 
     // Save a single student's grade
     const addGrade = async (studentId) => {
         if (isSaving) return;
         setIsSaving(true);
-        
+    
+        const student = filteredStudents.find(s => s._id === studentId);
+        if (!student) {
+            setIsSaving(false);
+            console.error('Student not found');
+            return;
+        }
+    
         try {
             const studentLocalGrades = localGrades[studentId] || {};
             const existingGrades = studentGrades[studentId]?.[selectedSubject] || {};
-            
-            // Only send grades that have been changed
+    
             const midterm = studentLocalGrades.midterm !== undefined ? 
                 studentLocalGrades.midterm : existingGrades.midterm;
             const finals = studentLocalGrades.finals !== undefined ? 
                 studentLocalGrades.finals : existingGrades.finals;
-            
-            // Don't save if no changes
+    
             if (midterm === undefined && finals === undefined) {
                 setIsSaving(false);
                 return;
             }
+            console.log('Student data:', student);
 
+            console.log('Sending data:', {
+                studentId,
+                subjectId: selectedSubject,
+                semesterId: currentSemester,
+                midterm,
+                finals,
+                section: student.sectionName,      // Updated this line
+                yearLevel: student.yearLevelName   // And this one
+            });
+            
+    
             const response = await fetch('/api/teacher/add-grades', {
                 method: 'POST',
                 headers: {
@@ -93,49 +113,46 @@ const TeacherEncodeGrade = () => {
                     subjectId: selectedSubject,
                     semesterId: currentSemester,
                     midterm,
-                    finals
+                    finals,
+                    section: student.sectionName,      // Updated this line
+                    yearLevel: student.yearLevelName   // And this one
                 })
             });
-  
+    
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Failed to save grade');
             }
-
+    
             const result = await response.json();
-            console.log('Grade save result:', result); // Debug log
-            
-            // Update the UI immediately with the saved data
+            console.log('Grade save result:', result);
+    
             const updatedGrades = { ...studentGrades };
             if (!updatedGrades[studentId]) {
                 updatedGrades[studentId] = {};
             }
-            
+    
             updatedGrades[studentId][selectedSubject] = {
-                midterm: midterm,
-                finals: finals,
+                midterm,
+                finals,
                 finalRating: result.data.finalRating,
                 action: result.data.action
             };
             
-            // Save to state
+    
             setStudentGrades(updatedGrades);
-            
-            // Clear local changes for this student
             setLocalGrades(prev => {
                 const updated = { ...prev };
                 delete updated[studentId];
                 return updated;
             });
-
-            // Exit edit mode after saving
+    
             setEditModeStudents(prev => {
                 const updated = { ...prev };
                 updated[studentId] = false;
                 return updated;
             });
-
-            setSuccessMessage('Grade saved successfully!');
+            toast.success('Grades saved successfully!')
         } catch (error) {
             console.error('Failed to add grade:', error);
             setError(error.message || 'Failed to add grade');
@@ -144,6 +161,8 @@ const TeacherEncodeGrade = () => {
         }
     };
 
+    
+    
     // Save all changed grades at once
     const saveAllGrades = async () => {
         if (isSaving || Object.keys(localGrades).length === 0) return;
@@ -152,16 +171,20 @@ const TeacherEncodeGrade = () => {
         try {
             // Prepare updates array
             const updates = Object.entries(localGrades).map(([studentId, grades]) => {
+                const student = filteredStudents.find(s => s._id === studentId); // Get section and year level
                 const existingGrades = studentGrades[studentId]?.[selectedSubject] || {};
-                
+            
                 return {
                     studentId,
                     subjectId: selectedSubject,
                     semesterId: currentSemester,
                     midterm: grades.midterm !== undefined ? grades.midterm : existingGrades.midterm,
-                    finals: grades.finals !== undefined ? grades.finals : existingGrades.finals
+                    finals: grades.finals !== undefined ? grades.finals : existingGrades.finals,
+                    section: student.sectionName,      // Updated this line
+                    yearLevel: student.yearLevelName   // And this one
                 };
             }).filter(update => update.midterm !== undefined || update.finals !== undefined);
+            
             
             if (updates.length === 0) {
                 setIsSaving(false);
@@ -200,7 +223,7 @@ const TeacherEncodeGrade = () => {
                 // Calculate final rating
                 const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
                 const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
-                const finalRating = (midtermValue * 0.4 + finalsValue * 0.6).toFixed(2);
+                const finalRating = Math.round(midtermValue * 0.4 + finalsValue * 0.6);
                 const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
                 
                 // Update the grades for this student and subject
@@ -225,8 +248,7 @@ const TeacherEncodeGrade = () => {
             });
             setEditModeStudents(updatedEditModes);
             
-            setSuccessMessage('All grades saved successfully!');
-            
+            toast.success('All grades saved successfully!')
             // Refresh grades from server (but we've already updated the UI)
             try {
                 await getSubjectGrades();
@@ -366,6 +388,7 @@ const TeacherEncodeGrade = () => {
     return (
         <>
             <TeacherDashboardNavbar />
+            <ToastContainer />
             <Container className="mt-4">
                 <TeacherGradeHeader />
                 <TeacherEncodeGradeFilter
@@ -374,7 +397,6 @@ const TeacherEncodeGrade = () => {
                     loading={loading}
                     currentSemester={currentSemester}
                     selectedSubject={selectedSubject}
-                    showAdvisoryOnly={showAdvisoryOnly}
                     selectedStrand={selectedStrand}
                     selectedYearLevel={selectedYearLevel}
                     selectedSection={selectedSection}
@@ -390,14 +412,11 @@ const TeacherEncodeGrade = () => {
                     setSelectedYearLevel={setSelectedYearLevel}
                     setSelectedSection={setSelectedSection}
                     setCurrentSemester={setCurrentSemester}
+                    setCurrentSemester={setCurrentSemester}
                 />
 
                 {!selectedSubject ? (
                     <Alert variant="info">Please select a subject to encode grades.</Alert>
-                ) : filteredStudents.length === 0 ? (
-                    <Alert variant="info">
-                        {showAdvisoryOnly ? "No advisory students found." : "No students found for the selected filters."}
-                    </Alert>
                 ) : (
                     <Card className="shadow-sm">
                         <Card.Body className="p-0">
@@ -436,26 +455,40 @@ const TeacherEncodeGrade = () => {
                                                 <td>{student.sectionName}</td>
                                                 <td>
                                                     {isEditing ? (
-                                                        <input 
-                                                            type="number" 
-                                                            min="0" 
-                                                            max="100"
-                                                            value={getGradeDisplayValue(student._id, 'midterm')} 
-                                                            onChange={(e) => handleGradeChange(e, student._id, 'midterm')} 
-                                                        />
+                                                   <input 
+                                                   type="number" 
+                                                   min="0" 
+                                                   max="100"
+                                                   step="0.01" // Allows decimal values
+                                                   value={getGradeDisplayValue(student._id, 'midterm')} 
+                                                   onChange={(e) => handleGradeChange(e, student._id, 'midterm')}
+                                                   onBlur={(e) => {
+                                                       // Clean up the value on blur
+                                                       if (e.target.value === '') return;
+                                                       const value = Math.min(100, Math.max(0, parseFloat(e.target.value)));
+                                                       handleGradeChange({ target: { value } }, student._id, 'midterm');
+                                                   }}
+                                               />
                                                     ) : (
                                                         <span>{getGradeDisplayValue(student._id, 'midterm') || 'N/A'}</span>
                                                     )}
                                                 </td>
                                                 <td>
                                                     {isEditing ? (
-                                                        <input 
-                                                            type="number" 
-                                                            min="0" 
-                                                            max="100"
-                                                            value={getGradeDisplayValue(student._id, 'finals')} 
-                                                            onChange={(e) => handleGradeChange(e, student._id, 'finals')} 
-                                                        />
+                                                      <input 
+                                                      type="number" 
+                                                      min="0" 
+                                                      max="100"
+                                                      step="0.01" // Allows decimal values
+                                                      value={getGradeDisplayValue(student._id, 'finals')} 
+                                                      onChange={(e) => handleGradeChange(e, student._id, 'finals')}
+                                                      onBlur={(e) => {
+                                                          // Clean up the value on blur
+                                                          if (e.target.value === '') return;
+                                                          const value = Math.min(100, Math.max(0, parseFloat(e.target.value)));
+                                                          handleGradeChange({ target: { value } }, student._id, 'finals');
+                                                      }}
+                                                  />
                                                     ) : (
                                                         <span>{getGradeDisplayValue(student._id, 'finals') || 'N/A'}</span>
                                                     )}
