@@ -3,6 +3,8 @@ import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
+import api from '../utils/api';
+
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
@@ -11,70 +13,62 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-
       // Encrypt password before sending
       const encryptedPassword = CryptoJS.AES.encrypt(
         password,
         ENCRYPTION_KEY
-    ).toString();
+      ).toString();
 
-        const response = await fetch('/api/users/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
-        });
+      // Use our API utility instead of fetch
+      const { data } = await api.post('/users/auth', { 
+        username, 
+        password: encryptedPassword, 
+        isEncrypted: true 
+      });
 
-        const data = await response.json();
+      // Debugging: Log data to verify the response structure
+      console.log('Response data:', data);
 
-        if (!response.ok) {
-            if (response.status === 423) {
-                // Handle account lockout
-                throw new Error(data.message || 'Account is locked. Please try again later.');
-            }
-            throw new Error(data.message || 'Invalid credentials');
-        }
+      // Save the token and user info to localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify(data.user));
 
-        // Debugging: Log data to verify the response structure
-        console.log('Response data:', data);
-
-        // Save the token and user info to localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userInfo', JSON.stringify(data.user));
-
-        setLoading(false);
-        // Navigate to dashboard based on role
-        if (data.user.role === 'student') {
-            navigate('./StudentScreens/StudentHomeScreen');
-        } else if (data.user.role === 'teacher') {
-            navigate('./TeacherScreens/TeacherHomeScreen');
-        } else if (data.user.role === 'admin') {
-            navigate('./AdminScreens/AdminHomeScreen');
-        }
+      setLoading(false);
+      
+      // Navigate to dashboard based on role
+      if (data.user.role === 'student') {
+        navigate('./StudentScreens/StudentHomeScreen');
+      } else if (data.user.role === 'teacher') {
+        navigate('./TeacherScreens/TeacherHomeScreen');
+      } else if (data.user.role === 'admin') {
+        navigate('./AdminScreens/AdminHomeScreen');
+      }
     } catch (err) {
-        setLoading(false);
-        setError(err.message);
-        
-        // Add visual feedback for remaining attempts
-        if (err.message.includes('attempts remaining')) {
-            setError(
-                <div>
-                    <p>{err.message}</p>
-                    <small className="text-danger mb-5">
-                        Warning: Your account will be locked for 15 minutes after 5 failed attempts
-                    </small>
-                </div>
-            );
-        }
+      setLoading(false);
+      console.error('Login error:', err);
+      
+      // Display error message
+      if (err.message && err.message.includes('attempts remaining')) {
+        setError(
+          <div>
+            <p>{err.message}</p>
+            <small className="text-danger mb-5">
+              Warning: Your account will be locked for 15 minutes after 5 failed attempts
+            </small>
+          </div>
+        );
+      } else {
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
     }
-};
+  };
 
   return (
     <div 
