@@ -1,4 +1,5 @@
-const API_URL = '/api/messages'; // Base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = `${API_BASE_URL}/messages`; // Base URL for messages
 
 // Send Message
 export const sendMessage = async (content, recipientId, token) => {
@@ -54,7 +55,7 @@ export const markMessageAsRead = async (messageId, token) => {
 
 export const fetchAdminId = async () => {
     try {
-        const response = await fetch('/api/users/adminId', {
+        const response = await fetch(`${API_BASE_URL}/users/adminId`, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
