@@ -404,7 +404,6 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
         bulkSaveGrades,
         saveStudentGrade,
         isBulkSaving,
-        setShowAdvisoryOnly
     };
 
 
