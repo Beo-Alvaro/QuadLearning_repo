@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Kosugi+Maru&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+
+*{
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+}
+
+/* Input fields with semi-gray background */
+input, 
+select, 
+textarea, 
+.form-control, 
+.form-select {
+  border: 1px solid #ddd !important;
+  color: #5f5c5c !important;
+}
+
+
+
+/* Semi-bold (600) styles */
+.semibold {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+}
+
+/* Semi-bold (600) styles */
+.semibold {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+}
+
+/* Common elements that might need semi-bold */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+/* Bootstrap button override */
+.btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+}
+
+/* Navigation links */
+.nav-link {
+    font-weight: 600;
+}
+
+/* Table headers */
+thead th {
+    font-weight: 600;
+}
+
+/* Form labels */
+.form-label {
+    font-weight: 600;
+}
+
+/* Card titles */
+.card-title {
+    font-weight: 600;
+}
+
+/* Modal headers */
+.modal-title {
+    font-weight: 600;
+}
+
+.hero-section {
+    display: flex;
+    align-items: center;
+  }
+  
+  .hero-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transition: transform .7s ease;
+  }
+  
+  .hero-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .school-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1.2;
+  }
+  
+  .highlight {
+    color: rgb(25 135 84);
+    font-size: 3rem;
+  }
+  
+  .welcome-text {
+    font-size: 1.2rem;
+    color: #718096;
+    line-height: 1.6;
+  }
+  
+  .get-started-btn {
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 1s ease;
+  }
+  
+  .get-started-btn:hover {
+    transform: scale(1.05);
+  }
+
+  .container {
+    max-width: 1000px;
+  }
+
+  
+  
+  /* Add some responsive adjustments */
+  @media (max-width: 768px) {
+    .container, .container-md, .container-sm {
+      max-width: 1000px;  /* You can adjust this value as needed */
+    }
+    
+    .school-title {
+      font-size: 2rem;
+    }
+    
+    .highlight {
+      font-size: 2.5rem;
+    }
+    
+    .welcome-text {
+      font-size: 1rem;
+    }
+  }

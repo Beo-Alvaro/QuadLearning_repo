@@ -1,0 +1,15 @@
+.main-content {
+    padding: 20px;
+    margin-left: 250px; /* Adjust based on your sidebar width */
+}
+
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+/* Add this to your CSS file */
+.button-group {
+    display: flex;
+    gap: 10px; /* Adjust the gap as needed */
+    justify-content: center; /* Center the buttons */
+}

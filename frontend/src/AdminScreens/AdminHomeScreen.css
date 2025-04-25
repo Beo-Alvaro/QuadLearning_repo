@@ -1,0 +1,56 @@
+/* Update main content styles */
+.main-content {
+    margin: 0;  /* Remove default margin */
+    margin-left: 260px;  /* Match sidebar width */
+    padding: 20px;
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+/* Container within main content */
+.main-content .container-fluid {
+    padding: 0 1.5rem;
+    margin: 0;  /* Remove default margin */
+}
+
+/* Fix flex layout */
+.d-flex {
+    display: flex;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.stat-card.total-users {
+    padding: 20px
+}
+
+.main-content {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding-top: 1rem;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Optional: Add smooth transitions for better UX */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
