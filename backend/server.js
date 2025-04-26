@@ -10,10 +10,34 @@ import teacherRoutes from './routes/teacherRoutes.js';
 import semesterRoutes from './routes/semesterRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
 dotenv.config(); // Load environment variables
 const port = process.env.PORT || 5000;
 
 const app = express();
+
+// CORS configuration
+app.use((req, res, next) => {
+    const allowedOrigins = [
+        process.env.FRONTEND_URL || 'http://localhost:5173', // Vite dev server default
+        'https://your-app-name.vercel.app' // Replace with your actual Vercel domain
+    ];
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
 
 // Middleware setup
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
@@ -35,7 +59,10 @@ connectDB()
         process.exit(1); // Exit if the server cannot start
     });
 
-// Routes
+// Health check route
+app.use('/health', healthRoutes);
+
+// API routes
 app.use('/api/users', userRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/admin', adminRoutes);

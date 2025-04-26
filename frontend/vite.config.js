@@ -13,4 +13,10 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    // Ensure images are copied to the build directory
+    copyPublicDir: true,
+  },
 })
