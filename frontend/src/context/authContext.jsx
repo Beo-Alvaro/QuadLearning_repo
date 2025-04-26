@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { fetchAdminId } from '../services/messageService';
+import apiConfig from '../config/apiConfig';
 
 export const AuthContext = createContext();
 
@@ -42,7 +43,8 @@ export const AuthProvider = ({ children }) => {
     const login = async (username, password) => {
         try {
             setLoading(true);
-            const response = await fetch('/api/auth/login', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

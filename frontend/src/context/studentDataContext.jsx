@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import apiConfig from "../config/apiConfig";
 
 export const StudentDataContext = createContext();
 
@@ -9,60 +10,93 @@ export const StudentDataProvider = ({ children }) => {
   const [subjects, setSubjects] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [yearLevels, setYearLevels] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const sanitizeData = (data) => data || [];
 
   const fetchData = async () => {
-    const token = localStorage.getItem('token');
-
     try {
-      const endpoints = [
-        { url: '/api/admin/users?role=student', label: 'Users', setter: setUsers },
-        { url: '/api/admin/getStrands', label: 'Strands', setter: setStrands },
-        { url: '/api/admin/getSections', label: 'Sections', setter: setSections },
-        { url: '/api/admin/getSubjects', label: 'Subjects', setter: setSubjects },
-        { url: '/api/admin/semesters', label: 'Semesters', setter: setSemesters },
-        { url: '/api/admin/yearLevels', label: 'Year Levels', setter: setYearLevels },
-      ];
+      setLoading(true);
+      const baseUrl = apiConfig.getBaseUrl();
+      
+      // Fetch users data
+      const usersResponse = await fetch(`${baseUrl}/users`);
+      if (!usersResponse.ok) {
+        throw new Error(`HTTP error! Status: ${usersResponse.status}`);
+      }
+      const usersData = await usersResponse.json();
 
-      const fetchPromises = endpoints.map(({ url }) => 
-        fetch(url, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
-      );
+      // Fetch strands data
+      const strandsResponse = await fetch(`${baseUrl}/strands`);
+      if (!strandsResponse.ok) {
+        throw new Error(`HTTP error! Status: ${strandsResponse.status}`);
+      }
+      const strandsData = await strandsResponse.json();
 
-      const responses = await Promise.all(fetchPromises);
+      // Fetch sections data
+      const sectionsResponse = await fetch(`${baseUrl}/sections`);
+      if (!sectionsResponse.ok) {
+        throw new Error(`HTTP error! Status: ${sectionsResponse.status}`);
+      }
+      const sectionsData = await sectionsResponse.json();
 
-      const handleResponse = async (res, label) => {
-        if (!res.ok) {
-          const errorDetails = await res.clone().text();
-          console.error(`${label} Error:`, {
-            status: res.status,
-            statusText: res.statusText,
-            errorDetails,
-          });
-          return null;
-        }
-        return await res.json();
-      };
+      // Fetch subjects data
+      const subjectsResponse = await fetch(`${baseUrl}/subjects`);
+      if (!subjectsResponse.ok) {
+        throw new Error(`HTTP error! Status: ${subjectsResponse.status}`);
+      }
+      const subjectsData = await subjectsResponse.json();
 
-      const data = await Promise.all(responses.map((res, index) =>
-        handleResponse(res, endpoints[index].label)
-      ));
+      // Fetch semesters data
+      const semestersResponse = await fetch(`${baseUrl}/semesters`);
+      if (!semestersResponse.ok) {
+        throw new Error(`HTTP error! Status: ${semestersResponse.status}`);
+      }
+      const semestersData = await semestersResponse.json();
+
+      // Fetch year levels data
+      const yearLevelsResponse = await fetch(`${baseUrl}/year-levels`);
+      if (!yearLevelsResponse.ok) {
+        throw new Error(`HTTP error! Status: ${yearLevelsResponse.status}`);
+      }
+      const yearLevelsData = await yearLevelsResponse.json();
+
+      // Filter and sanitize the data
+      const data = [usersData, strandsData, sectionsData, subjectsData, semestersData, yearLevelsData];
 
       data.forEach((result, index) => {
         if (result !== null) {
-          endpoints[index].setter(sanitizeData(result));
+          switch (index) {
+            case 0:
+              setUsers(sanitizeData(result));
+              break;
+            case 1:
+              setStrands(sanitizeData(result));
+              break;
+            case 2:
+              setSections(sanitizeData(result));
+              break;
+            case 3:
+              setSubjects(sanitizeData(result));
+              break;
+            case 4:
+              setSemesters(sanitizeData(result));
+              break;
+            case 5:
+              setYearLevels(sanitizeData(result));
+              break;
+          }
         }
       });
 
     } catch (error) {
       console.error('Comprehensive Error fetching dropdown data:', error);
       setError('An unexpected error occurred while fetching data');
+    } finally {
+      setLoading(false);
     }
   };
-
-
-  
 
   return (
     <StudentDataContext.Provider value={{ users, strands, sections, subjects, semesters, yearLevels, error, fetchData }}>

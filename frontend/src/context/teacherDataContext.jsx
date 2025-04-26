@@ -1,4 +1,5 @@
 import React, { createContext, useReducer } from 'react';
+import apiConfig from '../config/apiConfig';
 
 export const TeacherDataContext = createContext();
 
@@ -40,12 +41,14 @@ export const TeacherDataContextProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING' });
 
     try {
+      const baseUrl = apiConfig.getBaseUrl();
+      
       const [usersRes, sectionsRes, subjectsRes, semestersRes, advisorySectionsRes] = await Promise.all([
-        fetch('/api/admin/users?role=teacher', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/getSections', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/getSubjects', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/semesters', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/advisorySections', { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${baseUrl}/admin/users?role=teacher`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${baseUrl}/admin/getSections`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${baseUrl}/admin/getSubjects`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${baseUrl}/admin/semesters`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${baseUrl}/admin/advisorySections`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       const payload = {

@@ -1,4 +1,5 @@
 import React, { createContext, useState } from 'react';
+import apiConfig from '../config/apiConfig';
 
 export const UserDataContext = createContext();
 
@@ -19,7 +20,8 @@ export const UserContextProvider = ({ children }) => {
 
         try {
             setLoading(true);
-            const response = await fetch('/api/admin/getUsers', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/getUsers`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -49,7 +51,8 @@ export const UserContextProvider = ({ children }) => {
 
         try {
             setLoading(true);
-            const response = await fetch(`/api/admin/resetPassword/${userId}`, {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/resetPassword/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

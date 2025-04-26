@@ -3,6 +3,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useState, useEffect } from 'react';
 import { Table, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import apiConfig from '../config/apiConfig';
+
 function StudentDashboardNavbar() {
 
 
@@ -28,7 +30,10 @@ function StudentDashboardNavbar() {
     setError('');       // Clear any previous errors
 
     try {
-        const response = await fetch('/api/users/logout', {
+        const baseUrl = apiConfig.getBaseUrl();
+        console.log('Logging out using API URL:', `${baseUrl}/users/logout`);
+        
+        const response = await fetch(`${baseUrl}/users/logout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

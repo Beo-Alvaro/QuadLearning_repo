@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
 export const TeacherUserContext = createContext();
 
 export const TeacherUserContextProvider = ({ children }) => {
@@ -27,7 +28,8 @@ export const TeacherUserContextProvider = ({ children }) => {
 
             console.log('Fetching sections with token:', token.substring(0, 10) + '...');
             
-            const sectionsResponse = await fetch('/api/teacher/sections', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const sectionsResponse = await fetch(`${baseUrl}/teacher/sections`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -83,7 +85,8 @@ export const TeacherUserContextProvider = ({ children }) => {
     try {
         if (!studentId) throw new Error('Invalid Student ID');
 
-        const response = await fetch(`/api/teacher/generate-form137/${studentId}`, {
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/teacher/generate-form137/${studentId}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -116,7 +119,8 @@ const handleSelectStudent = async (studentId) => {
         if (!studentId) throw new Error('Invalid Student ID');
 
         // Fetch student details
-        const response = await fetch(`/api/teacher/student/${studentId}`, {
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
@@ -130,7 +134,7 @@ const handleSelectStudent = async (studentId) => {
         const data = await response.json();
 
         // Fetch grades with populated semester information
-        const gradesResponse = await fetch(`/api/teacher/student-grades/${studentId}`, {
+        const gradesResponse = await fetch(`${baseUrl}/teacher/student-grades/${studentId}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },

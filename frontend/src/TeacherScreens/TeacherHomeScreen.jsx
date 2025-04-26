@@ -9,6 +9,7 @@ import { Calendar, Users, BookOpen, Award, BarChart2 } from 'lucide-react';
 import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar';
 import './Teacher.css';
 import axios from 'axios';
+import apiConfig from '../config/apiConfig';
 
 const TeacherHomeScreen = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -43,7 +44,8 @@ const fetchSemesters = useCallback(async () => {
   try {
     setIsLoadingAttendance(true); // Add loading state
     const config = getAuthConfig();
-    const response = await axios.get('/api/teacher/getSemesters', config);
+    const baseUrl = apiConfig.getBaseUrl();
+    const response = await axios.get(`${baseUrl}/teacher/getSemesters`, config);
     console.log('Fetched semesters:', response.data);
     
     if (response.data && response.data.length > 0) {
@@ -79,8 +81,9 @@ const fetchSemesters = useCallback(async () => {
 const fetchSectionAverages = useCallback(async () => {
   try {
     const config = getAuthConfig();
+    const baseUrl = apiConfig.getBaseUrl();
     const response = await axios.get(
-      `/api/teacher/section-averages?semester=${selectedSemester}`,
+      `${baseUrl}/teacher/section-averages?semester=${selectedSemester}`,
       config
     );
 
@@ -110,9 +113,10 @@ const fetchSubjectPerformance = useCallback(async () => {
     setIsLoadingSubjects(true); // Start loading
     console.log('Fetching subject performance for semester:', selectedSemester);
     const config = getAuthConfig();
+    const baseUrl = apiConfig.getBaseUrl();
     
     const response = await axios.get(
-      `/api/teacher/subject-performance`,
+      `${baseUrl}/teacher/subject-performance`,
       {
         ...config,
         params: {
@@ -146,7 +150,8 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
   const fetchDashboardData = useCallback(async () => {
     try {
       const config = getAuthConfig();
-      const response = await axios.get('/api/teacher/dashboard', config);
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await axios.get(`${baseUrl}/teacher/dashboard`, config);
       setDashboardData(response.data.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -189,10 +194,11 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
   
       setIsLoadingAttendance(true);
       const config = getAuthConfig();
+      const baseUrl = apiConfig.getBaseUrl();
       
       console.log(`Fetching attendance data for ${weekType} week...`);
       const response = await axios.get(
-        `/api/teacher/attendance/summary?week=${weekType}&semester=${selectedSemester}`,
+        `${baseUrl}/teacher/attendance/summary?week=${weekType}&semester=${selectedSemester}`,
         config
       );
       

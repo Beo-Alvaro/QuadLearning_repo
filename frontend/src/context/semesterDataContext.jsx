@@ -1,4 +1,5 @@
 import { createContext, useState } from 'react';
+import apiConfig from '../config/apiConfig';
 
 export const SemesterDataContext = createContext();
 
@@ -16,11 +17,12 @@ export const SemesterDataProvider = ({ children }) => {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             };
+            const baseUrl = apiConfig.getBaseUrl();
 
             const [semestersRes, strandsRes, yearLevelsRes] = await Promise.all([
-                fetch('/api/admin/semesters', { headers }),
-                fetch('/api/admin/getStrands', { headers }),
-                fetch('/api/admin/yearLevels', { headers })
+                fetch(`${baseUrl}/admin/semesters`, { headers }),
+                fetch(`${baseUrl}/admin/getStrands`, { headers }),
+                fetch(`${baseUrl}/admin/yearLevels`, { headers })
             ]);
 
             const checkResponse = async (res) => {
@@ -49,7 +51,8 @@ export const SemesterDataProvider = ({ children }) => {
     const deleteHandler = async (semesterId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`/api/admin/semesters/${semesterId}`, {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/semesters/${semesterId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,8 +83,8 @@ export const SemesterDataProvider = ({ children }) => {
         }
       
         try {
-      
-          const response = await fetch(`/api/admin/semesters/${id}`, {
+          const baseUrl = apiConfig.getBaseUrl();
+          const response = await fetch(`${baseUrl}/admin/semesters/${id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -128,7 +131,8 @@ export const SemesterDataProvider = ({ children }) => {
         }
 
         try {
-            const response = await fetch('/api/admin/addSemesters', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/addSemesters`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

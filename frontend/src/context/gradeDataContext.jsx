@@ -1,4 +1,5 @@
 import React, { createContext, useState, useMemo } from 'react';
+import apiConfig from '../config/apiConfig';
 // Create Context
 export const GradeDataContext = createContext();
 
@@ -88,8 +89,9 @@ export const GradeDataContextProvider = ({ children }) => {
         setLoading(true);
         console.log(`Context: Fetching grades for subject: ${subjectId}, semester: ${semesterId}`);
         
+        const baseUrl = apiConfig.getBaseUrl();
         const response = await fetch(
-            `/api/teacher/subject-grades/${subjectId}?semesterId=${semesterId}`,
+            `${baseUrl}/teacher/subject-grades/${subjectId}?semesterId=${semesterId}`,
             {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -124,7 +126,8 @@ const bulkSaveGrades = async (updates) => {
         setIsBulkSaving(true);
         setError(null);
         
-        const response = await fetch('/api/teacher/bulk-add-grades', {
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/teacher/bulk-add-grades`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -159,7 +162,8 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
     try {
         setError(null);
         
-        const response = await fetch('/api/teacher/add-grades', {
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/teacher/add-grades`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -200,8 +204,9 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
           }
   
           try {
+              const baseUrl = apiConfig.getBaseUrl();
               const response = await fetch(
-                  `/api/teacher/subject-students?subjectId=${selectedSubject}&semesterId=${currentSemester}`,
+                  `${baseUrl}/teacher/subject-students?subjectId=${selectedSubject}&semesterId=${currentSemester}`,
                   {
                       headers: {
                           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -225,7 +230,8 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
           if (!currentSemester) return; // Don't fetch if no semester selected
   
           try {
-              const response = await fetch(`/api/teacher/subjects?semesterId=${currentSemester}`, {
+              const baseUrl = apiConfig.getBaseUrl();
+              const response = await fetch(`${baseUrl}/teacher/subjects?semesterId=${currentSemester}`, {
                   headers: {
                       'Authorization': `Bearer ${localStorage.getItem('token')}`
                   }

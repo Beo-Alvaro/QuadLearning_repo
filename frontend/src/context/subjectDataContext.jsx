@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
 export const SubjectDataContext = createContext();
 
 export const SubjectDataProvider = ({ children }) => {
@@ -26,11 +27,12 @@ export const SubjectDataProvider = ({ children }) => {
         };
     
         try {
+            const baseUrl = apiConfig.getBaseUrl();
             const [subjectsResponse, semestersResponse, strandsResponse, yearLevelsResponse] = await Promise.all([
-                fetch('/api/admin/getSubjects', { headers }),
-                fetch('/api/admin/semesters', { headers }),
-                fetch('/api/admin/getStrands', { headers }),
-                fetch('/api/admin/yearLevels', { headers })
+                fetch(`${baseUrl}/admin/getSubjects`, { headers }),
+                fetch(`${baseUrl}/admin/semesters`, { headers }),
+                fetch(`${baseUrl}/admin/getStrands`, { headers }),
+                fetch(`${baseUrl}/admin/yearLevels`, { headers })
             ]);
     
             const [subjectsData, semestersData, strandsData, yearLevelsData] = await Promise.all([
@@ -57,7 +59,8 @@ export const SubjectDataProvider = ({ children }) => {
         setError('');
     
         try {
-            const response = await fetch('/api/admin/addSubjects', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/addSubjects`, {
                 method: 'POST',
                 body: JSON.stringify(subjectData),
                 headers: {
@@ -88,7 +91,8 @@ export const SubjectDataProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         
         try {
-          const response = await fetch(`/api/admin/subjects/${selectedSubjectId}`, {
+          const baseUrl = apiConfig.getBaseUrl();
+          const response = await fetch(`${baseUrl}/admin/subjects/${selectedSubjectId}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -123,7 +127,8 @@ export const SubjectDataProvider = ({ children }) => {
     const handleDeleteSubject = async (subjectId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`/api/admin/subjects/${subjectId}`, {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/subjects/${subjectId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

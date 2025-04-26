@@ -1,6 +1,7 @@
 import React, { createContext, useState } from 'react';
 import { useAuth } from './authContext';
 import { ToastContainer, toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
 export const StrandDataContext = createContext();
 
 export const StrandDataProvider = ({ children }) => {
@@ -15,7 +16,8 @@ export const StrandDataProvider = ({ children }) => {
     setLoading(true);
     const storedToken = localStorage.getItem("token")
     try {
-      const response = await fetch('/api/admin/getStrands', {
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/admin/getStrands`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${storedToken}`,
@@ -37,7 +39,8 @@ export const StrandDataProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/addStrands', {
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/admin/addStrands`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +64,8 @@ export const StrandDataProvider = ({ children }) => {
   // Update a strand
   const updateStrand = async (id, updatedData) => {
     try {
-      const response = await fetch(`/api/admin/strands/${id}`, {
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/admin/strands/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +89,8 @@ export const StrandDataProvider = ({ children }) => {
   // Delete a strand
   const deleteStrand = async (id) => {
     try {
-      const response = await fetch(`/api/admin/strands/${id}`, {
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/admin/strands/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

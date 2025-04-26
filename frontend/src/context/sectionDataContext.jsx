@@ -1,5 +1,6 @@
 import React, { createContext, useState } from 'react';
 import { toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
 export const SectionDataContext = createContext();
 
 export const SectionDataProvider = ({ children }) => {
@@ -16,10 +17,11 @@ export const SectionDataProvider = ({ children }) => {
     const fetchData = async () => {
         const token = localStorage.getItem('token');
         try {
+            const baseUrl = apiConfig.getBaseUrl();
             const [sectionsResponse, strandsResponse, yearLevelsResponse] = await Promise.all([
-                fetch('/api/admin/getSections', { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
-                fetch('/api/admin/getStrands', { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
-                fetch('/api/admin/yearLevels', { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
+                fetch(`${baseUrl}/admin/getSections`, { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
+                fetch(`${baseUrl}/admin/getStrands`, { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
+                fetch(`${baseUrl}/admin/yearLevels`, { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
             ]);
 
             if (!sectionsResponse.ok || !strandsResponse.ok || !yearLevelsResponse.ok) {
@@ -61,7 +63,8 @@ export const SectionDataProvider = ({ children }) => {
         const token = localStorage.getItem('token');
     
         try {
-            const response = await fetch(`/api/admin/sections/${selectedSectionId}`, {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/sections/${selectedSectionId}`, {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json', 
@@ -95,7 +98,8 @@ export const SectionDataProvider = ({ children }) => {
     const deleteHandler = async (sectionId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`/api/admin/sections/${sectionId}`, {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/sections/${sectionId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             });
@@ -127,7 +131,8 @@ export const SectionDataProvider = ({ children }) => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/addSections', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/addSections`, {
                 method: 'POST',
                 body: JSON.stringify(sectionData),
                 headers: {

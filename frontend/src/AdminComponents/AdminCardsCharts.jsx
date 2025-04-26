@@ -7,6 +7,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import AdminSidebar from './AdminSidebar';
 import '../AdminComponents/AdminTableList.css';
 import { useState, useEffect } from 'react';
+import apiConfig from '../config/apiConfig';
+
 const getRoleBadgeColor = (role) => {
     switch (role.toLowerCase()) {
         case 'admin':
@@ -39,13 +41,13 @@ const AdminCardsCharts = () => {
             const token = localStorage.getItem('token');
             try {
                 const [usersRes, strandsRes, sectionsRes] = await Promise.all([
-                    fetch('/api/admin/getUsers', {
+                    fetch(`${apiConfig.getBaseUrl()}/admin/getUsers`, {
                         headers: { Authorization: `Bearer ${token}` }
                     }),
-                    fetch('/api/admin/getStrands', {
+                    fetch(`${apiConfig.getBaseUrl()}/admin/getStrands`, {
                         headers: { Authorization: `Bearer ${token}` }
                     }),
-                    fetch('/api/admin/getSections', {
+                    fetch(`${apiConfig.getBaseUrl()}/admin/getSections`, {
                         headers: { Authorization: `Bearer ${token}` }
                     })
                 ]);

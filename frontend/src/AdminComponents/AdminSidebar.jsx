@@ -7,6 +7,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext'; 
+import apiConfig from '../config/apiConfig';
 
 const AdminSidebar = () => {
     const [loading, setLoading] = useState(false); // Define loading state
@@ -20,7 +21,7 @@ const AdminSidebar = () => {
         setError('');       // Clear any previous errors
     
         try {
-            const response = await fetch('/api/users/logout', {
+            const response = await fetch(`${apiConfig.getBaseUrl()}/users/logout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
