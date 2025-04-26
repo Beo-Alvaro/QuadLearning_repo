@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { Container, Card, Row, Col, Spinner } from "react-bootstrap"
 import { User, BarChart2, MessageCircle } from "lucide-react"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
+import apiConfig from "../config/apiConfig"
 import "./StudentHomeScreen.css"
 
 const StudentHomeScreen = () => {
@@ -44,7 +45,9 @@ const StudentHomeScreen = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            const response = await fetch("/api/student/profile", {
+            const baseUrl = apiConfig.getBaseUrl();
+            
+            const response = await fetch(`${baseUrl}/student/profile`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
