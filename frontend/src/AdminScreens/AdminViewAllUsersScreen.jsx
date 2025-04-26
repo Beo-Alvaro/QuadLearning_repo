@@ -10,6 +10,7 @@ import Button from 'react-bootstrap/Button';
 import Header from '../components/Header';
 import AdminResetPasswordModal from '../AdminComponents/AdminResetPasswordModal';
 import { useUsersDataContext } from '../hooks/useUsersDataContext';
+import {toast, ToastContainer} from 'react-toastify';
 
 const AdminViewAllUsersScreen = () => {
     const { users, handleResetPassword, fetchUsers  } = useUsersDataContext();
@@ -17,11 +18,7 @@ const AdminViewAllUsersScreen = () => {
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [entriesPerPage, setEntriesPerPage] = useState(10);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
 
     const [newUser, setNewUser] = useState({
         username: '',
@@ -75,6 +72,7 @@ const getRoleBadgeColor = (role) => {
     return ( 
         <>
         <Header/>
+        <ToastContainer/>
         <AdminSidebar/>
         <div className='d-flex'>
             <main className="main-content flex-grow-1">
@@ -180,8 +178,10 @@ const getRoleBadgeColor = (role) => {
 
         <AdminResetPasswordModal 
       show={show} 
+      setShow={setShow}
       handleClose={handleClose} 
-      selectedUserId={selectedUserId} 
+      selectedUserId={selectedUserId}
+      setSelectedUserId={setSelectedUserId}
     />
             </>
      );

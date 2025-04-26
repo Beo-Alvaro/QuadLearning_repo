@@ -1,18 +1,45 @@
 import { useState, useEffect } from "react"
 import { getAdminMessages, markMessageAsRead } from "../services/messageService"
-import { Container, Row, Col, ListGroup, Form, InputGroup } from "react-bootstrap"
+import { Container, Row, Col, ListGroup, Form, InputGroup, Button } from "react-bootstrap"
 import Header from "../components/Header"
 import AdminSidebar from "../AdminComponents/AdminSidebar"
 import ConversationView from "./ConversationView"
 import './AdminMessages.css'
 import { useAuth } from "../context/authContext"
+import { Pagination } from "react-bootstrap"
 const AdminMessages = () => {
   const [messages, setMessages] = useState([])
   const { token, adminId } = useAuth();
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [messagesPerPage] = useState(5)
+
   let storedToken;
+
+// Update these constants to include console logs for debugging
+const filteredMessages = messages.filter((user) => 
+  user.username.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+   // Add pagination logic
+   const indexOfLastMessage = currentPage * messagesPerPage;
+   const indexOfFirstMessage = indexOfLastMessage - messagesPerPage;
+   const currentMessages = filteredMessages.slice(indexOfFirstMessage, indexOfLastMessage);
+   const totalPages = Math.ceil(filteredMessages.length / messagesPerPage);
+   
+ 
+   // Add pagination handler
+   const handlePageChange = (action) => {
+    if (action === 'prev' && currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+      setSelectedUser(null);
+    } else if (action === 'next' && currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+      setSelectedUser(null);
+    }
+  };
   
   useEffect(() => {
     const fetchMessages = async () => {
@@ -57,18 +84,32 @@ const AdminMessages = () => {
     const storedToken = localStorage.getItem("token")
     try {
       await markMessageAsRead(messageId, storedToken)
+      
+      // Update messages state to reflect read status
       setMessages((prevMessages) =>
         prevMessages.map((user) => ({
           ...user,
-          messages: user.messages.map((msg) => (msg._id === messageId ? { ...msg, status: "read" } : msg)),
-        })),
-      )
+          messages: user.messages.map((msg) => 
+            msg._id === messageId ? { ...msg, status: "read" } : msg
+          ),
+        }))
+      );
+  
+      // Also update selectedUser if this message belongs to them
+      if (selectedUser) {
+        setSelectedUser(prev => ({
+          ...prev,
+          messages: prev.messages.map((msg) =>
+            msg._id === messageId ? { ...msg, status: "read" } : msg
+          )
+        }));
+      }
     } catch (error) {
       console.error("Error marking message as read:", error)
     }
   }
 
-  const filteredMessages = messages.filter((user) => user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+
 
   return (
     <div className="min-vh-100 bg-light d-flex">
@@ -103,8 +144,9 @@ const AdminMessages = () => {
                 ) : filteredMessages.length === 0 ? (
                   <p className="text-center text-muted">No messages found.</p>
                 ) : (
+                  <>
                   <ListGroup variant="flush">
-                    {filteredMessages.map((user) => (
+                    {currentMessages.map((user) => (
                       <ListGroup.Item
                         key={user._id}
                         action
@@ -134,6 +176,30 @@ const AdminMessages = () => {
                       </ListGroup.Item>
                     ))}
                   </ListGroup>
+
+                         {/* Add Pagination */}
+                         {filteredMessages.length > messagesPerPage && (
+  <div className="d-flex justify-content-between mt-3">
+    <Button
+      variant="outline-primary" 
+      size="sm"
+      disabled={currentPage === 1}
+      onClick={() => handlePageChange('prev')}
+    >
+      Previous
+    </Button>
+    <span>Page {currentPage} of {totalPages}</span>
+    <Button 
+      variant="outline-primary" 
+      size="sm"
+      disabled={currentPage === totalPages}
+      onClick={() => handlePageChange('next')}
+    >
+      Next
+    </Button>
+  </div>
+)}
+                      </>
                 )}
               </div>
             </Col>

@@ -5,6 +5,7 @@ import { Container, Row, Col, Table, Button, Form, InputGroup, Card } from 'reac
 import { FaSearch } from 'react-icons/fa';
 import { useStudentDataContext } from '../hooks/useStudentsDataContext';
 import EnrollStudentModal from '../AdminComponents/EnrollStudentModal';
+import { ToastContainer } from 'react-toastify';
 
 const AdminPendingStudents = () => {
     const [pendingStudents, setPendingStudents] = useState([]);
@@ -107,13 +108,15 @@ const AdminPendingStudents = () => {
             yearLevel: '', 
             strand: '', 
             section: '',
-            _id: student._id // <-- Add this
+            semester: '',
+            subjects: [], // Add this to initialize empty subjects array
+            _id: student._id,
+            status: 'active'
         });
         setError('');
         setShowModal(true);
     };
     
-
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedStudent(null);
@@ -122,6 +125,7 @@ const AdminPendingStudents = () => {
     return (
         <>
             <Header />
+            <ToastContainer />
             <div className="d-flex">
                 <AdminSidebar />
                 <Container fluid className="ms-auto me-auto py-4">

@@ -1007,28 +1007,25 @@ const getAllYearLevels = asyncHandler(async (req, res) => {
 
 const getAvailableAdvisorySections = asyncHandler(async (req, res) => {
     try {
-        // Get all sections
-        const allSections = await Section.find();
-        
-        // Get sections that are already assigned as advisory sections
-        const assignedSections = await User.find(
-            { role: 'teacher', advisorySection: { $ne: null } },
-            'advisorySection'
-        );
-        
-        // Create a Set of assigned section IDs for quick lookup
-        const assignedSectionIds = new Set(
-            assignedSections.map(user => user.advisorySection.toString())
-        );
-        
-        // Filter out sections that are already assigned
-        const availableSections = allSections.map(section => ({
+        // Get all active sections that don't have an advisory teacher
+        const availableSections = await Section.find({
+            status: 'active',
+            'advisoryTeacher.status': { $ne: 'active' }
+        })
+        .populate('yearLevel', 'name')
+        .populate('strand', 'name')
+        .select('name yearLevel strand status');
+
+        const formattedSections = availableSections.map(section => ({
             _id: section._id,
             name: section.name,
-            hasAdviser: assignedSectionIds.has(section._id.toString())
+            yearLevel: section.yearLevel,
+            strand: section.strand,
+            hasAdviser: false,
+            status: section.status
         }));
 
-        res.json(availableSections);
+        res.json(formattedSections);
     } catch (error) {
         res.status(500);
         throw new Error('Error fetching available advisory sections');

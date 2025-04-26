@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, strands, filteredSections, semesters, error, subjects, setPendingStudents, pendingStudents, setError}) => {
     const [availableSubjects, setAvailableSubjects] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
     const modalStyles = {
         modalHeader: {
             background: '#f8f9fa',
@@ -29,8 +30,13 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
     };
 
     const handleEnroll = async (userId) => {
+        // Validate required subjects
+        if (!newUser.subjects || newUser.subjects.length === 0) {
+            setError('Please select at least one subject');
+            return;
+        }
+    
         const token = localStorage.getItem('token');
-        console.log('Form data being sent:', newUser); // Debugging log
         try {
             const response = await fetch('/api/admin/enroll-student', {
                 method: 'PUT',
@@ -39,23 +45,33 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    userId: userId, // Ensure this is not undefined
+                    userId: userId,
                     section: newUser.section,
                     strand: newUser.strand,
                     subjects: newUser.subjects,
                     yearLevel: newUser.yearLevel,
                     semester: newUser.semester,
+                    status: 'active'
                 }),
             });    
             const data = await response.json();
-            console.log('Server response:', data); // Debugging log
+            
             if (response.ok) {
-                // Make sure setPendingStudents and pendingStudents are passed as props if used
                 if (setPendingStudents && pendingStudents) {
                     setPendingStudents(pendingStudents.filter(pending => pending._id !== userId));
                 }
-                onClose(); // Close modal
-                toast.success('Student enrolled successfully!')
+                setNewUser({
+                    yearLevel: '',
+                    strand: '',
+                    section: '',
+                    semester: '',
+                    subjects: [],
+                    status: 'active'
+                });
+                setSelectAll(false);
+                setAvailableSubjects([]);
+                onClose();
+                toast.success('Student enrolled successfully!');
             } else {
                 setError(data.message || 'Failed to enroll student');
             }
@@ -69,6 +85,22 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
         setNewUser({ ...newUser, [field]: value });
     };
 
+        // Add useEffect to reset form when modal closes
+        useEffect(() => {
+            if (!show) {
+                setAvailableSubjects([]);
+                setNewUser(prev => ({
+                    ...prev,
+                    yearLevel: '',
+                    strand: '',
+                    section: '',
+                    semester: '',
+                    subjects: [], // Ensure subjects array is reset
+                    status: 'active'
+                }));
+            }
+        }, [show, setNewUser]);
+
     useEffect(() => {
         if (newUser.strand && newUser.semester && newUser.yearLevel) {
             const filteredSubjects = subjects.filter(subject =>
@@ -81,6 +113,17 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
             setAvailableSubjects([]);
         }
     }, [newUser.strand, newUser.semester, newUser.yearLevel, subjects]);
+
+    useEffect(() => {
+        if (availableSubjects.length > 0) {
+            if (selectAll) {
+                setNewUser(prev => ({
+                    ...prev,
+                    subjects: availableSubjects.map(subject => subject._id)
+                }));
+            }
+        }
+    }, [selectAll, availableSubjects]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -228,45 +271,74 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                     </div>
 
                      {/* Subjects Section */}
-            <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Subjects</h6>
-                {availableSubjects.length > 0 ? (
-                    <div className="subjects-grid" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '0.5rem' 
-                    }}>
-                        {availableSubjects.map(subject => (
+                     <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
+                    <h6 className="mb-3">Subjects</h6>
+                    {availableSubjects.length > 0 ? (
+                        <>
                             <Form.Check
-                                key={subject._id}
                                 type="checkbox"
-                                id={`add-${subject._id}`}
-                                label={subject.name}
-                                checked={newUser.subjects.includes(subject._id)}
+                                id="select-all-subjects"
+                                label="Select All Subjects"
+                                className="mb-3"
+                                checked={selectAll}
                                 onChange={(e) => {
-                                    setNewUser(prev => ({
-                                        ...prev,
-                                        subjects: e.target.checked
-                                            ? [...prev.subjects, subject._id]
-                                            : prev.subjects.filter(id => id !== subject._id)
-                                    }));
+                                    setSelectAll(e.target.checked);
+                                    if (!e.target.checked) {
+                                        setNewUser(prev => ({
+                                            ...prev,
+                                            subjects: []
+                                        }));
+                                    }
                                 }}
                             />
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-muted">
-                        Please select strand, year level, and semester to view available subjects
-                    </p>
-                )}
-            </div>
+                            <div className="subjects-grid" style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                                gap: '0.5rem' 
+                            }}>
+                                {availableSubjects.map(subject => (
+                                    <Form.Check
+                                        key={subject._id}
+                                        type="checkbox"
+                                        id={`add-${subject._id}`}
+                                        label={subject.name}
+                                        checked={(newUser.subjects || []).includes(subject._id)}
+                                        onChange={(e) => {
+                                            const updatedSubjects = e.target.checked
+                                                ? [...(newUser.subjects || []), subject._id]
+                                                : (newUser.subjects || []).filter(id => id !== subject._id);
+                                            
+                                            setNewUser(prev => ({
+                                                ...prev,
+                                                subjects: updatedSubjects
+                                            }));
+                                            
+                                            // Update selectAll state based on whether all subjects are selected
+                                            setSelectAll(updatedSubjects.length === availableSubjects.length);
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <p className="text-muted">
+                            Please select strand, year level, and semester to view available subjects
+                        </p>
+                    )}
+                </div>
 
                     {error && <div className="alert alert-danger">{error}</div>}
 
                     <Modal.Footer style={modalStyles.modalFooter}>
-                        <Button variant="outline-secondary" onClick={onClose}>Cancel</Button>
-                        <Button variant="outline-success" type="submit">Enroll Student</Button>
-                    </Modal.Footer>
+        <Button variant="outline-secondary" onClick={onClose}>Cancel</Button>
+        <Button 
+            variant="outline-success" 
+            type="submit"
+            title={!newUser.subjects || newUser.subjects.length === 0 ? 'Please select at least one subject' : ''}
+        >
+            Enroll Student
+        </Button>
+    </Modal.Footer>
                 </Form>
             </Modal.Body>
         </Modal>

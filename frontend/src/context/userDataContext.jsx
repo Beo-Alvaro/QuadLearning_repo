@@ -60,7 +60,6 @@ export const UserContextProvider = ({ children }) => {
 
             if (response.ok) {
                 console.log('New password set')
-                alert('Password reset successful');
             } else {
                 const data = await response.json();
                 setError(data.message || 'Failed to reset password');

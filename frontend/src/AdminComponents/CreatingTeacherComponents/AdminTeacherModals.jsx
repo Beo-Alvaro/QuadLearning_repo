@@ -104,67 +104,72 @@ const AdminTeacherModals = ({
                             </div>
                         </div>
 
-                        {/* Teaching Assignment Section */}
-                        <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-                            <h6 className="mb-3">Teaching Assignment</h6>
-                            <div style={modalStyles.formGrid}>
-                            <div className="subjects-grid" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '0.5rem' 
-                    }}>
-
-                        
-
+                      {/* Teaching Assignment Section */}
+<div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
+    <h6 className="mb-3">Teaching Assignment</h6>
+    <div style={modalStyles.formGrid}>
+        <Form.Group>
             <Form.Label>Sections</Form.Label>
-            {sections.map((section) => (
-              <Form.Check
-                key={section._id}
-                type="checkbox"
-                label={`${section.name} - ${section.yearLevel?.name || 'No Year Level'}`}
-                checked={newUser.sections?.includes(section._id)}
-                onChange={(e) => handleCheckboxChange(e, 'sections', section._id)}
-              />
-            ))}
-          </div>
+            <Form.Select
+                multiple
+                value={newUser.sections}
+                onChange={(e) => setNewUser({
+                    ...newUser,
+                    sections: Array.from(e.target.selectedOptions, option => option.value)
+                })}
+                required
+            >
+                {sections.map((section) => (
+                    <option key={section._id} value={section._id}>
+                        {section.name} - {section.yearLevel?.name || 'No Year Level'}
+                    </option>
+                ))}
+            </Form.Select>
+        </Form.Group>
 
-                                <div className="subjects-grid" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '0.5rem' 
-                    }}>
+        <Form.Group>
+            <Form.Label>Advisory Section</Form.Label>
+            <Form.Select
+                value={newUser.advisorySection}
+                onChange={(e) => setNewUser({ ...newUser, advisorySection: e.target.value })}
+            >
+                <option value="">Select Advisory Section (Optional)</option>
+                {advisorySections
+                    .filter(section =>
+                        (!section.hasAdviser || section._id === newUser.advisorySection) &&
+                        section.status === 'active'
+                    )
+                    .map((section) => (
+                        <option key={section._id} value={section._id}>
+                            {section.name} - {section.yearLevel?.name || 'No Year Level'}
+                        </option>
+                    ))}
+            </Form.Select>
+        </Form.Group>
+
+        <Form.Group>
             <Form.Label>Semesters</Form.Label>
-            {semesters
-                .filter(semester => semester.status === 'active')
-                .map((semester) => (
-                    <Form.Check
-                        key={semester._id}
-                        type="checkbox"
-                        label={`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
-                        checked={newUser.semesters?.includes(semester._id)}
-                        onChange={(e) => handleCheckboxChange(e, 'semesters', semester._id)}
-                    />
-                ))
-            }
-          </div>
-                                    <Form.Label>Advisory Section</Form.Label>
-                                    <Form.Select
-                                        value={newUser.advisorySection}
-                                        onChange={(e) => setNewUser({ ...newUser, advisorySection: e.target.value })}
-                                        style={{ borderColor: '#ced4da' }} // Override default validation styling
-                                    >
-                                        <option value="">Select Advisory Section (Optional)</option>
-                                        {advisorySections.map((section) => (
-                                            <option key={section._id} value={section._id}>
-                                                {section.name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                            </div>
-                            
-                        </div>
-
-                        
+            <Form.Select
+                multiple
+                value={newUser.semesters}
+                onChange={(e) => setNewUser({
+                    ...newUser,
+                    semesters: Array.from(e.target.selectedOptions, option => option.value)
+                })}
+                required
+            >
+                {semesters
+                    .filter(semester => semester.status === 'active')
+                    .map((semester) => (
+                        <option key={semester._id} value={semester._id}>
+                            {`${semester.name} - ${semester.strand?.name || 'Unknown Strand'} - ${semester.yearLevel?.name || 'Unknown Year Level'}`}
+                        </option>
+                    ))
+                }
+            </Form.Select>
+        </Form.Group>
+    </div>
+</div>                 
 
                       {/* Subjects Section */}
  <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
@@ -248,7 +253,6 @@ const AdminTeacherModals = ({
                 </Modal.Header>
                 <Modal.Body className="p-4">
                     <Form onSubmit={handleEditSubmit}>
-                        {/* Repeat the edit modal content like in the Add modal */}
                         {/* Teaching Assignment Section */}
                         <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
                             <h6 className="mb-3">Teaching Assignment</h6>
@@ -273,22 +277,27 @@ const AdminTeacherModals = ({
                                 </Form.Group>
 
                                 <Form.Group>
-                                    <Form.Label>Advisory Section</Form.Label>
-                                    <Form.Select
-                                        value={editUser.advisorySection}
-                                        onChange={(e) => setEditUser({
-                                            ...editUser,
-                                            advisorySection: e.target.value
-                                        })}
-                                    >
-                                        <option value="">Select Advisory Section (Optional)</option>
-                                        {advisorySections.map((section) => (
-                                            <option key={section._id} value={section._id}>
-                                                {section.name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                </Form.Group>
+    <Form.Label>Advisory Section</Form.Label>
+    <Form.Select
+        value={editUser.advisorySection}
+        onChange={(e) => setEditUser({
+            ...editUser,
+            advisorySection: e.target.value
+        })}
+    >
+        <option value="">Select Advisory Section (Optional)</option>
+        {advisorySections
+            .filter(section => 
+                (!section.hasAdviser || section._id === editUser.advisorySection) && 
+                section.status === 'active'
+            )
+            .map((section) => (
+                <option key={section._id} value={section._id}>
+                    {section.name} - {section.yearLevel?.name || 'No Year Level'}
+                </option>
+            ))}
+    </Form.Select>
+</Form.Group>
 
                                 <Form.Group>
                                     <Form.Label>Semesters</Form.Label>
