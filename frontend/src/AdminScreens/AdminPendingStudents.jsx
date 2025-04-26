@@ -5,6 +5,7 @@ import { Container, Row, Col, Table, Button, Form, InputGroup, Card } from 'reac
 import { FaSearch } from 'react-icons/fa';
 import { useStudentDataContext } from '../hooks/useStudentsDataContext';
 import EnrollStudentModal from '../AdminComponents/EnrollStudentModal';
+import apiConfig from '../config/apiConfig';
 
 const AdminPendingStudents = () => {
     const [pendingStudents, setPendingStudents] = useState([]);
@@ -26,10 +27,12 @@ const AdminPendingStudents = () => {
     });
     const [error, setError] = useState('');
     const { strands, sections, yearLevels, semesters, fetchData, subjects } = useStudentDataContext();
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-      fetchData();
-    }, [])
+        fetchPendingStudents();
+        fetchData();
+    }, [fetchData]);
 
     useEffect(() => {
       const safeFilterSections = (strandId) => {
@@ -64,30 +67,35 @@ const AdminPendingStudents = () => {
       setFilteredSections(filteredSectionsResult);
   }, [newUser.strand, sections, showModal]);
 
-    useEffect(() => {
-        const fetchPendingStudents = async () => {
+    const fetchPendingStudents = async () => {
+        try {
+            setLoading(true);
+            setError(null);
             const token = localStorage.getItem('token');
-            try {
-                const response = await fetch('/api/admin/pending-students', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                const data = await response.json();
-                if (response.ok) {
-                    setPendingStudents(data);
-                } else {
-                    console.error('Failed to fetch pending students:', data.message, data.error);
+            
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/pending-students`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
                 }
-            } catch (error) {
-                console.error('Error fetching pending students:', error);
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                console.log('Pending students data:', data);
+                setPendingStudents(data);
+            } else {
+                setError('Failed to fetch pending students');
+                console.error('Failed to fetch pending students', data);
             }
-        };    
-        fetchPendingStudents();
-    }, []);
+        } catch (error) {
+            setError('An error occurred while fetching data');
+            console.error('Error fetching pending students:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredStudents = pendingStudents
         .filter((student) => (selectedStrand ? student.strand?._id === selectedStrand : true))

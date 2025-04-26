@@ -1,8 +1,12 @@
 import { Modal, Button, Form } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
+
 const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, strands, filteredSections, semesters, error, subjects, setPendingStudents, pendingStudents, setError}) => {
     const [availableSubjects, setAvailableSubjects] = useState([]);
+    const [submitting, setSubmitting] = useState(false);
+
     const modalStyles = {
         modalHeader: {
             background: '#f8f9fa',
@@ -28,40 +32,50 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
         }
     };
 
-    const handleEnroll = async (userId) => {
-        const token = localStorage.getItem('token');
-        console.log('Form data being sent:', newUser); // Debugging log
+    const handleEnroll = async () => {
         try {
-            const response = await fetch('/api/admin/enroll-student', {
-                method: 'PUT',
+            setSubmitting(true);
+            setError('');
+            const token = localStorage.getItem('token');
+            
+            // Create enrollment data object
+            const enrollmentData = {
+                studentId: newUser._id,
+                yearLevel: newUser.yearLevel,
+                strand: newUser.strand,
+                section: newUser.section,
+                semester: newUser.semester,
+                subjects: newUser.subjects
+            };
+            
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/enroll-student`, {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    userId: userId, // Ensure this is not undefined
-                    section: newUser.section,
-                    strand: newUser.strand,
-                    subjects: newUser.subjects,
-                    yearLevel: newUser.yearLevel,
-                    semester: newUser.semester,
-                }),
-            });    
+                body: JSON.stringify(enrollmentData)
+            });
+            
             const data = await response.json();
-            console.log('Server response:', data); // Debugging log
+            
             if (response.ok) {
-                // Make sure setPendingStudents and pendingStudents are passed as props if used
+                toast.success('Student enrolled successfully!');
+                onClose();
                 if (setPendingStudents && pendingStudents) {
-                    setPendingStudents(pendingStudents.filter(pending => pending._id !== userId));
+                    setPendingStudents(pendingStudents.filter(pending => pending._id !== newUser._id));
                 }
-                onClose(); // Close modal
-                toast.success('Student enrolled successfully!')
             } else {
                 setError(data.message || 'Failed to enroll student');
+                toast.error(data.message || 'Failed to enroll student');
             }
         } catch (error) {
-            setError('Error enrolling student');
             console.error('Error enrolling student:', error);
+            setError('An error occurred while enrolling student');
+            toast.error('An error occurred while enrolling student');
+        } finally {
+            setSubmitting(false);
         }
     };
     
@@ -84,7 +98,7 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        handleEnroll(newUser._id); // Pass userId when calling handleEnroll
+        handleEnroll();
     };
     
 
@@ -265,7 +279,7 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
 
                     <Modal.Footer style={modalStyles.modalFooter}>
                         <Button variant="outline-secondary" onClick={onClose}>Cancel</Button>
-                        <Button variant="outline-success" type="submit">Enroll Student</Button>
+                        <Button variant="outline-success" type="submit" disabled={submitting}>Enroll Student</Button>
                     </Modal.Footer>
                 </Form>
             </Modal.Body>

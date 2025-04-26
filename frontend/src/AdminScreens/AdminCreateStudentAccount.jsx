@@ -11,6 +11,8 @@ import StudModals from '../AdminComponents/CreateStudentComponents/StudModals';
 import StudTables from '../AdminComponents/CreateStudentComponents/StudTables';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiConfig from '../config/apiConfig';
+
 const AdminCreateStudentAccount = () => {
 
         const { users, strands, sections, subjects, semesters, yearLevels,fetchData } = useStudentDataContext()
@@ -54,7 +56,7 @@ const AdminCreateStudentAccount = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [fetchData]);
     
     const handleClose = () => {
         setShow(false);
@@ -71,7 +73,8 @@ const AdminCreateStudentAccount = () => {
         const token = localStorage.getItem('token'); // Retrieve the token from localStorage
         console.log("Deleting user with ID:", userId);
         try {
-            const response = await fetch(`/api/admin/users/${userId}`, {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -114,7 +117,8 @@ const AdminCreateStudentAccount = () => {
         console.log('Sending User Data:', userData);
     
         try {
-            const response = await fetch('/api/admin/addUsers', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/addUsers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -261,41 +265,46 @@ const handleEditClose = () => {
 const handleEditSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
-        const userData = {
+        // Create an update object with only the fields we want to update
+        const updateData = {
             username: editUser.username,
-            role: 'student',
-            sections: [editUser.section || null], // Ensure null if undefined or empty
+            role: 'student', // Hard-coded as 'student' since this is the student admin page
+            sections: [editUser.section], // Wrap the section ID in an array
             strand: editUser.strand,
             yearLevel: editUser.yearLevel,
-            semester: editUser.semester,
             subjects: editUser.subjects,
+            semester: editUser.semester,
         };
 
-        const response = await fetch(`/api/admin/users/${editUser.id}`, {
+        console.log('Sending update data:', updateData);
+
+        const token = localStorage.getItem('token');
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/admin/users/${editUser.id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(userData),
+            body: JSON.stringify(updateData),
         });
 
         const data = await response.json();
-        console.log('Response data:', data);
 
         if (!response.ok) {
             throw new Error(data.message || 'Failed to update user');
         }
 
-        handleEditClose();
-        fetchData(); // Refresh the data
+        // Success - close modal and refresh data
+        setEditModalShow(false);
+        fetchData();
         toast.success('User updated successfully!');
     } catch (error) {
+        console.error('Error updating user:', error);
         setError(error.message);
-        console.error('Error:', error);
+        toast.error(`Error: ${error.message}`);
     } finally {
         setLoading(false);
     }

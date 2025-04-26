@@ -3,6 +3,8 @@ import { LinkContainer } from 'react-router-bootstrap';
 import { FaSignInAlt, FaSignOutAlt } from 'react-icons/fa';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiConfig from '../config/apiConfig';
+
 const Header = () => {
   const [loading, setLoading] = useState(false); // Define loading state
   const [error, setError] = useState('');
@@ -20,38 +22,33 @@ const Header = () => {
   }, []); // Empty dependency array to run only once on mount
 
 
-  const handleLogOut = async (e) => {
-    e.preventDefault(); // Prevent the default behavior of the event
-    setLoading(true);   // Set loading state to true
-    setError('');       // Clear any previous errors
-
+  const logoutHandler = async () => {
     try {
-        const response = await fetch('/api/users/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include', // Include cookies in the request if they're used for authentication
-        });
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/users/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (!response.ok) {
-            throw new Error('Logout failed');
-        }
+      // Remove token and user info from localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('userInfo');
+      localStorage.removeItem('sections');
 
-        // Clear token and user info from local storage
-        localStorage.removeItem('token'); // Clear token if stored locally
-        localStorage.removeItem('userInfo'); // Remove additional user data if stored
-
-        // Redirect to the login page
-        navigate('/login');
-        console.log('Logout successful');
-    } catch (err) {
-        setError(err.message); // Display error message in the UI
-        console.error('Error during logout:', err.message); // Log the error for debugging
+      // Navigate to login page
+      navigate('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
     } finally {
-        setLoading(false); // Reset the loading state
+      setLoading(false);
     }
-};
+  };
 
 
 
@@ -84,7 +81,7 @@ const Header = () => {
                   </Nav.Link>
                 </LinkContainer>
               )}
-              <button onClick={handleLogOut} disabled={loading} className='btn btn-success'>
+              <button onClick={logoutHandler} disabled={loading} className='btn btn-success'>
                 {loading ? 'Logging out...' : 'Log Out'}
               </button>
               {error && <div className="alert alert-danger">{error}</div>}

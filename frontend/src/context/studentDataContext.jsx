@@ -19,44 +19,63 @@ export const StudentDataProvider = ({ children }) => {
     try {
       setLoading(true);
       const baseUrl = apiConfig.getBaseUrl();
+      const token = localStorage.getItem('token');
+      
+      // Define headers with authorization
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      };
       
       // Fetch users data
-      const usersResponse = await fetch(`${baseUrl}/users`);
+      const usersResponse = await fetch(`${baseUrl}/admin/users`, {
+        headers
+      });
       if (!usersResponse.ok) {
         throw new Error(`HTTP error! Status: ${usersResponse.status}`);
       }
       const usersData = await usersResponse.json();
 
       // Fetch strands data
-      const strandsResponse = await fetch(`${baseUrl}/strands`);
+      const strandsResponse = await fetch(`${baseUrl}/strands`, {
+        headers
+      });
       if (!strandsResponse.ok) {
         throw new Error(`HTTP error! Status: ${strandsResponse.status}`);
       }
       const strandsData = await strandsResponse.json();
 
       // Fetch sections data
-      const sectionsResponse = await fetch(`${baseUrl}/sections`);
+      const sectionsResponse = await fetch(`${baseUrl}/sections`, {
+        headers
+      });
       if (!sectionsResponse.ok) {
         throw new Error(`HTTP error! Status: ${sectionsResponse.status}`);
       }
       const sectionsData = await sectionsResponse.json();
 
       // Fetch subjects data
-      const subjectsResponse = await fetch(`${baseUrl}/subjects`);
+      const subjectsResponse = await fetch(`${baseUrl}/subjects`, {
+        headers
+      });
       if (!subjectsResponse.ok) {
         throw new Error(`HTTP error! Status: ${subjectsResponse.status}`);
       }
       const subjectsData = await subjectsResponse.json();
 
       // Fetch semesters data
-      const semestersResponse = await fetch(`${baseUrl}/semesters`);
+      const semestersResponse = await fetch(`${baseUrl}/semesters`, {
+        headers
+      });
       if (!semestersResponse.ok) {
         throw new Error(`HTTP error! Status: ${semestersResponse.status}`);
       }
       const semestersData = await semestersResponse.json();
 
       // Fetch year levels data
-      const yearLevelsResponse = await fetch(`${baseUrl}/year-levels`);
+      const yearLevelsResponse = await fetch(`${baseUrl}/year-levels`, {
+        headers
+      });
       if (!yearLevelsResponse.ok) {
         throw new Error(`HTTP error! Status: ${yearLevelsResponse.status}`);
       }

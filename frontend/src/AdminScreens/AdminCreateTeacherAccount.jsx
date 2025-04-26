@@ -11,6 +11,7 @@ import { useTeacherDataContext } from '../hooks/useTeacherDataContext';
 import AdminTeacherModals from '../AdminComponents/CreatingTeacherComponents/AdminTeacherModals';
 import AdminTeacherTable from '../AdminComponents/CreatingTeacherComponents/AdminTeacherTable';
 import { ToastContainer, toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
 
 const AdminCreateTeacherAccount = () => {
     const { teacherUsers, sections, semesters, advisorySections, loading, dispatch, fetchData} = useTeacherDataContext()
@@ -69,41 +70,41 @@ const AdminCreateTeacherAccount = () => {
 };
 
 const deleteHandler = async (userId) => {
-    console.log("Deleting user with ID:", userId);  // Log userId to make sure it's valid
-    if (!userId) {
-        console.error("Invalid userId:", userId);
-        return;
-    }
-    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`/api/admin/users/${userId}`, {
+        setLoading(true);
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/admin/users/${userId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         });
 
-        console.log("Response status:", response.status);
         if (response.ok) {
-            // Ensure the deletion is complete before updating the state
-            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
-                headers: { Authorization: `Bearer ${token}` }
+            // Refresh teacher list
+            const baseUrl = apiConfig.getBaseUrl();
+            const updatedTeachersRes = await fetch(`${baseUrl}/admin/users?role=teacher`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
             });
-            const updatedTeachers = await updatedTeachersRes.json();
-
-            // Dispatch the updated list of teachers to the context
-            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-            handleClose(); // Close modal after successful deletion
-            toast.error('Teacher deleted successfully!')
+            
+            if (updatedTeachersRes.ok) {
+                const updatedTeachers = await updatedTeachersRes.json();
+                setTeachers(updatedTeachers);
+                toast.success('Teacher deleted successfully');
+            }
         } else {
-            const json = await response.json();
-            console.error('Error response:', json);
-            setError(json.message);
+            const errorData = await response.json();
+            toast.error(`Failed to delete: ${errorData.message || 'Unknown error'}`);
         }
     } catch (error) {
-        console.error('Error deleting user:', error);
-        setError('Failed to delete user');
+        console.error('Error deleting teacher:', error);
+        toast.error('Failed to delete teacher');
+    } finally {
+        setLoading(false);
+        handleClose();
     }
 };
    // Update handleAddUser to properly handle the advisory section
