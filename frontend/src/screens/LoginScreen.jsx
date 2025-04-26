@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
+import apiConfig from '../config/apiConfig';
 import './LoginScreen.css';
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
@@ -24,12 +25,15 @@ const LoginScreen = () => {
       ).toString();
 
       try {
-        const response = await fetch('/api/users/auth', {
+        // Get the base URL from config
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/users/auth`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
+            credentials: 'include'
         });
 
         const data = await response.json();
