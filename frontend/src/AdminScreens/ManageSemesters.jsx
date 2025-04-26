@@ -78,7 +78,6 @@ const ManageSemesters = () => {
             });
             fetchData(); // Refresh the list after submission
             resetFormState();
-            toast.success('Semester created successfully!');
         } catch (error) {
             console.error("Error adding semester:", error);
         }
@@ -165,11 +164,6 @@ const ManageSemesters = () => {
                                 <h4 className="mb-0">Create New Semester</h4>
                             </Card.Header>
                             <Card.Body>
-                                {error && (
-                                    <div className="alert alert-danger" role="alert">
-                                        {error}
-                                    </div>
-                                )}
 
                                 <SemesterForm
                                     strands={strands}

@@ -69,7 +69,7 @@ export const SubjectDataProvider = ({ children }) => {
             const json = await response.json();
     
             if (!response.ok) {
-                setError(json.message || 'Failed to create subject');
+                toast.error(json.message || 'Failed to create subject');
             } else {
                 fetchAllData();
                 console.log('Subject created successfully');
@@ -105,16 +105,16 @@ export const SubjectDataProvider = ({ children }) => {
                 subject._id === selectedSubjectId ? result : subject
               )
             );
+            toast.success('Subject updated successfully!')
           } else {
             console.error('Error updating subject:', result);
-            setError(result.message || 'Failed to update subject');
+            toast.error(result.message || 'Failed to update subject');
           }
         } catch (error) {
           console.error('Failed to update subject:', error);
-          setError('An error occurred while updating the subject');
+          toast.error('An error occurred while updating the subject');
         }
         fetchAllData();
-        toast.success('Subject updated successfully!')
       };
       
       
@@ -145,10 +145,11 @@ export const SubjectDataProvider = ({ children }) => {
 
     const filteredSemesters = semesters.filter(semester => {
         return (
+          semester.status === 'active' && // Add this condition
           (selectedStrand ? semester.strand._id === selectedStrand : true) &&
           (selectedYearLevel ? semester.yearLevel._id === selectedYearLevel : true)
         );
-      });
+    });
       
 
     return (

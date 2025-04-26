@@ -23,6 +23,15 @@ const SubjectForm = () => {
         setSelectedYearLevel
     } = useSubjectDataContext();
 
+    const handleClear = () => {
+        setSelectedStrand('');
+        setSelectedYearLevel('');
+        setName('');
+        setCode('');
+        setSelectedSemester('');
+        fetchAllData();
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         const subjectData = {
@@ -139,9 +148,9 @@ const SubjectForm = () => {
                 <div className="d-flex gap-2">
                     <Button
                         variant="outline-secondary"
-                        onClick={() => fetchAllData()}
+                        onClick={() => handleClear()}
                     >
-                        Cancel
+                        Clear
                     </Button>
                     <Button
                         variant="outline-success"

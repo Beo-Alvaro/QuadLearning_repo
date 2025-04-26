@@ -11,13 +11,21 @@ const SubjectTable = ({
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredSubjects = Array.isArray(studSubjects)
-    ? studSubjects.filter((subject) => subject.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : [];  // If it's not an array, return an empty array
+        ? studSubjects.filter((subject) => 
+            subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            subject.code.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : [];
 
     const handlePageChange = (direction) => {
         if (direction === 'prev' && currentPage > 1) setCurrentPage(currentPage - 1);
         if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
+
+    const handleSearch = (value) => {
+      setSearchTerm(value);
+      setCurrentPage(1); // Reset to first page when searching
+  };
 
     const totalPages = Math.ceil(filteredSubjects.length / entriesPerPage);
     const indexOfLastEntry = currentPage * entriesPerPage;
@@ -49,18 +57,18 @@ const SubjectTable = ({
   
           {/* Search Input */}
           <div className="d-flex align-items-center">
-            <InputGroup>
-              <Form.Control
-                type="text"
-                placeholder="Search Subject Name"
-                value={searchTerm}
-                onChange={(e) => handlePageChange(e.target.value, 'search')}
-              />
-              <InputGroup.Text>
-                <FaSearch />
-              </InputGroup.Text>
-            </InputGroup>
-          </div>
+                <InputGroup>
+                    <Form.Control
+                        type="text"
+                        placeholder="Search by name or code..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearch(e.target.value)}
+                    />
+                    <InputGroup.Text>
+                        <FaSearch />
+                    </InputGroup.Text>
+                </InputGroup>
+            </div>
         </div>
   
         <Card className="shadow-sm">
