@@ -25,8 +25,9 @@ const getAdminId = async (req, res) => {
 const authUser = asyncHandler(async (req, res) => {
     try {
         const { username, password: receivedPassword, isEncrypted } = req.body;
-        const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'TROPICALVNHS12345';
-
+        // Ensure we use the exact same encryption key as frontend - hardcode it for now
+        const ENCRYPTION_KEY = 'TROPICALVNHS12345';
+        
         console.log('Auth attempt for username:', username);
         console.log('Is encrypted password:', isEncrypted);
         console.log('Received password type:', typeof receivedPassword);
@@ -75,7 +76,7 @@ const authUser = asyncHandler(async (req, res) => {
         let password;
         if (isEncrypted) {
             try {
-                // Decrypt the password
+                // Decrypt the password with the hardcoded key
                 const bytes = CryptoJS.AES.decrypt(receivedPassword, ENCRYPTION_KEY);
                 password = bytes.toString(CryptoJS.enc.Utf8);
                 console.log('Decrypted password length:', password.length);
