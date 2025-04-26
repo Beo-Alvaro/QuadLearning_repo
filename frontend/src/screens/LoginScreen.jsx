@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import apiConfig from '../config/apiConfig';
 import './LoginScreen.css';
+
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
@@ -20,37 +21,22 @@ const LoginScreen = () => {
     setError('');
 
     try {
-      // For the test account, don't encrypt the password
-      const isTestAccount = username.toUpperCase() === 'TEACHER001';
-      
       // Get the base URL from config
       const baseUrl = apiConfig.getBaseUrl();
       console.log('Using API URL:', `${baseUrl}/users/auth`);
       
-      // Prepare the request payload
-      let requestBody;
+      // Encrypt the password
+      const encryptedPassword = CryptoJS.AES.encrypt(
+        password,
+        ENCRYPTION_KEY
+      ).toString();
       
-      if (isTestAccount) {
-        // For test account, send password directly
-        requestBody = { 
-          username: username.toUpperCase(), 
-          password: password,
-          isEncrypted: false
-        };
-        console.log('Using test account login');
-      } else {
-        // For regular accounts, encrypt the password
-        const encryptedPassword = CryptoJS.AES.encrypt(
-          password,
-          ENCRYPTION_KEY
-        ).toString();
-        
-        requestBody = { 
-          username, 
-          password: encryptedPassword, 
-          isEncrypted: true 
-        };
-      }
+      // Prepare the request payload
+      const requestBody = { 
+        username, 
+        password: encryptedPassword, 
+        isEncrypted: true 
+      };
       
       try {
         const response = await fetch(`${baseUrl}/users/auth`, {
@@ -77,9 +63,6 @@ const LoginScreen = () => {
             }
             throw new Error(data.message || 'Invalid credentials');
         }
-
-        // Debugging: Log data to verify the response structure
-        console.log('Response data:', data);
 
         // Save the token and user info to localStorage
         localStorage.setItem('token', data.token);
