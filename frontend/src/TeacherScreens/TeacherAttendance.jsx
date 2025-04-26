@@ -3,6 +3,7 @@ import { Container, Button, Card, Form, Row, Col, Alert, Spinner } from 'react-b
 import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar'
 import TeacherAttendanceModal from '../TeacherComponents/TeacherAttendanceModal'
 import axios from 'axios'
+import apiConfig from '../config/apiConfig'
 
 const TeacherAttendance = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,8 +16,9 @@ const TeacherAttendance = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
+        const baseUrl = apiConfig.getBaseUrl();
         
-        const response = await axios.get('/api/teacher/advisorySections', {
+        const response = await axios.get(`${baseUrl}/teacher/advisorySections`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

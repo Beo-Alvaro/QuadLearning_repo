@@ -3,7 +3,9 @@ import { Modal, Button, Table, Form, Alert, Row, Col, Badge, Tabs, Tab } from 'r
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
+import apiConfig from '../config/apiConfig';
 import { ToastContainer, toast } from 'react-toastify';
+
 const TeacherAttendanceModal = ({ isOpen, onClose, sectionId }) => {
   const [data, setData] = useState([]);
   const [error, setError] = useState('');
@@ -34,7 +36,8 @@ useEffect(() => {
   const fetchSemesters = async () => {
     try {
       const config = getAuthConfig();
-      const response = await axios.get('/api/teacher/getSemesters', config);
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await axios.get(`${baseUrl}/teacher/getSemesters`, config);
       if (response.data && response.data.length > 0) {
         setSemesters(response.data);
         setSelectedSemester(response.data[0]._id);
@@ -81,16 +84,17 @@ useEffect(() => {
         setError('');
         
         const config = getAuthConfig();
+        const baseUrl = apiConfig.getBaseUrl();
         
         // First, get section details
         const { data: sectionData } = await axios.get(
-          `/api/teacher/sections/${sectionId}`, 
+          `${baseUrl}/teacher/sections/${sectionId}`, 
           config
         );
         
         // Then, get students for this section
         const { data: studentsData } = await axios.get(
-          `/api/teacher/students?section=${sectionId}`, 
+          `${baseUrl}/teacher/students?section=${sectionId}`, 
           config
         );
         
@@ -160,11 +164,12 @@ useEffect(() => {
         setLoading(true);
         
         const config = getAuthConfig();
+        const baseUrl = apiConfig.getBaseUrl();
         console.log('Fetching attendance with config:', config);
-        console.log(`Requesting: /api/teacher/attendance?section=${sectionId}&month=${formData.month}`);
+        console.log(`Requesting: ${baseUrl}/teacher/attendance?section=${sectionId}&month=${formData.month}`);
         
         const { data: attendanceData } = await axios.get(
-          `/api/teacher/attendance?section=${sectionId}&month=${formData.month}`,
+          `${baseUrl}/teacher/attendance?section=${sectionId}&month=${formData.month}`,
           config
         );
         
@@ -423,6 +428,7 @@ useEffect(() => {
       setLoading(true);
       
       const config = getAuthConfig();
+      const baseUrl = apiConfig.getBaseUrl();
       console.log('Saving attendance with config:', config);
       
       // Prepare attendance data
@@ -449,7 +455,7 @@ useEffect(() => {
       console.log('Sending attendance data:', attendanceData);
       
       // Send data to backend with auth headers
-      const response = await axios.post('/api/teacher/attendance', attendanceData, config);
+      const response = await axios.post(`${baseUrl}/teacher/attendance`, attendanceData, config);
       console.log('Save attendance response:', response.data);
       
       setLoading(false);
