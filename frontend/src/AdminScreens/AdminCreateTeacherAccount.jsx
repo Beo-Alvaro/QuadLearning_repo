@@ -136,7 +136,8 @@ const handleAddUser = async (e) => {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/addUsers', {
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/admin/addUsers`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -152,7 +153,8 @@ const handleAddUser = async (e) => {
         }
 
         // Fetch the updated list of teachers
-        const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+        const baseUrl2 = apiConfig.getBaseUrl();
+        const updatedTeachersRes = await fetch(`${baseUrl2}/admin/users?role=teacher`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         const updatedTeachers = await updatedTeachersRes.json();
@@ -187,7 +189,8 @@ const handleAddUser = async (e) => {
         // Trigger subject filtering immediately
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/subjects/filter', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/subjects/filter`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -242,12 +245,14 @@ const [editUser, setEditUser] = useState({
             };
     
             console.log('Sending update request:', userData);
-    
-            const response = await fetch(`/api/admin/users/${editUser.id}`, {
+            
+            const token = localStorage.getItem('token');
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/admin/users/${editUser.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(userData),
             });
@@ -260,8 +265,8 @@ const [editUser, setEditUser] = useState({
             }
     
             // Re-fetch the updated list of teachers
-            const token = localStorage.getItem('token');
-            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+            const baseUrl2 = apiConfig.getBaseUrl();
+            const updatedTeachersRes = await fetch(`${baseUrl2}/admin/users?role=teacher`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const updatedTeachers = await updatedTeachersRes.json();
@@ -314,7 +319,8 @@ const [editUser, setEditUser] = useState({
             if (activeUser?.sections?.length > 0 && activeUser?.semesters?.length > 0) {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch('/api/admin/subjects/filter', {
+                    const baseUrl = apiConfig.getBaseUrl();
+                    const response = await fetch(`${baseUrl}/admin/subjects/filter`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

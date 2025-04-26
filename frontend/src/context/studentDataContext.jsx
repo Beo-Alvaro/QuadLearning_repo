@@ -28,7 +28,7 @@ export const StudentDataProvider = ({ children }) => {
       };
       
       // Fetch users data
-      const usersResponse = await fetch(`${baseUrl}/admin/users`, {
+      const usersResponse = await fetch(`${baseUrl}/admin/getUsers`, {
         headers
       });
       if (!usersResponse.ok) {
@@ -37,7 +37,7 @@ export const StudentDataProvider = ({ children }) => {
       const usersData = await usersResponse.json();
 
       // Fetch strands data
-      const strandsResponse = await fetch(`${baseUrl}/strands`, {
+      const strandsResponse = await fetch(`${baseUrl}/admin/getStrands`, {
         headers
       });
       if (!strandsResponse.ok) {
@@ -46,7 +46,7 @@ export const StudentDataProvider = ({ children }) => {
       const strandsData = await strandsResponse.json();
 
       // Fetch sections data
-      const sectionsResponse = await fetch(`${baseUrl}/sections`, {
+      const sectionsResponse = await fetch(`${baseUrl}/admin/getSections`, {
         headers
       });
       if (!sectionsResponse.ok) {
@@ -55,7 +55,7 @@ export const StudentDataProvider = ({ children }) => {
       const sectionsData = await sectionsResponse.json();
 
       // Fetch subjects data
-      const subjectsResponse = await fetch(`${baseUrl}/subjects`, {
+      const subjectsResponse = await fetch(`${baseUrl}/admin/getSubjects`, {
         headers
       });
       if (!subjectsResponse.ok) {
@@ -64,7 +64,7 @@ export const StudentDataProvider = ({ children }) => {
       const subjectsData = await subjectsResponse.json();
 
       // Fetch semesters data
-      const semestersResponse = await fetch(`${baseUrl}/semesters`, {
+      const semestersResponse = await fetch(`${baseUrl}/admin/getSemesters`, {
         headers
       });
       if (!semestersResponse.ok) {
@@ -73,7 +73,7 @@ export const StudentDataProvider = ({ children }) => {
       const semestersData = await semestersResponse.json();
 
       // Fetch year levels data
-      const yearLevelsResponse = await fetch(`${baseUrl}/year-levels`, {
+      const yearLevelsResponse = await fetch(`${baseUrl}/admin/yearLevels`, {
         headers
       });
       if (!yearLevelsResponse.ok) {
