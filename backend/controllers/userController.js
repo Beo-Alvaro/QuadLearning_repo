@@ -24,17 +24,59 @@ const getAdminId = async (req, res) => {
 
 const authUser = asyncHandler(async (req, res) => {
     try {
-        const { username, password: encryptedPassword, isEncrypted } = req.body;
+        const { username, password: receivedPassword, isEncrypted } = req.body;
         const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'TROPICALVNHS12345';
 
         console.log('Auth attempt for username:', username);
         console.log('Is encrypted password:', isEncrypted);
+        console.log('Received password type:', typeof receivedPassword);
+        console.log('Received password length:', receivedPassword ? receivedPassword.length : 0);
 
+        // Special case for test account
+        if (username.toUpperCase() === 'TEACHER001') {
+            console.log('Test account login attempt');
+            
+            // For the test account, directly check the password
+            if (receivedPassword === '12345') {
+                console.log('Test account login successful');
+                
+                // Create a mock user if it doesn't exist
+                let testUser = await User.findOne({ username: 'TEACHER001' });
+                
+                if (!testUser) {
+                    console.log('Creating test user account');
+                    testUser = {
+                        _id: '123456789012345678901234', // Mock ObjectId
+                        username: 'TEACHER001',
+                        role: 'teacher'
+                    };
+                }
+                
+                // Generate token and send response
+                const token = generateToken(testUser._id, res);
+                res.status(200).json({
+                    success: true,
+                    token,
+                    user: {
+                        _id: testUser._id,
+                        username: testUser.username,
+                        role: testUser.role || 'teacher'
+                    }
+                });
+                return;
+            } else {
+                console.log('Test account password incorrect');
+                res.status(401).json({ message: 'Invalid password for test account' });
+                return;
+            }
+        }
+
+        // For non-test accounts, proceed with normal authentication
         let password;
         if (isEncrypted) {
             try {
                 // Decrypt the password
-                const bytes = CryptoJS.AES.decrypt(encryptedPassword, ENCRYPTION_KEY);
+                const bytes = CryptoJS.AES.decrypt(receivedPassword, ENCRYPTION_KEY);
                 password = bytes.toString(CryptoJS.enc.Utf8);
                 console.log('Decrypted password length:', password.length);
             } catch (error) {
@@ -43,7 +85,7 @@ const authUser = asyncHandler(async (req, res) => {
                 return;
             }
         } else {
-            password = encryptedPassword;
+            password = receivedPassword;
         }
 
         const user = await User.findOne({ username });
@@ -63,20 +105,12 @@ const authUser = asyncHandler(async (req, res) => {
             return;
         }
 
-        // For testing, allow any password for TEACHER001
-        const isTeacherTest = username === 'TEACHER001' && password === '12345';
-        
         // Verify password - regular bcrypt comparison
         let isMatch = false;
         
         try {
-            if (isTeacherTest) {
-                isMatch = true;
-                console.log('Teacher test login successful');
-            } else {
-                isMatch = await bcrypt.compare(password.trim(), user.password);
-                console.log('Password comparison result:', isMatch);
-            }
+            isMatch = await bcrypt.compare(password.trim(), user.password);
+            console.log('Password comparison result:', isMatch);
         } catch (bcryptError) {
             console.error('Error comparing passwords:', bcryptError);
             res.status(500).json({ message: 'Error during password verification' });

@@ -20,23 +20,45 @@ const LoginScreen = () => {
     setError('');
 
     try {
-      // Encrypt password before sending
-      const encryptedPassword = CryptoJS.AES.encrypt(
-        password,
-        ENCRYPTION_KEY
-      ).toString();
-
-      try {
-        // Get the base URL from config
-        const baseUrl = apiConfig.getBaseUrl();
-        console.log('Using API URL:', `${baseUrl}/users/auth`);
+      // For the test account, don't encrypt the password
+      const isTestAccount = username.toUpperCase() === 'TEACHER001';
+      
+      // Get the base URL from config
+      const baseUrl = apiConfig.getBaseUrl();
+      console.log('Using API URL:', `${baseUrl}/users/auth`);
+      
+      // Prepare the request payload
+      let requestBody;
+      
+      if (isTestAccount) {
+        // For test account, send password directly
+        requestBody = { 
+          username: username.toUpperCase(), 
+          password: password,
+          isEncrypted: false
+        };
+        console.log('Using test account login');
+      } else {
+        // For regular accounts, encrypt the password
+        const encryptedPassword = CryptoJS.AES.encrypt(
+          password,
+          ENCRYPTION_KEY
+        ).toString();
         
+        requestBody = { 
+          username, 
+          password: encryptedPassword, 
+          isEncrypted: true 
+        };
+      }
+      
+      try {
         const response = await fetch(`${baseUrl}/users/auth`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
+            body: JSON.stringify(requestBody),
             credentials: 'include'
         });
 
