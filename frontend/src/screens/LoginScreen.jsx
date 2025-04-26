@@ -17,13 +17,13 @@ const LoginScreen = () => {
     setError('');
 
     try {
-
       // Encrypt password before sending
       const encryptedPassword = CryptoJS.AES.encrypt(
         password,
         ENCRYPTION_KEY
-    ).toString();
+      ).toString();
 
+      try {
         const response = await fetch('/api/users/auth', {
             method: 'POST',
             headers: {
@@ -58,6 +58,15 @@ const LoginScreen = () => {
         } else if (data.user.role === 'admin') {
             navigate('./AdminScreens/AdminHomeScreen');
         }
+      } catch (fetchError) {
+        // Handle network-related errors separately
+        if (fetchError.name === 'SyntaxError' || fetchError.message.includes('JSON')) {
+          setError('Unable to connect to the server. The backend service may be down or starting up.');
+        } else {
+          setError(fetchError.message);
+        }
+        setLoading(false);
+      }
     } catch (err) {
         setLoading(false);
         setError(err.message);
