@@ -1,8 +1,12 @@
-const API_URL = '/api/messages'; // Base URL
+import apiConfig from '../config/apiConfig';
+
+// Get the base URL dynamically
+const getBaseUrl = () => apiConfig.getBaseUrl();
 
 // Send Message
 export const sendMessage = async (content, recipientId, token) => {
-    const response = await fetch(`${API_URL}/send`, {
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/messages/send`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -20,7 +24,8 @@ export const sendMessage = async (content, recipientId, token) => {
 
 // Get Messages for Admin
 export const getAdminMessages = async (token) => {
-    const response = await fetch(`${API_URL}/getMessages`, {
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/messages/getMessages`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -38,7 +43,8 @@ export const getAdminMessages = async (token) => {
 
 // Mark Message as Read
 export const markMessageAsRead = async (messageId, token) => {
-    const response = await fetch(`${API_URL}/read/${messageId}`, {
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/messages/read/${messageId}`, {
         method: 'PUT',
         headers: {
             Authorization: `Bearer ${token}`,
@@ -54,7 +60,8 @@ export const markMessageAsRead = async (messageId, token) => {
 
 export const fetchAdminId = async () => {
     try {
-        const response = await fetch('/api/users/adminId', {
+        const baseUrl = getBaseUrl();
+        const response = await fetch(`${baseUrl}/users/adminId`, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }

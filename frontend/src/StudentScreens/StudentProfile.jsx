@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Container, Card, Row, Col, Spinner, Alert, Nav, Tab, Badge, Form, Button } from "react-bootstrap"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
+import apiConfig from "../config/apiConfig"
 import "./Student.css"
 import { ToastContainer, toast } from 'react-toastify';
 import {
@@ -69,8 +70,9 @@ const StudentProfile = () => {
     const fetchStudentProfile = async () => {
       try {
         const token = localStorage.getItem("token")
+        const baseUrl = apiConfig.getBaseUrl();
 
-        const response = await fetch("/api/student/profile", {
+        const response = await fetch(`${baseUrl}/student/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -149,8 +151,9 @@ const StudentProfile = () => {
 
     try {
       const token = localStorage.getItem("token")
+      const baseUrl = apiConfig.getBaseUrl();
 
-      const response = await fetch("/api/student/update-profile", {
+      const response = await fetch(`${baseUrl}/student/update-profile`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

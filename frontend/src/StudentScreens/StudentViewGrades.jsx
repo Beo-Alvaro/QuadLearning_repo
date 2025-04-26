@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Container, Card, Table, Alert, Spinner, Nav, Row, Col, Badge, ProgressBar, Accordion } from "react-bootstrap"
 import { BookOpen, Calendar, Award, BarChart2 } from "lucide-react"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
+import apiConfig from "../config/apiConfig"
 import "./student-view.css"
 
 const StudentViewGrades = () => {
@@ -19,8 +20,9 @@ const StudentViewGrades = () => {
       try {
         const token = localStorage.getItem("token")
         console.log("Attempting to fetch grades with token:", token)
+        const baseUrl = apiConfig.getBaseUrl();
 
-        const response = await fetch("/api/student/grades", {
+        const response = await fetch(`${baseUrl}/student/grades`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
