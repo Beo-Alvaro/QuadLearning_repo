@@ -22,7 +22,7 @@ const Hero = () => {
             {/* School Logo could be added here */}
             <div className='d-flex justify-content-center mb-4'>
               <img 
-                src="./img/TVNHS.png" 
+                src="/img/TVNHS.png" 
                 alt="School Logo" 
                 style={{ width: '100px' }}
               />
