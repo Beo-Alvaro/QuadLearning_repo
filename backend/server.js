@@ -20,16 +20,21 @@ const app = express();
 app.use((req, res, next) => {
     const allowedOrigins = [
         process.env.FRONTEND_URL || 'http://localhost:5173', // Vite dev server default
-        'https://your-app-name.vercel.app' // Replace with your actual Vercel domain
+        'https://topicalvillage.vercel.app', // Your actual Vercel domain
+        'https://topicalvillage-p88qp01u7-beo-alvaros-projects.vercel.app', // Deployment URL
+        'https://tropicalvillageportal-production.up.railway.app' // Backend Railway URL (for API testing)
     ];
     const origin = req.headers.origin;
     
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        // For development and testing, allow any origin
+        res.setHeader('Access-Control-Allow-Origin', '*');
     }
     
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     
     if (req.method === 'OPTIONS') {
