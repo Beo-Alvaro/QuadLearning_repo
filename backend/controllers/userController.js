@@ -23,62 +23,76 @@ const getAdminId = async (req, res) => {
 // @access  Public
 
 const authUser = asyncHandler(async (req, res) => {
-    const { username, password: encryptedPassword, isEncrypted } = req.body;
-    const ENCRYPTION_KEY = process.env.VITE_ENCRYPTION_KEY
+    try {
+        const { username, password: encryptedPassword, isEncrypted } = req.body;
+        const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'TROPICALVNHS12345';
 
-    let password;
-    if (isEncrypted) {
-        // Decrypt the password
-        const bytes = CryptoJS.AES.decrypt(encryptedPassword, ENCRYPTION_KEY);
-        password = bytes.toString(CryptoJS.enc.Utf8);
-    } else {
-        password = encryptedPassword;
-    }
+        console.log('Auth attempt for username:', username);
+        console.log('Is encrypted password:', isEncrypted);
 
-    const user = await User.findOne({ username });
-
-    if (!user) {
-        res.status(401);
-        throw new Error('Invalid username or password');
-    }
-
-    // Check if account is locked
-    if (user.lockUntil && user.lockUntil > Date.now()) {
-        const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
-        res.status(423);
-        throw new Error(`Account is locked. Try again in ${minutesLeft} minutes`);
-    }
-
-    // Verify password
-    const isMatch = await bcrypt.compare(password.trim(), user.password);
-
-    if (!isMatch) {
-        await user.incrementLoginAttempts();
-        
-        // Check if this attempt caused a lock
-        if (user.loginAttempts + 1 >= 5) {
-            res.status(423);
-            throw new Error('Account is now locked for 15 minutes due to too many failed attempts');
+        let password;
+        if (isEncrypted) {
+            try {
+                // Decrypt the password
+                const bytes = CryptoJS.AES.decrypt(encryptedPassword, ENCRYPTION_KEY);
+                password = bytes.toString(CryptoJS.enc.Utf8);
+            } catch (error) {
+                console.error('Error decrypting password:', error);
+                res.status(400).json({ message: 'Error processing encrypted password' });
+                return;
+            }
+        } else {
+            password = encryptedPassword;
         }
 
-        res.status(401);
-        throw new Error(`Invalid password. ${4 - user.loginAttempts} attempts remaining`);
-    }
+        const user = await User.findOne({ username });
 
-    // Reset attempts on successful login
-    await user.resetLoginAttempts();
-
-    // Generate token and send response
-    const token = generateToken(user._id, res);
-    res.json({
-        success: true,
-        token,
-        user: {
-            _id: user._id,
-            username: user.username,
-            role: user.role
+        if (!user) {
+            res.status(401).json({ message: 'Invalid username or password' });
+            return;
         }
-    });
+
+        // Check if account is locked
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+            res.status(423).json({ message: `Account is locked. Try again in ${minutesLeft} minutes` });
+            return;
+        }
+
+        // Verify password
+        const isMatch = await bcrypt.compare(password.trim(), user.password);
+
+        if (!isMatch) {
+            await user.incrementLoginAttempts();
+            
+            // Check if this attempt caused a lock
+            if (user.loginAttempts + 1 >= 5) {
+                res.status(423).json({ message: 'Account is now locked for 15 minutes due to too many failed attempts' });
+                return;
+            }
+
+            res.status(401).json({ message: `Invalid password. ${4 - user.loginAttempts} attempts remaining` });
+            return;
+        }
+
+        // Reset attempts on successful login
+        await user.resetLoginAttempts();
+
+        // Generate token and send response
+        const token = generateToken(user._id, res);
+        res.status(200).json({
+            success: true,
+            token,
+            user: {
+                _id: user._id,
+                username: user.username,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Authentication error:', error);
+        res.status(500).json({ message: 'Internal server error during authentication' });
+    }
 });
 
 // @desc    Logout user

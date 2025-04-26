@@ -11,7 +11,9 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  // Use the same encryption key as the backend
+  const ENCRYPTION_KEY = 'TROPICALVNHS12345';
+  
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -27,6 +29,8 @@ const LoginScreen = () => {
       try {
         // Get the base URL from config
         const baseUrl = apiConfig.getBaseUrl();
+        console.log('Using API URL:', `${baseUrl}/users/auth`);
+        
         const response = await fetch(`${baseUrl}/users/auth`, {
             method: 'POST',
             headers: {
@@ -36,7 +40,13 @@ const LoginScreen = () => {
             credentials: 'include'
         });
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Error parsing JSON response:', jsonError);
+          throw new Error('Unable to parse server response. Please try again later.');
+        }
 
         if (!response.ok) {
             if (response.status === 423) {
