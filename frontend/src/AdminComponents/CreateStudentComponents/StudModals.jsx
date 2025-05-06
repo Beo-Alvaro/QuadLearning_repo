@@ -1,4 +1,5 @@
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
 const StudModals = ({
     showAddModal, setShowAddModal,
     show, handleClose,
@@ -7,8 +8,31 @@ const StudModals = ({
     editUser, setEditUser,
     yearLevels, strands, semesters, filteredSections, availableSubjects,
     handleAddUser, handleEditSubmit, deleteHandler, loading,
-    error, selectedUserId
+    error, selectedUserId, validations, setValidations
 }) => {
+
+    const LRN_MAX_LENGTH = 12;
+    // Add these state variables and validation logic after the existing useState declarations
+const [showPassword, setShowPassword] = useState(false);
+const [showRequirements, setShowRequirements] = useState(false);
+
+const passwordValidation = {
+    minLength: (password) => password.length >= 8,
+    hasUppercase: (password) => /[A-Z]/.test(password),
+    hasNumber: (password) => /[0-9]/.test(password),
+    hasSymbol: (password) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
+};
+
+// Add useEffect for password validation
+useEffect(() => {
+    setValidations({
+        minLength: passwordValidation.minLength(newUser.password),
+        hasUppercase: passwordValidation.hasUppercase(newUser.password),
+        hasNumber: passwordValidation.hasNumber(newUser.password),
+        hasSymbol: passwordValidation.hasSymbol(newUser.password)
+    });
+}, [newUser.password]);
+
         // First, add these styles at the top of your file
     const modalStyles = {
         modal: {
@@ -67,7 +91,14 @@ const StudModals = ({
         <Form onSubmit={handleAddUser}>
             {/* Basic Information Section */}
             <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Basic Information</h6>
+                <h6 className="mb-3">Basic Information
+                <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>All fields in Basic Information are required.</Tooltip>}
+                    >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                </OverlayTrigger>
+                </h6>
                 <div style={modalStyles.formGrid}>
                     <Form.Group>
                         <Form.Label>Username</Form.Label>
@@ -76,24 +107,65 @@ const StudModals = ({
                             value={newUser.username}
                             onChange={(e) => setNewUser({...newUser, username: e.target.value})}
                             required
+                            maxLength={LRN_MAX_LENGTH}
                         />
                     </Form.Group>
 
                     <Form.Group>
-                        <Form.Label>Password</Form.Label>
-                        <Form.Control
-                            type="password"
-                            value={newUser.password}
-                            onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                            required
-                        />
-                    </Form.Group>
+    <Form.Label>Password</Form.Label>
+    <div className="position-relative">
+        <Form.Control
+            type={showPassword ? "text" : "password"}
+            value={newUser.password}
+            onChange={(e) => {
+                setNewUser({...newUser, password: e.target.value});
+                if (!showRequirements) setShowRequirements(true);
+            }}
+            onFocus={() => setShowRequirements(true)}
+            required
+        />
+        <Button
+            className="position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+            onClick={() => setShowPassword(!showPassword)}
+            type="button"
+        >
+            <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'} text-success`}></i>
+        </Button>
+    </div>
+    {showRequirements && (
+        <div className="password-requirements mb-3">
+            <small className={`d-block ${validations.minLength ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.minLength ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}Minimum 8 characters
+            </small>
+            <small className={`d-block ${validations.hasUppercase ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.hasUppercase ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}One uppercase letter
+            </small>
+            <small className={`d-block ${validations.hasNumber ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.hasNumber ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}One number
+            </small>
+            <small className={`d-block ${validations.hasSymbol ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.hasSymbol ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}One special character
+            </small>
+        </div>
+    )}
+</Form.Group>
                 </div>
             </div>
 
             {/* Academic Information Section */}
             <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Academic Information</h6>
+                <h6 className="mb-3">Academic Information
+                <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>All fields in Academic Information are required.</Tooltip>}
+                    >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                </OverlayTrigger>
+                </h6>
                 <div style={modalStyles.formGrid}>
                     <Form.Group>
                         <Form.Label>Year Level</Form.Label>
@@ -231,7 +303,14 @@ const StudModals = ({
 
           {/* Subjects Section */}
 <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-    <h6 className="mb-3">Subjects</h6>
+    <h6 className="mb-3">Subjects                
+                <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Subjects are required to proceed.</Tooltip>}
+                    >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                </OverlayTrigger>
+                </h6>
 
     {availableSubjects.length > 0 ? (
         <>
@@ -332,22 +411,35 @@ const StudModals = ({
         <Form onSubmit={handleEditSubmit}>
             {/* Basic Information */}
             <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Basic Information</h6>
+                <h6 className="mb-3">Basic Information
+                <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>This field must not be empty to proceed.</Tooltip>}
+                    >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                </OverlayTrigger>
+                </h6>
                 <Form.Group>
                     <Form.Label>Username</Form.Label>
                     <Form.Control
                         type="text"
                         value={editUser.username}
-                        readOnly
-                        disabled
-                        className="bg-light"
+                        onChange={(e) => setEditUser({...editUser, username: e.target.value})}
+                        required
                     />
                 </Form.Group>
             </div>
 
             {/* Academic Information */}
             <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Academic Information</h6>
+                <h6 className="mb-3">Academic Information
+                <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>All fields in Academic Information are required.</Tooltip>}
+                    >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                </OverlayTrigger>
+                </h6>
                 <div style={modalStyles.formGrid}>
                     <Form.Group>
                         <Form.Label>Year Level</Form.Label>
@@ -457,7 +549,14 @@ const StudModals = ({
 
             {/* Subjects Section */}
             <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                <h6 className="mb-3">Subjects</h6>
+                <h6 className="mb-3">Subjects
+                <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Subjects are required to proceed.</Tooltip>}
+                    >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                </OverlayTrigger>
+                </h6>
                 {availableSubjects.length > 0 ? (
                     <div className="subjects-grid" style={{ 
                         display: 'grid', 
@@ -479,6 +578,7 @@ const StudModals = ({
                                             : prev.subjects.filter(id => id !== subject._id)
                                     }));
                                 }}
+                                required
                             />
                         ))}
                     </div>
