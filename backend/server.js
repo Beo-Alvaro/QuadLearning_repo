@@ -83,7 +83,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
-app.use('/api/admin', semesterRoutes);
+app.use('/api', semesterRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/messages', messageRoutes);
 // Basic route

@@ -257,7 +257,8 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
                   throw new Error('No authentication token found');
               }
       
-              const response = await fetch('/api/admin/semesters', {
+              const baseUrl = apiConfig.getBaseUrl();
+              const response = await fetch(`${baseUrl}/admin/semesters`, {
                   method: 'GET',
                   headers: {
                       'Authorization': `Bearer ${token}`,

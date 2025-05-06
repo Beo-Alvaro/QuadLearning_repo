@@ -6,6 +6,8 @@ import TeacherGradeHeader from '../TeacherComponents/TeacherGradeHeader';
 import TeacherEncodeGradeFilter from '../TeacherComponents/TeacherEncodeFilter';
 import { useGradeDataContext } from '../hooks/useGradeDataContext';
 import { ToastContainer, toast } from 'react-toastify';
+import apiConfig from '../config/apiConfig';
+
 const TeacherEncodeGrade = () => {
     const [error, setError] = useState(null);
     const { selectedSubject, currentSemester, studentGrades, setStudentGrades,
@@ -38,31 +40,31 @@ const TeacherEncodeGrade = () => {
         });
     };
 
-// Update the handleGradeChange function
-const handleGradeChange = (e, studentId, gradeType) => {
-    const value = e.target.value !== '' ? parseFloat(e.target.value) : '';
+    // Update the handleGradeChange function
+    const handleGradeChange = (e, studentId, gradeType) => {
+        const value = e.target.value !== '' ? parseFloat(e.target.value) : '';
 
-    setLocalGrades(prevGrades => {
-        const updatedGrades = { ...prevGrades };
-        if (!updatedGrades[studentId]) updatedGrades[studentId] = {};
-        
-        updatedGrades[studentId][gradeType] = value;
+        setLocalGrades(prevGrades => {
+            const updatedGrades = { ...prevGrades };
+            if (!updatedGrades[studentId]) updatedGrades[studentId] = {};
+            
+            updatedGrades[studentId][gradeType] = value;
 
-        // Calculate final rating if both grades exist
-        const midterm = updatedGrades[studentId].midterm ?? 
-            (studentGrades[studentId]?.[selectedSubject]?.midterm ?? 0);
-        const finals = updatedGrades[studentId].finals ?? 
-            (studentGrades[studentId]?.[selectedSubject]?.finals ?? 0);
+            // Calculate final rating if both grades exist
+            const midterm = updatedGrades[studentId].midterm ?? 
+                (studentGrades[studentId]?.[selectedSubject]?.midterm ?? 0);
+            const finals = updatedGrades[studentId].finals ?? 
+                (studentGrades[studentId]?.[selectedSubject]?.finals ?? 0);
 
-        if (midterm !== '' && finals !== '') {
-            // Round to nearest whole number
-            const finalRating = Math.round((midterm * 0.4 + finals * 0.6));
-            updatedGrades[studentId].finalRating = finalRating.toString();
-        }
+            if (midterm !== '' && finals !== '') {
+                // Round to nearest whole number
+                const finalRating = Math.round((midterm * 0.4 + finals * 0.6));
+                updatedGrades[studentId].finalRating = finalRating.toString();
+            }
 
-        return updatedGrades;
-    });
-};
+            return updatedGrades;
+        });
+    };
 
     // Save a single student's grade
     const addGrade = async (studentId) => {
@@ -97,12 +99,12 @@ const handleGradeChange = (e, studentId, gradeType) => {
                 semesterId: currentSemester,
                 midterm,
                 finals,
-                section: student.sectionName,      // Updated this line
-                yearLevel: student.yearLevelName   // And this one
+                section: student.sectionName,
+                yearLevel: student.yearLevelName
             });
             
-    
-            const response = await fetch('/api/teacher/add-grades', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/teacher/add-grades`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -114,8 +116,8 @@ const handleGradeChange = (e, studentId, gradeType) => {
                     semesterId: currentSemester,
                     midterm,
                     finals,
-                    section: student.sectionName,      // Updated this line
-                    yearLevel: student.yearLevelName   // And this one
+                    section: student.sectionName,
+                    yearLevel: student.yearLevelName
                 })
             });
     
@@ -180,8 +182,8 @@ const handleGradeChange = (e, studentId, gradeType) => {
                     semesterId: currentSemester,
                     midterm: grades.midterm !== undefined ? grades.midterm : existingGrades.midterm,
                     finals: grades.finals !== undefined ? grades.finals : existingGrades.finals,
-                    section: student.sectionName,      // Updated this line
-                    yearLevel: student.yearLevelName   // And this one
+                    section: student.sectionName,
+                    yearLevel: student.yearLevelName
                 };
             }).filter(update => update.midterm !== undefined || update.finals !== undefined);
             
@@ -191,7 +193,8 @@ const handleGradeChange = (e, studentId, gradeType) => {
                 return;
             }
 
-            const response = await fetch('/api/teacher/bulk-add-grades', {
+            const baseUrl = apiConfig.getBaseUrl();
+            const response = await fetch(`${baseUrl}/teacher/bulk-add-grades`, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
@@ -208,45 +211,27 @@ const handleGradeChange = (e, studentId, gradeType) => {
             const result = await response.json();
             console.log('Bulk save result:', result);
             
-            // Update the UI immediately with the saved data
-            const updatedGrades = { ...studentGrades };
+            // Update the UI with the saved grades
+            const newGrades = { ...studentGrades };
             
-            // Process each update to update the UI
-            updates.forEach(update => {
-                const { studentId, subjectId, midterm, finals } = update;
+            result.data.forEach(updated => {
+                const { studentId, subjectId, midterm, finals, finalRating, action } = updated;
                 
-                // Initialize student entry if it doesn't exist
-                if (!updatedGrades[studentId]) {
-                    updatedGrades[studentId] = {};
+                if (!newGrades[studentId]) {
+                    newGrades[studentId] = {};
                 }
                 
-                // Calculate final rating
-                const midtermValue = midterm !== undefined ? parseFloat(midterm) : 0;
-                const finalsValue = finals !== undefined ? parseFloat(finals) : 0;
-                const finalRating = Math.round(midtermValue * 0.4 + finalsValue * 0.6);
-                const action = parseFloat(finalRating) >= 75 ? 'PASSED' : 'FAILED';
-                
-                // Update the grades for this student and subject
-                updatedGrades[studentId][subjectId] = {
-                    midterm: midterm,
-                    finals: finals,
-                    finalRating: finalRating,
-                    action: action
+                newGrades[studentId][subjectId] = {
+                    midterm,
+                    finals,
+                    finalRating,
+                    action
                 };
             });
             
-            // Save to state
-            setStudentGrades(updatedGrades);
-
-            // Clear all local changes
-            setLocalGrades({});
-            
-            // Exit edit mode for all students
-            const updatedEditModes = {};
-            Object.keys(editModeStudents).forEach(studentId => {
-                updatedEditModes[studentId] = false;
-            });
-            setEditModeStudents(updatedEditModes);
+            setStudentGrades(newGrades);
+            setLocalGrades({}); // Clear all local changes
+            setEditModeStudents({}); // Turn off all edit modes
             
             toast.success('All grades saved successfully!')
             // Refresh grades from server (but we've already updated the UI)
@@ -273,8 +258,9 @@ const handleGradeChange = (e, studentId, gradeType) => {
 
             console.log(`Fetching grades for subject: ${selectedSubject}, semester: ${currentSemester}`);
 
+            const baseUrl = apiConfig.getBaseUrl();
             const response = await fetch(
-                `/api/teacher/subject-grades/${selectedSubject}?semesterId=${currentSemester}`,
+                `${baseUrl}/teacher/subject-grades/${selectedSubject}?semesterId=${currentSemester}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import axios from 'axios';
+import apiConfig from '../config/apiConfig';
 
 const TeacherEncodeGradeFilter = ({
   successMessage,
@@ -43,8 +44,9 @@ useEffect(() => {
 
     try {
       const token = localStorage.getItem('token');
+      const baseUrl = apiConfig.getBaseUrl();
       const response = await axios.get(
-        `/api/teacher/subjects`, {
+        `${baseUrl}/teacher/subjects`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -163,7 +165,7 @@ useEffect(() => {
               <Form.Group>
     <Form.Label>Subject</Form.Label>
     {loadingSubjects ? (
-        <div className="text-center py-3">
+        <div className="text-center py-2">
             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
             Loading subjects...
         </div>
@@ -179,10 +181,10 @@ useEffect(() => {
             >
                 <option value="">Choose Subject</option>
                 {semesterSubjects.map((subject) => (
-    <option key={subject._id} value={subject._id}>
-        {subject.name} ({subject.code || 'No Code'})
-    </option>
-))}
+                    <option key={subject._id} value={subject._id}>
+                        {subject.name} ({subject.code || 'No Code'})
+                    </option>
+                ))}
             </Form.Select>
             {subjectError && (
                 <Form.Text className="text-danger">
