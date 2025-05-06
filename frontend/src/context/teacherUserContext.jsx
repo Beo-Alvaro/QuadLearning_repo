@@ -88,16 +88,21 @@ export const TeacherUserContextProvider = ({ children }) => {
     // Handle selecting a student
     const handleSelectStudent = async (studentId) => {
         try {
+            console.log('===== STARTING STUDENT FETCH PROCESS =====');
+            console.log('Student ID received:', studentId);
+            
             setSelectedStudent(null); // Reset previous selection
             const token = localStorage.getItem('token');
-            const baseUrl = apiConfig.getBaseUrl();
+            console.log('Token available:', !!token);
             
-            console.log('Fetching student details for ID:', studentId);
+            const baseUrl = apiConfig.getBaseUrl();
+            console.log('API Base URL:', baseUrl);
             
             // Show loading toast
             const loadingToastId = toast.loading("Loading student data...");
             
             // Fetch the student details
+            console.log('Sending request to:', `${baseUrl}/teacher/student/${studentId}`);
             const studentResponse = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
                 method: 'GET',
                 headers: {
@@ -121,19 +126,22 @@ export const TeacherUserContextProvider = ({ children }) => {
             }
 
             const studentData = await studentResponse.json();
-            console.log('Fetched student data:', studentData);
+            console.log('Raw student data from API:', JSON.stringify(studentData));
             
             // Fetch grades with populated semester information
+            console.log('Fetching grades from:', `${baseUrl}/teacher/student-grades/${studentId}`);
             const gradesResponse = await fetch(`${baseUrl}/teacher/student-grades/${studentId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
             });
 
+            console.log('Grades response status:', gradesResponse.status);
+            
             let grades = [];
             if (gradesResponse.ok) {
                 const gradesData = await gradesResponse.json();
-                console.log('Received grades data:', gradesData);
+                console.log('Raw grades data from API:', JSON.stringify(gradesData));
                 
                 // Group grades by year level and semester
                 const gradeBySemester = {};
@@ -161,19 +169,33 @@ export const TeacherUserContextProvider = ({ children }) => {
                 
                 // Convert to array
                 grades = Object.values(gradeBySemester);
+                console.log('Processed grades data:', JSON.stringify(grades));
+            } else {
+                console.error('Failed to fetch grades:', gradesResponse.status);
+                const errorText = await gradesResponse.text();
+                console.error('Grades API Error Response:', errorText);
             }
             
             // Get section data for display
+            console.log('Sections available:', JSON.stringify(sections.map(s => ({ id: s._id, name: s.name }))));
+            
             let sectionInfo = {
                 name: 'Not Assigned',
                 yearLevel: 'Not Assigned',
                 strand: 'Not Assigned'
             };
             
+            console.log('Student section data:', JSON.stringify(studentData.section));
+            
             if (studentData.section) {
                 const sectionId = typeof studentData.section === 'object' ? studentData.section._id : studentData.section;
+                console.log('Extracted section ID:', sectionId);
+                
                 const matchingSection = sections.find(s => s._id === sectionId);
+                console.log('Matching section found:', !!matchingSection);
+                
                 if (matchingSection) {
+                    console.log('Section details:', JSON.stringify(matchingSection));
                     sectionInfo = {
                         name: matchingSection.name || 'Not Assigned',
                         yearLevel: matchingSection.yearLevel?.name || 'Not Assigned',
@@ -181,6 +203,8 @@ export const TeacherUserContextProvider = ({ children }) => {
                     };
                 }
             }
+            
+            console.log('Final section info:', JSON.stringify(sectionInfo));
             
             // Format the student data for display, ensuring all personal info is included
             const formattedStudentData = {
@@ -196,7 +220,7 @@ export const TeacherUserContextProvider = ({ children }) => {
                 grades
             };
             
-            console.log('Formatted student data:', formattedStudentData);
+            console.log('Final formatted student data:', JSON.stringify(formattedStudentData));
             setSelectedStudent(formattedStudentData);
             
             toast.update(loadingToastId, {
@@ -206,6 +230,7 @@ export const TeacherUserContextProvider = ({ children }) => {
                 autoClose: 1500
             });
             
+            console.log('===== COMPLETED STUDENT FETCH PROCESS =====');
         } catch (error) {
             console.error('Error fetching student details:', error);
             toast.error(error.message || 'Failed to load student details');
