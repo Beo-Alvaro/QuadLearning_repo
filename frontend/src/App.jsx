@@ -21,6 +21,7 @@ import StudentMessages from './StudentScreens/StudentMessages';
 import AdminMessages from './AdminScreens/AdminMessages';
 import TeacherAttendance from './TeacherScreens/TeacherAttendance';
 import AdminPendingStudents from './AdminScreens/AdminPendingStudents';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Redirect handler component
 function RedirectHandler() {
@@ -43,33 +44,35 @@ function RedirectHandler() {
 
 const App = () => {
   return (
-    <Router>
-      <RedirectHandler />
-      <Routes>
-        <Route path='/' element={<HomeScreen />} />
-        <Route path='/login' element={<LoginScreen />} />
-        <Route path='/admin' element={<AdminHomeScreen />} />
-        <Route path='/admin/Strands' element={<Strands />} />
-        <Route path='/login/AdminScreens/AdminHomeScreen' element={<AdminHomeScreen />} />
-        <Route path='/admin/AdminViewAllUsersScreen' element={<AdminViewAllUsersScreen />} />
-        <Route path='/login/StudentScreens/StudentHomeScreen' element={<StudentHomeScreen />} />
-        <Route path='/login/TeacherScreens/TeacherHomeScreen' element={<TeacherHomeScreen />} />
-        <Route path='/admin/AdminCreateStudentAccount/' element={<AdminCreateStudentAccount />} />
-        <Route path='/admin/AdminCreateTeacherAccount' element={<AdminCreateTeacherAccount />} />
-        <Route path='/admin/AdminMessages' element={<AdminMessages />} />
-        <Route path='/admin/AdminPendingStudents' element={<AdminPendingStudents />} />
-        <Route path='/admin/ManageSubjects' element={<ManageSubjects />} />
-        <Route path='/admin/ManageSemesters' element={<ManageSemesters />} />
-        <Route path='/admin/ManageSections' element={<ManageSections />} />
-        <Route path='/login/TeacherScreens/TeacherViewStudents' element={<TeacherViewStudents />} />
-        <Route path='/login/TeacherScreens/TeacherEncodeGrade' element={<TeacherEncodeGrade />} />
-        <Route path='/login/TeacherScreens/TeacherGenerateForm' element={<TeacherGenerateForm />} />
-        <Route path='/login/TeacherScreens/TeacherAttendance' element={<TeacherAttendance />} />
-        <Route path='/login/StudentScreens/StudentProfile' element={<StudentProfile />} />
-        <Route path='/login/StudentScreens/StudentViewGrades' element={<StudentViewGrades />} />
-        <Route path='/login/StudentScreens/StudentMessages' element={<StudentMessages />} />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <RedirectHandler />
+        <Routes>
+          <Route path='/' element={<HomeScreen />} />
+          <Route path='/login' element={<LoginScreen />} />
+          <Route path='/admin' element={<AdminHomeScreen />} />
+          <Route path='/admin/Strands' element={<Strands />} />
+          <Route path='/login/AdminScreens/AdminHomeScreen' element={<AdminHomeScreen />} />
+          <Route path='/admin/AdminViewAllUsersScreen' element={<AdminViewAllUsersScreen />} />
+          <Route path='/login/StudentScreens/StudentHomeScreen' element={<StudentHomeScreen />} />
+          <Route path='/login/TeacherScreens/TeacherHomeScreen' element={<TeacherHomeScreen />} />
+          <Route path='/admin/AdminCreateStudentAccount/' element={<AdminCreateStudentAccount />} />
+          <Route path='/admin/AdminCreateTeacherAccount' element={<AdminCreateTeacherAccount />} />
+          <Route path='/admin/AdminMessages' element={<AdminMessages />} />
+          <Route path='/admin/AdminPendingStudents' element={<AdminPendingStudents />} />
+          <Route path='/admin/ManageSubjects' element={<ManageSubjects />} />
+          <Route path='/admin/ManageSemesters' element={<ManageSemesters />} />
+          <Route path='/admin/ManageSections' element={<ManageSections />} />
+          <Route path='/login/TeacherScreens/TeacherViewStudents' element={<TeacherViewStudents />} />
+          <Route path='/login/TeacherScreens/TeacherEncodeGrade' element={<TeacherEncodeGrade />} />
+          <Route path='/login/TeacherScreens/TeacherGenerateForm' element={<TeacherGenerateForm />} />
+          <Route path='/login/TeacherScreens/TeacherAttendance' element={<TeacherAttendance />} />
+          <Route path='/login/StudentScreens/StudentProfile' element={<StudentProfile />} />
+          <Route path='/login/StudentScreens/StudentViewGrades' element={<StudentViewGrades />} />
+          <Route path='/login/StudentScreens/StudentMessages' element={<StudentMessages />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

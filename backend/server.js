@@ -23,6 +23,8 @@ app.use((req, res, next) => {
         'http://localhost:3000', // Alternative local development port
         'https://topicalvillage.vercel.app', // Your actual Vercel domain
         'http://topicalvillage.vercel.app', // Non-HTTPS variant
+        'https://tropicalvillage.vercel.app', // Corrected domain name
+        'http://tropicalvillage.vercel.app', // Non-HTTPS variant of corrected domain
         'https://topicalvillage-p88qp01u7-beo-alvaros-projects.vercel.app', // Old deployment URL
         'https://topicalvillage-i1a1gpubh-beo-alvaros-projects.vercel.app', // Old deployment URL
         'https://topicalvillage-ijtrs19jy-beo-alvaros-projects.vercel.app', // Old deployment URL

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Modal, Button, Form, Row, Col, Card, Spinner } from "react-bootstrap"
 import { toast } from "react-toastify"
+import apiConfig from "../config/apiConfig"
 
 const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const [formData, setFormData] = useState({
@@ -43,17 +44,22 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const fetchStudentData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/teacher/student/${studentId}`, {
+      console.log('Fetching student data for ID:', studentId);
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
       if (!response.ok) {
-        throw new Error("Failed to fetch student data")
+        const errorText = await response.text();
+        console.error('Student API Error Response:', errorText);
+        throw new Error(`Failed to fetch student data: ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('Student data received:', data);
 
       setFormData((prevData) => ({
         ...prevData,
@@ -91,7 +97,7 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
       }))
     } catch (error) {
       console.error("Error fetching student data:", error)
-      toast.error("Failed to fetch student data")
+      toast.error(`Failed to fetch student data: ${error.message}`)
     } finally {
       setIsLoading(false)
     }
@@ -133,7 +139,8 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
         ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).toLowerCase()
         : undefined
 
-      const response = await fetch(`/api/teacher/student/${studentId}/form`, {
+      const baseUrl = apiConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/teacher/student/${studentId}/form`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

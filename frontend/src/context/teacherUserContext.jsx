@@ -27,6 +27,7 @@ export const TeacherUserContextProvider = ({ children }) => {
             }
 
             console.log('Fetching sections with token:', token.substring(0, 10) + '...');
+            console.log('API Base URL:', apiConfig.getBaseUrl());
             
             const baseUrl = apiConfig.getBaseUrl();
             const sectionsResponse = await fetch(`${baseUrl}/teacher/sections`, {
@@ -39,10 +40,13 @@ export const TeacherUserContextProvider = ({ children }) => {
             console.log('Sections response status:', sectionsResponse.status);
 
             if (!sectionsResponse.ok) {
+                const errorText = await sectionsResponse.text();
+                console.error('API Error Response:', errorText);
+                
                 if (sectionsResponse.status === 401) {
                     throw new Error('Your session has expired. Please log in again.');
                 }
-                throw new Error(`Failed to fetch sections (Status: ${sectionsResponse.status})`);
+                throw new Error(`Failed to fetch sections (Status: ${sectionsResponse.status}): ${errorText}`);
             }
 
             const sectionsData = await sectionsResponse.json();
@@ -75,68 +79,94 @@ export const TeacherUserContextProvider = ({ children }) => {
         } catch (error) {
             console.error('Error fetching teacher data:', error);
             setError(error.message || 'Failed to load sections. Please try again later.');
+            toast.error(error.message || 'Failed to load sections. Please try again later.');
         } finally {
             setLoading(false);
         }
     }, []); // Empty dependency array
 
+    // Handle selecting a student
+    const handleSelectStudent = async (studentId) => {
+        try {
+            setSelectedStudent(null); // Reset previous selection
+            const token = localStorage.getItem('token');
+            const baseUrl = apiConfig.getBaseUrl();
+            
+            console.log('Fetching student details for ID:', studentId);
+            
+            // Fetch the student details
+            const studentResponse = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            console.log('Student response status:', studentResponse.status);
+            
+            if (!studentResponse.ok) {
+                const errorText = await studentResponse.text();
+                console.error('Student API Error Response:', errorText);
+                throw new Error(`Failed to fetch student details: ${errorText}`);
+            }
+
+            const studentData = await studentResponse.json();
+            console.log('Fetched student data:', studentData);
+            
+            setSelectedStudent(studentData);
+        } catch (error) {
+            console.error('Error fetching student details:', error);
+            toast.error(error.message || 'Failed to load student details');
+        }
+    };
+
   // Handle Form 137 Generation
   const handleGenerateForm = async (studentId) => {
     try {
         if (!studentId) throw new Error('Invalid Student ID');
-
+        
+        // Show loading toast
+        const loadingToastId = toast.loading("Generating Form 137...");
+        
+        const token = localStorage.getItem('token');
         const baseUrl = apiConfig.getBaseUrl();
-        const response = await fetch(`${baseUrl}/teacher/generate-form137/${studentId}`, {
-            method: 'GET',
+        
+        // Fetch the student's basic information
+        const studentResponse = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
-        });
-         // Get filename from headers
-         const filename = response.headers.get("X-Filename") || `Form137_${studentId}.xlsx`;
-         // Convert response to a Blob
-         const blob = await response.blob();
-
-        // Save the file
-        saveAs(blob, filename);
-        toast.success('Form generated successfully!')
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to generate Form 137');
-        }
-
-        console.log(`✅ Form 137 downloaded successfully as ${filename}`);
-    } catch (error) {
-        console.error("❌ Error downloading Form 137:", error);
-
-        setError(`Failed to generate Form 137: ${error.message}`);
-    }
-};
-
-const handleSelectStudent = async (studentId) => {
-    try {
-        if (!studentId) throw new Error('Invalid Student ID');
-
-        // Fetch student details
-        const baseUrl = apiConfig.getBaseUrl();
-        const response = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${token}`,
             },
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch student details');
+        if (!studentResponse.ok) {
+            const errorText = await studentResponse.text();
+            toast.update(loadingToastId, {
+                render: `Error: Failed to fetch student data - ${errorText}`,
+                type: "error",
+                isLoading: false,
+                autoClose: 3000
+            });
+            return;
         }
 
-        const data = await response.json();
+        const studentData = await studentResponse.json();
+        
+        // Check if we have sufficient student data
+        if (!studentData.firstName || !studentData.lastName) {
+            toast.update(loadingToastId, {
+                render: "Student profile incomplete. Please complete the student information first.",
+                type: "error",
+                isLoading: false,
+                autoClose: 3000
+            });
+            return;
+        }
 
         // Fetch grades with populated semester information
         const gradesResponse = await fetch(`${baseUrl}/teacher/student-grades/${studentId}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${token}`,
             },
         });
 
@@ -168,47 +198,29 @@ const handleSelectStudent = async (studentId) => {
                     })));
                 }
             });
-        
-            // Convert to array and sort by year level and semester name
-            grades = Object.values(gradeBySemester).sort((a, b) => {
-                // First sort by year level
-                const yearLevelA = a.yearLevel || '';
-                const yearLevelB = b.yearLevel || '';
-                if (yearLevelA !== yearLevelB) {
-                    return yearLevelA.localeCompare(yearLevelB);
-                }
-                // Then sort by semester name
-                return (a.semesterInfo?.name || '').localeCompare(b.semesterInfo?.name || '');
-            });
-        
-            console.log('Processed grades:', grades);
+            
+            // Convert to array
+            grades = Object.values(gradeBySemester);
         }
-
-        // Create the combined student object
-        const studentWithGrades = {
-            _id: data.data._id,
-            username: data.data.username,
-            firstName: data.data.firstName,
-            lastName: data.data.lastName,
-            middleInitial: data.data.middleInitial,
-            section: data.data.section,
-            yearLevel: data.data.yearLevel,
-            strand: data.data.strand,
-            gender: data.data.gender || 'Not Set',
-            birthdate: data.data.birthdate ? new Date(data.data.birthdate).toLocaleDateString() : 'Not Set',
-            address: data.data.address || 'Not Set',
-            guardian: data.data.guardian?.name || 'Not Set',
-            school: data.data.school?.name || 'Not Set',
-            grades: grades
-        };
-
-        setSelectedStudent(studentWithGrades);
+        
+        // Set the complete student data including grades
+        setSelectedStudent({
+            ...studentData,
+            grades
+        });
+        
+        toast.update(loadingToastId, {
+            render: "Student data loaded successfully!",
+            type: "success",
+            isLoading: false,
+            autoClose: 1500
+        });
     } catch (error) {
-        console.error('Error fetching student details:', error);
-        setError(`Failed to fetch student details: ${error.message}`);
+        console.error('Error loading student data:', error);
+        toast.error(error.message || 'Error loading student data');
     }
 };
-
+    
     return (
         <TeacherUserContext.Provider
             value={{

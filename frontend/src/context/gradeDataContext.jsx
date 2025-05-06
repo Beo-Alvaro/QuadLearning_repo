@@ -311,11 +311,12 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
             if (!token) throw new Error('No authentication token found');
             if (!currentSemester) return;
     
+            const baseUrl = apiConfig.getBaseUrl();
             const [sectionsResponse, subjectsResponse] = await Promise.all([
-                fetch('/api/teacher/sections', {
+                fetch(`${baseUrl}/teacher/sections`, {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                fetch(`/api/teacher/subjects?semesterId=${currentSemester}`, {
+                fetch(`${baseUrl}/teacher/subjects?semesterId=${currentSemester}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
             ]);

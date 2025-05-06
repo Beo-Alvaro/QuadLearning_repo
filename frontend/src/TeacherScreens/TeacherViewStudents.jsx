@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar';
-import { Container, Form, Row, Col , Button, Badge, Card, OverlayTrigger, Tooltip} from 'react-bootstrap';
+import { Container, Form, Row, Col, Button, Badge, Card, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useTeacherUserContext } from '../hooks/useTeacherUserContext';
 import UpdateStudentModal from '../TeacherComponents/UpdateStudentModal';
 import './TeacherViewStudent.css';
 import TeacherStudentTable from '../TeacherComponents/TeacherStudentTable';
 import { ToastContainer, toast } from 'react-toastify';
+import HealthCheck from '../components/HealthCheck';
+
 const TeacherViewStudents = () => {
     const [availableSections, setAvailableSections] = useState([]);
     const [showAdvisoryOnly, setShowAdvisoryOnly] = useState(false);
@@ -23,14 +25,26 @@ const TeacherViewStudents = () => {
     const { sections, strands, yearLevels, loading, error, fetchData } = useTeacherUserContext();
 
     useEffect(() => {
-        fetchData()
-    }, [])
+        try {
+            console.log('TeacherViewStudents: Fetching data');
+            fetchData();
+        } catch (err) {
+            console.error('TeacherViewStudents: Error fetching data:', err);
+            toast.error('Failed to load teacher data: ' + err.message);
+        }
+    }, [fetchData]);
 
     const handleViewStudent = (student) => {
-        // Make sure we're passing the user ID, not the student record ID
-        const userId = typeof student === 'string' ? student : student.user;
-        setSelectedStudentId(userId);
-        setShowModal(true);
+        try {
+            // Make sure we're passing the user ID, not the student record ID
+            const userId = typeof student === 'string' ? student : student.user;
+            console.log('Viewing student with ID:', userId);
+            setSelectedStudentId(userId);
+            setShowModal(true);
+        } catch (err) {
+            console.error('Error setting student for viewing:', err);
+            toast.error('Failed to view student details');
+        }
     };
     
     // Function to filter sections based on strand and year level
@@ -53,7 +67,16 @@ const TeacherViewStudents = () => {
     }, [filteredSections, selectedSection]);
     
     const filteredStudents = useMemo(() => {
+        if (!sections || sections.length === 0) {
+            return [];
+        }
+        
         return sections.flatMap(({ students, name, strand, yearLevel, _id }) => {
+            if (!students) {
+                console.log(`No students in section ${name}`);
+                return [];
+            }
+            
             const matchesFilters =
                 (!selectedStrand || strand?.name === selectedStrand) &&
                 (!selectedYearLevel || yearLevel?.name === selectedYearLevel) &&
@@ -74,8 +97,49 @@ const TeacherViewStudents = () => {
     
     
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (loading) return (
+        <>
+            <TeacherDashboardNavbar />
+            <Container className="mt-4">
+                <div className="text-center py-5">
+                    <div className="spinner-border text-success" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="mt-3 text-muted">Loading section and student data...</p>
+                </div>
+            </Container>
+        </>
+    );
+
+    if (error) return (
+        <>
+            <TeacherDashboardNavbar />
+            <Container className="mt-4">
+                <div className="alert alert-danger">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error: {error}
+                </div>
+                <Card className="mt-3">
+                    <Card.Header className="bg-light">
+                        <h5 className="mb-0">API Connection Status</h5>
+                    </Card.Header>
+                    <Card.Body>
+                        <HealthCheck />
+                        <div className="mt-3">
+                            <p className="mb-2"><strong>Troubleshooting Steps:</strong></p>
+                            <ol className="ps-3">
+                                <li>Verify your internet connection</li>
+                                <li>Check if you're logged in properly (try logging out and back in)</li>
+                                <li>Make sure the backend server is running</li>
+                                <li>Clear your browser cache and cookies</li>
+                                <li>Contact administrator if the problem persists</li>
+                            </ol>
+                        </div>
+                    </Card.Body>
+                </Card>
+            </Container>
+        </>
+    );
 
     const handleToggleAdvisoryView = (e) => {
         setShowAdvisoryOnly(e.target.checked); // Directly use the checkbox's value
