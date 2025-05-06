@@ -3,20 +3,33 @@
 <head>
   <meta charset="utf-8">
   <title>Redirecting...</title>
-  <script>
-    // Single Page App routing fix
-    // This script checks to see if a redirect is present in the query string,
-    // converts it back into the correct URL and adds it to the browser's history
-    // without reloading the page
+  <script type="text/javascript">
+    // Single Page Apps for GitHub Pages and Vercel
+    // MIT License
+    // https://github.com/rafgraph/spa-github-pages
+    // This script takes the current url and converts the path and query
+    // string into just a query string, and then redirects the browser
+    // to the new url with only a query string and hash fragment.
     
-    // Get the current URL path
-    var path = window.location.pathname;
+    // Preserve the query parameters if any
+    var pathSegmentsToKeep = 0;
+    var l = window.location;
+    var query = l.search || '';
+    var hash = l.hash || '';
+    
+    // Get the current path without the base path
+    var path = l.pathname.split('/').slice(pathSegmentsToKeep + 1).join('/'); 
     
     // Redirect to the index.html with the path as a query parameter
-    window.location.href = '/index.html?redirect=' + path;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      '/' + 
+      (path ? '?' + 'redirect=' + path + (query ? '&' + query.slice(1) : '') : query) + 
+      hash
+    );
   </script>
 </head>
 <body>
-  <p>Redirecting to application...</p>
+  <p>Redirecting to the application...</p>
 </body>
 </html> 

@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
 import HomeScreen from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import AdminHomeScreen from './AdminScreens/AdminHomeScreen';
@@ -21,9 +21,30 @@ import StudentMessages from './StudentScreens/StudentMessages';
 import AdminMessages from './AdminScreens/AdminMessages';
 import TeacherAttendance from './TeacherScreens/TeacherAttendance';
 import AdminPendingStudents from './AdminScreens/AdminPendingStudents';
+
+// Redirect handler component
+function RedirectHandler() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Check if there's a redirect parameter
+    const redirectPath = searchParams.get('redirect');
+    if (redirectPath) {
+      // Remove the leading slash if present
+      const cleanPath = redirectPath.startsWith('/') ? redirectPath.substring(1) : redirectPath;
+      // Navigate to the path
+      navigate(`/${cleanPath}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
+  
+  return null;
+}
+
 const App = () => {
   return (
     <Router>
+      <RedirectHandler />
       <Routes>
         <Route path='/' element={<HomeScreen />} />
         <Route path='/login' element={<LoginScreen />} />
