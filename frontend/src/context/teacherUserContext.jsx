@@ -94,6 +94,9 @@ export const TeacherUserContextProvider = ({ children }) => {
             
             console.log('Fetching student details for ID:', studentId);
             
+            // Show loading toast
+            const loadingToastId = toast.loading("Loading student data...");
+            
             // Fetch the student details
             const studentResponse = await fetch(`${baseUrl}/teacher/student/${studentId}`, {
                 method: 'GET',
@@ -108,13 +111,90 @@ export const TeacherUserContextProvider = ({ children }) => {
             if (!studentResponse.ok) {
                 const errorText = await studentResponse.text();
                 console.error('Student API Error Response:', errorText);
+                toast.update(loadingToastId, {
+                    render: `Failed to fetch student details: ${errorText}`,
+                    type: "error",
+                    isLoading: false,
+                    autoClose: 3000
+                });
                 throw new Error(`Failed to fetch student details: ${errorText}`);
             }
 
             const studentData = await studentResponse.json();
             console.log('Fetched student data:', studentData);
             
-            setSelectedStudent(studentData);
+            // Fetch grades with populated semester information
+            const gradesResponse = await fetch(`${baseUrl}/teacher/student-grades/${studentId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            let grades = [];
+            if (gradesResponse.ok) {
+                const gradesData = await gradesResponse.json();
+                console.log('Received grades data:', gradesData);
+                
+                // Group grades by year level and semester
+                const gradeBySemester = {};
+                
+                gradesData.forEach(grade => {
+                    if (grade.semester && grade.semester._id) {
+                        const key = `${grade.yearLevel}-${grade.semester._id}`;
+                        if (!gradeBySemester[key]) {
+                            gradeBySemester[key] = {
+                                semesterInfo: grade.semester,
+                                yearLevel: grade.yearLevel,
+                                subjects: []
+                            };
+                        }
+                        gradeBySemester[key].subjects.push(...grade.subjects.map(subject => ({
+                            subject: subject.subject,
+                            subjectName: subject.subject?.name,
+                            midterm: subject.midterm,
+                            finals: subject.finals,
+                            finalRating: subject.finalRating,
+                            action: subject.action
+                        })));
+                    }
+                });
+                
+                // Convert to array
+                grades = Object.values(gradeBySemester);
+            }
+            
+            // Get section data for display
+            let sectionInfo = null;
+            if (studentData.section) {
+                const sectionId = studentData.section;
+                const matchingSection = sections.find(s => s._id === sectionId);
+                if (matchingSection) {
+                    sectionInfo = {
+                        name: matchingSection.name,
+                        yearLevel: matchingSection.yearLevel?.name,
+                        strand: matchingSection.strand?.name
+                    };
+                }
+            }
+            
+            // Format the student data for display
+            const formattedStudentData = {
+                ...studentData,
+                section: sectionInfo?.name || 'Not Assigned',
+                yearLevel: sectionInfo?.yearLevel || 'Not Assigned',
+                strand: sectionInfo?.strand || 'Not Assigned',
+                grades
+            };
+            
+            setSelectedStudent(formattedStudentData);
+            
+            toast.update(loadingToastId, {
+                render: "Student data loaded successfully!",
+                type: "success",
+                isLoading: false,
+                autoClose: 1500
+            });
+            
         } catch (error) {
             console.error('Error fetching student details:', error);
             toast.error(error.message || 'Failed to load student details');
