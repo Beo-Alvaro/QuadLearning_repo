@@ -836,6 +836,7 @@ const updateSubject = asyncHandler(async (req, res) => {
 
         // Check if subject with same name or code exists
         const existingSubject = await Subject.findOne({
+            _id: { $ne: id },
             $or: [
                 { name: { $regex: new RegExp(`^${name}$`, 'i') } }, // Case insensitive name check
                 { code: { $regex: new RegExp(`^${code}$`, 'i') } }  // Case insensitive code check

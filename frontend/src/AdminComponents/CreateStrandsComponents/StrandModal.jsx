@@ -1,4 +1,4 @@
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 const StrandModal = ({
     show,
@@ -45,7 +45,14 @@ const StrandModal = ({
                     <Form>
                         {/* Strand Name */}
                         <Form.Group className="mb-3">
-                            <Form.Label>Strand Name</Form.Label>
+                            <Form.Label>Strand Name
+                                                            <OverlayTrigger
+                                                                    placement="right"
+                                                                    overlay={<Tooltip className='custom-tooltip'>Strand Name is required to proceed.</Tooltip>}
+                                                                >
+                                                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                                                            </OverlayTrigger>
+                            </Form.Label>
                             <Form.Control
                                 type="text"
                                 value={name}
@@ -56,7 +63,14 @@ const StrandModal = ({
 
                         {/* Strand Description */}
                         <Form.Group className="mb-3">
-                            <Form.Label>Strand Description</Form.Label>
+                            <Form.Label>Strand Description
+                                                            <OverlayTrigger
+                                                                    placement="right"
+                                                                    overlay={<Tooltip className='custom-tooltip'>Strand Description is required to proceed.</Tooltip>}
+                                                                >
+                                                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                                                            </OverlayTrigger>
+                            </Form.Label>
                             <Form.Control
                                 type="text"
                                 value={description}

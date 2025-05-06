@@ -1,6 +1,7 @@
-import React, { useContext } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import React, { useContext, useState } from 'react';
+import { Modal, Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useSubjectDataContext } from '../../hooks/useSubjectDataContext';
+import { toast } from 'react-toastify';
 const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, selectedSubjectId, name, code, selectedStrand, selectedYearLevel, selectedSemester  ,setSelectedStrand,
     setSelectedYearLevel, setName, setCode,setSelectedSemester, deleteHandler}) => {
     const {
@@ -9,10 +10,10 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
       filteredSemesters,
       handleUpdateSubject,
     } = useSubjectDataContext();
-  
+    const [error, setError] = useState('');
     const handleSubmitUpdateSubject = () => {
         if (!name || !code || !selectedStrand || !selectedYearLevel || !selectedSemester) {
-            setError('All fields are required');
+            toast.error('All fields are required');
             return;
         }
     
@@ -61,7 +62,14 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
           <Modal.Body>
             <Form>
             <Form.Group className="mb-3">
-  <Form.Label>Strand</Form.Label>
+  <Form.Label>Strand
+  <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Strand to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+  </Form.Label>
   <Form.Select
     value={selectedStrand}
     onChange={(e) => setSelectedStrand(e.target.value)}  // Correct setter usage
@@ -77,7 +85,14 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
 </Form.Group>
 
 <Form.Group className="mb-3">
-  <Form.Label>Year Level</Form.Label>
+  <Form.Label>Year Level
+  <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Year Level to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+  </Form.Label>
   <Form.Control
     as="select"
     value={selectedYearLevel}
@@ -94,7 +109,14 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
 </Form.Group>
 
 <Form.Group className="mb-3">
-  <Form.Label>Term</Form.Label>
+  <Form.Label>Term
+  <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Term to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+  </Form.Label>
   <Form.Select
     value={selectedSemester}
     onChange={(e) => setSelectedSemester(e.target.value)}
@@ -119,7 +141,14 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
 </Form.Group>
 
 <Form.Group className="mb-3">
-  <Form.Label>Subject Name</Form.Label>
+  <Form.Label>Subject Name
+                    <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Subject Name is required to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+  </Form.Label>
   <Form.Control
     type="text"
     placeholder="Enter subject name"
@@ -130,7 +159,14 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
 </Form.Group>
 
 <Form.Group className="mb-3">
-  <Form.Label>Subject Code</Form.Label>
+  <Form.Label>Subject Code
+                    <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Subject Code is required to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+  </Form.Label>
   <Form.Control
     type="text"
     placeholder="Enter subject code"

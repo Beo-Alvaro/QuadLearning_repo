@@ -94,6 +94,11 @@ const ManageSemesters = () => {
                 endDate,
             };
 
+            if (!name || !selectedStrand || !selectedYearLevel || !startDate || !endDate) {
+                toast.error('Please fill in all fields before saving changes.');
+                return;
+            }
+
             // Call the updateSemester function from context
             await updateSemester(updatedSemester, selectedSemesterId);
             

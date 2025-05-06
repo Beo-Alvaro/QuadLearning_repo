@@ -29,6 +29,13 @@ const AdminCreateStudentAccount = () => {
             yearLevel: '',
         });
 
+        const [validations, setValidations] = useState({
+            minLength: false,
+            hasUppercase: false,
+            hasNumber: false,
+            hasSymbol: false
+        });
+
     const [show, setShow] = useState(false);
     const [editModalShow, setEditModalShow] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState(null);
@@ -99,6 +106,21 @@ const AdminCreateStudentAccount = () => {
     const handleAddUser = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('token');
+
+    // Check if all password requirements are met
+    const isPasswordValid = Object.values(validations).every(v => v);
+    
+    if (!isPasswordValid) {
+        toast.error('Password is not strong enough. Please meet all requirements.');
+        return;
+    }
+
+    if (!newUser.username || !newUser.password || !newUser.strand || 
+        !newUser.section || !newUser.yearLevel || !newUser.semester || 
+        !newUser.subjects || newUser.subjects.length === 0) {
+        toast.error('Please fill in all required fields');
+        return;
+    }
     
         const userData = {
             username: newUser.username,
@@ -263,6 +285,12 @@ const handleEditSubmit = async (e) => {
     setLoading(true);
     setError('');
 
+    if (!editUser.username || !editUser.strand || 
+        !editUser.section || !editUser.yearLevel || !editUser.semester || 
+        !editUser.subjects || editUser.subjects.length === 0) {
+        toast.error('Please fill in all required fields');
+        return;
+    }
     try {
         const userData = {
             username: editUser.username,
@@ -352,6 +380,8 @@ const filteredUsers = (users || [])
 
 
                                 <StudModals
+                                validations={validations}
+                                setValidations={setValidations}
     showAddModal={showAddModal}
     setShowAddModal={setShowAddModal}
     show={show}

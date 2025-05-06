@@ -9,7 +9,7 @@ const SubjectTable = ({
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
-
+    const MAX_SEARCH_LENGTH = 30;
     const filteredSubjects = Array.isArray(studSubjects)
         ? studSubjects.filter((subject) => 
             subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -60,9 +60,10 @@ const SubjectTable = ({
                 <InputGroup>
                     <Form.Control
                         type="text"
-                        placeholder="Search by name or code..."
+                        placeholder="Search subject by name or code (e.g., Math 101)"
                         value={searchTerm}
                         onChange={(e) => handleSearch(e.target.value)}
+                        maxLength={MAX_SEARCH_LENGTH}
                     />
                     <InputGroup.Text>
                         <FaSearch />

@@ -59,7 +59,7 @@ const ManageSubjects = () => {
             setSemester(subject.semester);
             setSelectedStrand(subject.strand._id);
             setSelectedYearLevel(subject.yearLevel._id);
-            setSelectedSemester(subject.semester);  
+            setSelectedSemester(subject.semester._id);  
             setEditModalShow(true);
         } else {
             console.error('Subject not found');

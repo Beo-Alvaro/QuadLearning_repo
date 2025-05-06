@@ -1,6 +1,6 @@
 import { useSectionDataContext } from '../../hooks/useSectionDataContext'
 import Modal from 'react-bootstrap/Modal';
-import { Form, Button } from 'react-bootstrap';
+import { Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 const SectionModal = ({
     show,
@@ -45,7 +45,14 @@ const SectionModal = ({
                 <Modal.Body>
                     <Form>
                         <Form.Group className="mb-3">
-                            <Form.Label>Section Name</Form.Label>
+                            <Form.Label>Section Name
+                            <OverlayTrigger
+                                                                    placement="right"
+                                                                    overlay={<Tooltip className='custom-tooltip'>Section Name is required to proceed.</Tooltip>}
+                                                                >
+                                                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                                                            </OverlayTrigger>
+                            </Form.Label>
                             <Form.Control
                                 type="text"
                                 value={name}
@@ -56,7 +63,14 @@ const SectionModal = ({
 
                         {/* Strand Selection */}
                         <Form.Group className="mb-3">
-                            <Form.Label>Strand</Form.Label>
+                            <Form.Label>Strand
+                                                                                            <OverlayTrigger
+                                                                                                    placement="right"
+                                                                                                    overlay={<Tooltip className='custom-tooltip'>Strand is required to proceed.</Tooltip>}
+                                                                                                >
+                                                                                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                                                                                            </OverlayTrigger>
+                            </Form.Label>
                             <Form.Control
                                 as="select"
                                 value={linkedStrand || ""}
@@ -75,7 +89,14 @@ const SectionModal = ({
 
                         {/* Year Level Selection */}
                         <Form.Group className="mb-3">
-                            <Form.Label>Year Level:</Form.Label>
+                            <Form.Label>Year Level
+                                                                                            <OverlayTrigger
+                                                                                                    placement="right"
+                                                                                                    overlay={<Tooltip className='custom-tooltip'>Year Level is required to proceed.</Tooltip>}
+                                                                                                >
+                                                                                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                                                                                            </OverlayTrigger>
+                            </Form.Label>
                             <Form.Select
                                 value={linkedYearLevel}
                                 onChange={(e) => setLinkedYearLevel(e.target.value)}

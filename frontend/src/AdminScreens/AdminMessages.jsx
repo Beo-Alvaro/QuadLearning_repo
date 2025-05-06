@@ -16,7 +16,10 @@ const AdminMessages = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [messagesPerPage] = useState(5)
 
+  const MAX_SEARCH_LENGTH = 30;
+
   let storedToken;
+
 
 // Update these constants to include console logs for debugging
 const filteredMessages = messages.filter((user) => 
@@ -120,7 +123,7 @@ const filteredMessages = messages.filter((user) =>
           <Row>
             <Col md={4} className="mb-4">
               <div className="bg-white p-3 rounded shadow-sm">
-                <h2 className="h4 mb-3 text-success fw-bold">Student Messages</h2>
+                <h2 className="h4 mb-3 text-success fw-bold text-center">Student Messages</h2>
                 <Form className="mb-3">
                   <InputGroup>
                     <InputGroup.Text className="bg-white border-end-0">
@@ -128,10 +131,12 @@ const filteredMessages = messages.filter((user) =>
                     </InputGroup.Text>
                     <Form.Control
                       type="text"
-                      placeholder="Search students..."
+                      placeholder="Search for a student name (e.g., John Doe)"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="border-start-0 ps-0 shadow-none"
+                      maxLength={MAX_SEARCH_LENGTH}
+                      style={{ textIndent: "10px" }}
                     />
                   </InputGroup>
                 </Form>

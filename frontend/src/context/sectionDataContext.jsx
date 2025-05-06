@@ -53,6 +53,11 @@ export const SectionDataProvider = ({ children }) => {
             strand: linkedStrand, 
             yearLevel: linkedYearLevel 
         };
+
+        if (!updatedSection.name || !updatedSection.strand || !updatedSection.yearLevel) {
+            toast.error('Please fill in all fields.');
+            return;
+        }
     
         console.log('Updated Section:', updatedSection);
         console.log('linkedStrand:', linkedStrand);

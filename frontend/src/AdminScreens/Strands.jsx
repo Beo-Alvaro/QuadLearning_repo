@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Container, Card, Form, Button, Toast } from 'react-bootstrap';
+import { Container, Card, Form, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import AdminSidebar from "../AdminComponents/AdminSidebar";
 import { useNavigate } from 'react-router-dom';
 import StrandModal from '../AdminComponents/CreateStrandsComponents/StrandModal';
@@ -24,7 +24,8 @@ const AdminCreateStrand = () => {
     const [selectedStrandId, setSelectedStrandId] = useState(null);
     const [show, setShow] = useState(false);
     const [editModalShow, setEditModalShow] = useState(false);
-
+    const STRAND_NAME_MAX_LENGTH = 50;
+    const STRAND_DESC_MAX_LENGTH = 200;
     const handleReset = () => {
         setName('');
         setDescription('');
@@ -62,12 +63,22 @@ const AdminCreateStrand = () => {
 
     const handleSaveChanges = () => {
         const updatedStrand = { name, description };
+        if (!updatedStrand.name || !updatedStrand.description) {
+            toast.error('Please fill in all fields.');
+            return;
+        }
         updateStrand(selectedStrandId, updatedStrand);
         handleCloseModal();
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        if(!newStrand.name || !newStrand.description) {
+            toast.error('Please fill in all fields.');
+            return;
+        }
+
         const newStrand = { name, description };
         addStrand(newStrand);
         handleReset();
@@ -94,18 +105,33 @@ const AdminCreateStrand = () => {
 
                                 <Form onSubmit={handleSubmit}>
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Strand Name</Form.Label>
+                                        <Form.Label>Strand Name
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Strand Name is required to proceed</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+                                        </Form.Label>
                                         <Form.Control
                                             type="text"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder='e.g STEM'
                                             required
+                                            maxLength={STRAND_NAME_MAX_LENGTH}
                                         />
                                     </Form.Group>
 
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Description</Form.Label>
+                                        <Form.Label>Description
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Strand Description is required to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+                                        </Form.Label>
                                         <Form.Control
                                             as="textarea"
                                             rows={3}
@@ -113,6 +139,7 @@ const AdminCreateStrand = () => {
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder='e.g Science, Technology, Engineering, and Mathematics'
                                             required
+                                            maxLength={STRAND_DESC_MAX_LENGTH}
                                         />
                                     </Form.Group>
 

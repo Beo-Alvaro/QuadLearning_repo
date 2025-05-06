@@ -39,8 +39,8 @@ const ManageSections = () => {
         const section = studSections.find((section) => section._id === sectionId);
         if (section) {
             setName(section.name);
-            setLinkedStrand(section.strand);
-            setLinkedYearLevel(section.yearLevel);
+            setLinkedStrand(section.strand._id); // Assuming strand is an object with an _id property
+            setLinkedYearLevel(section.yearLevel._id);
             setEditModalShow(true);  // Open modal
         }
     };

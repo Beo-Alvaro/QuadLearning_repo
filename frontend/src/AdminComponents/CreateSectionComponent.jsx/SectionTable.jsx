@@ -24,6 +24,8 @@ const SectionTable = ({
         if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
 
+    const MAX_SEARCH_LENGTH = 30;
+
     return ( 
         <div>
             <h2 className="my-4">Section List</h2>
@@ -42,10 +44,11 @@ const SectionTable = ({
                 </div>
                 <Form.Control
                     type="text"
-                    placeholder="Search by name"
+                    placeholder="Search for a section (e.g., TVL 101)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ width: '300px' }}
+                    style={{ width: '450px' }}
+                    maxLength={MAX_SEARCH_LENGTH}
                 />
                 <Button variant="outline-secondary">
                     <FaSearch />

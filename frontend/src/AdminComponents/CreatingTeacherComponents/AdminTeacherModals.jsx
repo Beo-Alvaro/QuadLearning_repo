@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
-
+import { Modal, Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useState } from 'react';
 const AdminTeacherModals = ({
     showAddModal, 
     showEditModal, 
@@ -8,8 +8,11 @@ const AdminTeacherModals = ({
     newUser, setNewUser,
     editUser, setEditUser,
     availableSubjects, sections, semesters, advisorySections,
-    loading, error, handleAddUser, handleEditSubmit, handleEditClose, deleteHandler, selectedUserId, handleClose
+    loading, error, handleAddUser, handleEditSubmit, handleEditClose, deleteHandler, selectedUserId, handleClose, validations, setValidations
 }) => {
+    const TEACHER_USERNAME_MAX_LENGTH = 30; // Set max length for username
+    const [showPassword, setShowPassword] = useState(false);
+    const [showRequirements, setShowRequirements] = useState(false);
     const handleCheckboxChange = (e, field, value) => {
         const currentSelections = newUser[field] || [];
         setNewUser({
@@ -79,7 +82,14 @@ const AdminTeacherModals = ({
                     <Form onSubmit={handleAddUser}>
                         {/* Basic Information Section */}
                         <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-                            <h6 className="mb-3">Basic Information</h6>
+                            <h6 className="mb-3">Basic Information
+                            <OverlayTrigger
+                                    placement="right"
+                                    overlay={<Tooltip className='custom-tooltip'>All fields in Basic Information are required.</Tooltip>}
+                                >
+                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                            </OverlayTrigger>
+                            </h6>
                             <div style={modalStyles.formGrid}>
                                 <Form.Group>
                                     <Form.Label>Username</Form.Label>
@@ -89,24 +99,65 @@ const AdminTeacherModals = ({
                                         onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                                         required
                                         style={{ borderColor: '#ced4da' }} // Override default validation styling
+                                        maxLength={TEACHER_USERNAME_MAX_LENGTH} // Set max length for username
                                     />
                                 </Form.Group>
                                 <Form.Group>
-                                    <Form.Label>Password</Form.Label>
-                                    <Form.Control
-                                        type="password"
-                                        value={newUser.password}
-                                        onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                                        required
-                                        style={{ borderColor: '#ced4da' }} // Override default validation styling
-                                    />
-                                </Form.Group>
+    <Form.Label>Password</Form.Label>
+    <div className="position-relative">
+        <Form.Control
+            type={showPassword ? "text" : "password"}
+            value={newUser.password}
+            onChange={(e) => {
+                setNewUser({ ...newUser, password: e.target.value });
+                if (!showRequirements) setShowRequirements(true);
+            }}
+            onFocus={() => setShowRequirements(true)}
+            required
+            style={{ borderColor: '#ced4da' }}
+        />
+        <Button
+            className="position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+            onClick={() => setShowPassword(!showPassword)}
+            type="button"
+        >
+            <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'} text-success`}></i>
+        </Button>
+    </div>
+    {showRequirements && (
+        <div className="password-requirements mb-3">
+            <small className={`d-block ${validations.minLength ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.minLength ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}Minimum 8 characters
+            </small>
+            <small className={`d-block ${validations.hasUppercase ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.hasUppercase ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}One uppercase letter
+            </small>
+            <small className={`d-block ${validations.hasNumber ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.hasNumber ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}One number
+            </small>
+            <small className={`d-block ${validations.hasSymbol ? 'text-success' : 'text-danger'}`}>
+                <i className={`bi ${validations.hasSymbol ? 'bi-check-circle' : 'bi-x-circle'}`}></i>
+                {' '}One special character
+            </small>
+        </div>
+    )}
+</Form.Group>
                             </div>
                         </div>
 
                       {/* Teaching Assignment Section */}
 <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-    <h6 className="mb-3">Teaching Assignment</h6>
+    <h6 className="mb-3">Teaching Assignment
+                        <OverlayTrigger
+                                placement="right"
+                                overlay={<Tooltip className='custom-tooltip'>All fields in Teaching Assignment are required.</Tooltip>}
+                            >
+                                <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+    </h6>
     <div style={modalStyles.formGrid}>
         <Form.Group>
             <Form.Label>Sections</Form.Label>
@@ -173,7 +224,14 @@ const AdminTeacherModals = ({
 
                       {/* Subjects Section */}
  <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-     <h6 className="mb-3">Subject Assignment</h6>
+     <h6 className="mb-3">Subject Assignment
+     <OverlayTrigger
+                                    placement="right"
+                                    overlay={<Tooltip className='custom-tooltip'>Subjects are required to proceed.</Tooltip>}
+                                >
+                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                            </OverlayTrigger>
+     </h6>
      {availableSubjects.length > 0 && (
          <Form.Check
              type="checkbox"
@@ -255,7 +313,14 @@ const AdminTeacherModals = ({
                     <Form onSubmit={handleEditSubmit}>
                         {/* Teaching Assignment Section */}
                         <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-                            <h6 className="mb-3">Teaching Assignment</h6>
+                            <h6 className="mb-3">Teaching Assignment
+                            <OverlayTrigger
+                                    placement="right"
+                                    overlay={<Tooltip className='custom-tooltip'>All fields in Teaching Assignment are required.</Tooltip>}
+                                >
+                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                            </OverlayTrigger>
+                            </h6>
                             <div style={modalStyles.formGrid}>
                                 <Form.Group>
                                     <Form.Label>Sections</Form.Label>
@@ -325,9 +390,16 @@ const AdminTeacherModals = ({
 
                         {/* Subjects Section */}
  <div style={{ ...modalStyles.formSection, ...modalStyles.fullWidth }}>
-     <h6 className="mb-3">Subject Assignment</h6>
+     <h6 className="mb-3">Subject Assignment
+     <OverlayTrigger
+                                    placement="right"
+                                    overlay={<Tooltip className='custom-tooltip'>Subjects are required to proceed.</Tooltip>}
+                                >
+                                    <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                            </OverlayTrigger>
+     </h6>
      <Form.Group>
-         <Form.Label>Subjects*</Form.Label>
+         <Form.Label>Subjects</Form.Label>
          {loading ? (
              <p>Loading subjects...</p>
          ) : availableSubjects.length > 0 ? (

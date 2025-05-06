@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Button } from "react-bootstrap";
+import { Form, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
 const SemesterForm = ({
@@ -32,7 +32,14 @@ const SemesterForm = ({
     <div>
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3">
-          <Form.Label>Strand</Form.Label>
+          <Form.Label>Strand
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Strand to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+          </Form.Label>
           <Form.Control
             as="select"
             value={selectedStrand}
@@ -49,7 +56,14 @@ const SemesterForm = ({
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Year Level</Form.Label>
+          <Form.Label>Year Level
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Year Level to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+          </Form.Label>
           <Form.Control
             as="select"
             value={selectedYearLevel}
@@ -66,7 +80,14 @@ const SemesterForm = ({
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Semester Period</Form.Label>
+          <Form.Label>Semester Period
+          <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Semester Period to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+          </Form.Label>
           <Form.Control
             as="select"
             value={name}
@@ -81,7 +102,14 @@ const SemesterForm = ({
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Start Date</Form.Label>
+          <Form.Label>Start Date
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Start Date is required to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+          </Form.Label>
           <Form.Control
             type="date"
             value={startDate}
@@ -91,7 +119,14 @@ const SemesterForm = ({
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>End Date</Form.Label>
+          <Form.Label>End Date
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>The End Date is required to proceed and must not be earlier than the Start Date.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+          </Form.Label>
           <Form.Control
             type="date"
             value={endDate}

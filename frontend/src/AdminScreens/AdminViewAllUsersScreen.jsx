@@ -19,12 +19,15 @@ const AdminViewAllUsersScreen = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
+    const SEARCH_MAX_LENGTH = 50;
 
     const [newUser, setNewUser] = useState({
         username: '',
         password: '',
         role: ''
     });
+
+    
 
     // Add this helper function
 const getRoleBadgeColor = (role) => {
@@ -99,15 +102,17 @@ const getRoleBadgeColor = (role) => {
                                     <span>entries</span>
                                 </div>
 
-                                <div className="search-container">
-                                    <FaSearch className="search-icon" />
-                                    <Form.Control
-                                        className="search-input"
-                                        placeholder="Search..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
+                                        <InputGroup style={{ width: "700px" }}>
+                                            <InputGroup.Text>
+                                                <FaSearch />
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                placeholder="Search for a user (e.g., John Doe or 1234567)"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                maxLength={SEARCH_MAX_LENGTH}
+                                            />
+                                        </InputGroup>
                             </div>
                         
                             <Table responsive hover className='custom-table text-center align-middle'>

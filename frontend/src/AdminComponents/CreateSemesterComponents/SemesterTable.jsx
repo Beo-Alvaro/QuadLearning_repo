@@ -8,11 +8,19 @@ const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [endShow, setEndShow] = useState(false);
   const [selectedSemesterId, setSelectedSemesterId] = useState(null);
-
+  const SEARCH_MAX_LENGTH = 30;
   // Filtering and Pagination
   const filteredSemesters = semesters
-    .filter((semester) => semester.status?.trim().toLowerCase() === "active")
-    .filter((semester) => semester?.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  .filter((semester) => semester.status?.trim().toLowerCase() === "active")
+  .filter((semester) => {
+    const searchTermLower = searchTerm.toLowerCase();
+    const strandName = semester.strand?.name?.toLowerCase() || '';
+    const termName = semester.name?.toLowerCase() || '';
+    const fullTermName = `${termName} - ${strandName}`;
+
+    return strandName.includes(searchTermLower) || 
+           fullTermName.includes(searchTermLower);
+  });
 
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
@@ -60,14 +68,15 @@ const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
         </div>
 
         {/* Search Bar */}
-        <InputGroup style={{ width: "300px" }}>
+        <InputGroup style={{ width: "800px" }}>
           <InputGroup.Text>
             <FaSearch />
           </InputGroup.Text>
           <Form.Control
-            placeholder="Search..."
+            placeholder="Search for a semester (e.g., 1st - Semester TVL)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            maxLength={SEARCH_MAX_LENGTH}
           />
         </InputGroup>
       </div>

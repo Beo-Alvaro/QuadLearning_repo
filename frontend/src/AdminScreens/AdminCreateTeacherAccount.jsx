@@ -34,6 +34,7 @@ const AdminCreateTeacherAccount = () => {
         advisorySection: '' // Add this field
     });
 
+    const SEARCH_MAX_LENGTH = 30;
         
     const resetForm = () => {
         setNewUser({
@@ -46,6 +47,32 @@ const AdminCreateTeacherAccount = () => {
             advisorySection: ''
         });
     };
+
+    // Add these state declarations after your existing useState declarations
+    const [validations, setValidations] = useState({
+        minLength: false,
+        hasUppercase: false,
+        hasNumber: false,
+        hasSymbol: false
+    });
+
+    // Add password validation object
+    const passwordValidation = {
+        minLength: (password) => password.length >= 8,
+        hasUppercase: (password) => /[A-Z]/.test(password),
+        hasNumber: (password) => /[0-9]/.test(password),
+        hasSymbol: (password) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    // Add useEffect for password validation
+    useEffect(() => {
+        setValidations({
+            minLength: passwordValidation.minLength(newUser.password),
+            hasUppercase: passwordValidation.hasUppercase(newUser.password),
+            hasNumber: passwordValidation.hasNumber(newUser.password),
+            hasSymbol: passwordValidation.hasSymbol(newUser.password)
+        });
+    }, [newUser.password]);
 
 
     const handleClose = () => {
@@ -111,10 +138,18 @@ const handleAddUser = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validate required fields
+    // Check if all password requirements are met
+    const isPasswordValid = Object.values(validations).every(v => v);
+    
+    if (!isPasswordValid) {
+        toast.error('Password is not strong enough. Please meet all requirements.');
+        return;
+    }
+
+    // Rest of your existing validation
     if (!newUser.username || !newUser.password || !newUser.sections.length || 
         !newUser.subjects.length || !newUser.semesters.length) {
-        setError('Please fill in all required fields');
+        toast.error('Please fill in all required fields');
         return;
     }
 
@@ -228,6 +263,14 @@ const [editUser, setEditUser] = useState({
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+    // Fix the validation logic
+    if (editUser.sections.length === 0 || editUser.subjects.length === 0 || editUser.semesters.length === 0 || !editUser.semesters
+        || !editUser.sections
+    ) {
+        toast.error('Please fill in all required fields');
+        return;
+    }
     
         try {
             // Format the data to match what the backend expects
@@ -363,14 +406,15 @@ const [editUser, setEditUser] = useState({
                                 
                                 {/* Search and Add User controls */}
                                 <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <InputGroup style={{ width: "300px" }}>
+                                    <InputGroup style={{ width: "400px" }}>
                                         <InputGroup.Text>
                                             <FaSearch />
                                         </InputGroup.Text>
                                         <Form.Control
-                                            placeholder="Search..."
+                                            placeholder="Search for a teacher name (e.g., John Doe)"
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
+                                            maxLength={SEARCH_MAX_LENGTH}
                                         />
                                     </InputGroup>
                                     <button 
@@ -394,6 +438,8 @@ const [editUser, setEditUser] = useState({
                         totalPages={totalPages}
                     />
                                 <AdminTeacherModals 
+                                validations={validations}
+                                setValidations={setValidations}
                                 showAddModal={showAddModal}
                                 setShowAddModal={setShowAddModal}
                                 showEditModal={showEditModal}

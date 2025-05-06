@@ -28,6 +28,8 @@ const AdminPendingStudents = () => {
     const [error, setError] = useState('');
     const { strands, sections, yearLevels, semesters, fetchData, subjects } = useStudentDataContext();
 
+    const SEARCH_MAX_LENGTH = 30;
+
     useEffect(() => {
       fetchData();
     }, [])
@@ -163,14 +165,15 @@ const AdminPendingStudents = () => {
                                                     </option>
                                                 ))}
                                         </Form.Select>
-                                        <InputGroup style={{ width: "700px" }}>
+                                        <InputGroup style={{ width: "1000px" }}>
                                             <InputGroup.Text>
                                                 <FaSearch />
                                             </InputGroup.Text>
                                             <Form.Control
-                                                placeholder="Search..."
+                                                placeholder="Search LRN (e.g., 1234567)"
                                                 value={searchTerm}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                                maxLength={SEARCH_MAX_LENGTH}
                                             />
                                         </InputGroup>
                                     </div>

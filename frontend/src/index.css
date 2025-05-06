@@ -15,7 +15,16 @@ textarea,
   color: #5f5c5c !important;
 }
 
+.custom-tooltip .tooltip-inner {
+  background-color: #dc3545;  /* Red background */
+  color: white;               /* White text */
+  font-size: 0.875rem;       /* Adjust font size if needed */
+  padding: 8px 12px;         /* Adjust padding if needed */
+}
 
+.custom-tooltip .tooltip-arrow::before {
+  border-right-color: #dc3545;  /* Match the arrow color with background */
+}
 
 /* Semi-bold (600) styles */
 .semibold {

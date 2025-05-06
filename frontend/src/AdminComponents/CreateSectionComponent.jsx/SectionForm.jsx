@@ -1,4 +1,4 @@
-import {Form, Button } from 'react-bootstrap';
+import {Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 const SectionForm = ({
     name,
     setName,
@@ -22,7 +22,14 @@ const SectionForm = ({
         <div>
             <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
-                    <Form.Label>Section Name</Form.Label>
+                    <Form.Label>Section Name
+                    <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Section Name is required to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+                    </Form.Label>
                     <Form.Control
                         type="text"
                         placeholder="Enter section name"
@@ -33,7 +40,14 @@ const SectionForm = ({
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                    <Form.Label>Strands:</Form.Label>
+                    <Form.Label>Strands
+                    <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Strand to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+                    </Form.Label>
                     <Form.Select
                         value={linkedStrand}
                         onChange={(e) => {
@@ -55,7 +69,14 @@ const SectionForm = ({
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                    <Form.Label>Year Level:</Form.Label>
+                    <Form.Label>Year Level
+                    <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>Select a Year Level to proceed.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+                    </Form.Label>
                     <Form.Select
                         value={linkedYearLevel}
                         onChange={(e) => {

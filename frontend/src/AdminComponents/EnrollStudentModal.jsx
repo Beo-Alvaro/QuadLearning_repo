@@ -1,4 +1,4 @@
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, strands, filteredSections, semesters, error, subjects, setPendingStudents, pendingStudents, setError}) => {
@@ -30,9 +30,10 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
     };
 
     const handleEnroll = async (userId) => {
-        // Validate required subjects
-        if (!newUser.subjects || newUser.subjects.length === 0) {
-            setError('Please select at least one subject');
+
+        if (!newUser.strand || !newUser.section || !newUser.yearLevel ||
+            !newUser.semester || !newUser.subjects || newUser.subjects.length === 0) {
+            toast.error('Please fill in all required fields');
             return;
         }
     
@@ -139,14 +140,20 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
                     <div style={modalStyles.formSection}>
-                        <h6>Academic Information</h6>
+                        <h6>Academic Information
+                        <OverlayTrigger
+                        placement="right"
+                        overlay={<Tooltip className='custom-tooltip'>All fields in Academic Information are required.</Tooltip>}
+                        >
+                        <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                        </OverlayTrigger>
+                        </h6>
                         <div style={modalStyles.formGrid}>
                         <Form.Group>
                         <Form.Label>Year Level</Form.Label>
                         <Form.Select
                             value={newUser.yearLevel}
                             onChange={(e) => setNewUser({...newUser, yearLevel: e.target.value, semester: '', subjects: []})}
-                            required
                         >
                             <option value="">Select Year Level</option>
                             {yearLevels.map(yearLevel => (
@@ -162,7 +169,6 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                                 <Form.Select
                                     value={newUser.strand}
                                     onChange={(e) => handleInputChange('strand', e.target.value)}
-                                    required
                                 >
                                    <option value="">Select Strand</option>
                             {strands.map(strand => (
@@ -272,7 +278,14 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
 
                      {/* Subjects Section */}
                      <div style={{...modalStyles.formSection, ...modalStyles.fullWidth}}>
-                    <h6 className="mb-3">Subjects</h6>
+                    <h6 className="mb-3">Subjects
+                                        <OverlayTrigger
+                                                placement="right"
+                                                overlay={<Tooltip className='custom-tooltip'>Subjects are required to proceed.</Tooltip>}
+                                            >
+                                                <i class="bi bi-exclamation-circle text-danger ms-2"></i>
+                                        </OverlayTrigger>
+                    </h6>
                     {availableSubjects.length > 0 ? (
                         <>
                             <Form.Check

@@ -11,6 +11,7 @@ const StrandTable = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
+    const SEARCH_MAX_LENGTH = 30;
 
     // Filter and Paginate Data
     const filteredStrands = studStrands.filter((strand) =>
@@ -57,14 +58,15 @@ const StrandTable = ({
                 </div>
 
                 {/* Search */}
-                <InputGroup style={{ width: '300px' }}>
+                <InputGroup style={{ width: '500px' }}>
                     <InputGroup.Text>
                         <FaSearch />
                     </InputGroup.Text>
                     <Form.Control
-                        placeholder="Search..."
+                        placeholder="Search for a strand (e.g., TVL)"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        maxLength={SEARCH_MAX_LENGTH}
                     />
                 </InputGroup>
             </div>
