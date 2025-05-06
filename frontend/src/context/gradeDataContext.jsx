@@ -258,7 +258,7 @@ const saveStudentGrade = async (studentId, subjectId, semesterId, midterm, final
               }
       
               const baseUrl = apiConfig.getBaseUrl();
-              const response = await fetch(`${baseUrl}/admin/getSemesters`, {
+              const response = await fetch(`${baseUrl}/teacher/getSemesters`, {
                   method: 'GET',
                   headers: {
                       'Authorization': `Bearer ${token}`,
