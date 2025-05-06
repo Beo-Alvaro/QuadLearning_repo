@@ -74,7 +74,7 @@ const SemesterModal = ({
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Semester Name</Form.Label>
+              <Form.Label>Semester Period</Form.Label>
               <Form.Control as="select" value={name} onChange={(e) => setName(e.target.value)}>
                 <option value="">Select Semester</option>
                 <option value="1st Semester">1st Semester</option>

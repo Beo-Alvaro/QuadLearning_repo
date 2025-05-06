@@ -12,9 +12,7 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  // Use the same encryption key as the backend
-  const ENCRYPTION_KEY = 'TROPICALVNHS12345';
-  
+  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);

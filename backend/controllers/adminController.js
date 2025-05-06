@@ -710,12 +710,29 @@ const deleteSection = asyncHandler(async (req, res) => {
 // @access  Private (admin role)
 const createSubject = asyncHandler(async (req, res) => {
     const { name, code, strand, semester, yearLevel } = req.body;
-    let newSubject = null; // Initialize variable outside try block
+    let newSubject = null;
 
     // Validate required fields
     if (!name || !code || !strand || !semester || !yearLevel) {
         res.status(400);
         throw new Error('Please provide all required fields');
+    }
+
+    // Check if subject with same name or code exists
+    const existingSubject = await Subject.findOne({
+        $or: [
+            { name: { $regex: new RegExp(`^${name}$`, 'i') } }, // Case insensitive name check
+            { code: { $regex: new RegExp(`^${code}$`, 'i') } }  // Case insensitive code check
+        ]
+    });
+
+    if (existingSubject) {
+        res.status(400);
+        if (existingSubject.name.toLowerCase() === name.toLowerCase()) {
+            throw new Error('Subject with this name already exists');
+        } else {
+            throw new Error('Subject with this code already exists');
+        }
     }
 
     // Find the semester and strand documents
@@ -817,6 +834,23 @@ const updateSubject = asyncHandler(async (req, res) => {
         throw new Error('All fields are required');
     }
 
+        // Check if subject with same name or code exists
+        const existingSubject = await Subject.findOne({
+            $or: [
+                { name: { $regex: new RegExp(`^${name}$`, 'i') } }, // Case insensitive name check
+                { code: { $regex: new RegExp(`^${code}$`, 'i') } }  // Case insensitive code check
+            ]
+        });
+    
+        if (existingSubject) {
+            res.status(400);
+            if (existingSubject.name.toLowerCase() === name.toLowerCase()) {
+                throw new Error('Subject with this name already exists');
+            } else {
+                throw new Error('Subject with this code already exists');
+            }
+        }
+
     const subject = await Subject.findById(id);
     if (!subject) {
         res.status(404);
@@ -880,19 +914,47 @@ const createSemester = asyncHandler(async (req, res) => {
         throw new Error('Please provide all required fields');
     }
 
-    const newSemester = await Semester.create({
+    // Check if an active semester with the same name, strand, and year level already exists
+    const existingSemester = await Semester.findOne({
         name,
         strand,
-        startDate,
-        endDate,
-        yearLevel
+        yearLevel,
+        status: 'active'
     });
 
-    // Populate the strand before sending response
-    const populatedSemester = await Semester.findById(newSemester._id)
-        .populate('strand', 'name');
+    if (existingSemester) {
+        res.status(400);
+        throw new Error(`An active ${name} already exists for this strand and year level`);
+    }
 
-    res.status(201).json(populatedSemester);
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (end <= start) {
+        res.status(400);
+        throw new Error('End date must be after start date');
+    }
+
+    try {
+        const newSemester = await Semester.create({
+            name,
+            strand,
+            startDate,
+            endDate,
+            yearLevel,
+            status: 'active'
+        });
+
+        // Populate the semester before sending response
+        const populatedSemester = await Semester.findById(newSemester._id)
+            .populate('strand', 'name')
+            .populate('yearLevel', 'name');
+
+        res.status(201).json(populatedSemester);
+    } catch (error) {
+        res.status(400);
+        throw new Error(`Failed to create semester: ${error.message}`);
+    }
 });
 
 // @desc    Get all strands
@@ -1007,28 +1069,25 @@ const getAllYearLevels = asyncHandler(async (req, res) => {
 
 const getAvailableAdvisorySections = asyncHandler(async (req, res) => {
     try {
-        // Get all sections
-        const allSections = await Section.find();
-        
-        // Get sections that are already assigned as advisory sections
-        const assignedSections = await User.find(
-            { role: 'teacher', advisorySection: { $ne: null } },
-            'advisorySection'
-        );
-        
-        // Create a Set of assigned section IDs for quick lookup
-        const assignedSectionIds = new Set(
-            assignedSections.map(user => user.advisorySection.toString())
-        );
-        
-        // Filter out sections that are already assigned
-        const availableSections = allSections.map(section => ({
+        // Get all active sections that don't have an advisory teacher
+        const availableSections = await Section.find({
+            status: 'active',
+            'advisoryTeacher.status': { $ne: 'active' }
+        })
+        .populate('yearLevel', 'name')
+        .populate('strand', 'name')
+        .select('name yearLevel strand status');
+
+        const formattedSections = availableSections.map(section => ({
             _id: section._id,
             name: section.name,
-            hasAdviser: assignedSectionIds.has(section._id.toString())
+            yearLevel: section.yearLevel,
+            strand: section.strand,
+            hasAdviser: false,
+            status: section.status
         }));
 
-        res.json(availableSections);
+        res.json(formattedSections);
     } catch (error) {
         res.status(500);
         throw new Error('Error fetching available advisory sections');

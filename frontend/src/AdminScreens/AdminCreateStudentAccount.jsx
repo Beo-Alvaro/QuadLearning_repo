@@ -56,7 +56,7 @@ const AdminCreateStudentAccount = () => {
 
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+    }, []);
     
     const handleClose = () => {
         setShow(false);
@@ -297,14 +297,12 @@ const handleEditSubmit = async (e) => {
             throw new Error(data.message || 'Failed to update user');
         }
 
-        // Success - close modal and refresh data
-        setEditModalShow(false);
-        fetchData();
+        handleEditClose();
+        fetchData(); // Refresh the data
         toast.success('User updated successfully!');
     } catch (error) {
-        console.error('Error updating user:', error);
         setError(error.message);
-        toast.error(`Error: ${error.message}`);
+        console.error('Error:', error);
     } finally {
         setLoading(false);
     }

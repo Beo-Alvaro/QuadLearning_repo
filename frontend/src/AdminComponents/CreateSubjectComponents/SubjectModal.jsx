@@ -97,19 +97,23 @@ const SubjectModal = ({ show, editModalShow, handleClose, handleCloseModal, sele
   <Form.Label>Term</Form.Label>
   <Form.Select
     value={selectedSemester}
-    onChange={(e) => setSelectedSemester(e.target.value)}  // Correct setter usage
+    onChange={(e) => setSelectedSemester(e.target.value)}
     required
     disabled={!selectedStrand || !selectedYearLevel}
   >
     <option value="">Select Term</option>
-    {filteredSemesters.length > 0 ? (
-      filteredSemesters.map((semester) => (
-        <option key={semester._id} value={semester._id}>
-          {`${semester.name} - ${semester.strand.name}`}
-        </option>
-      ))
+    {filteredSemesters
+      .filter(semester => semester.status === 'active') // Add this filter
+      .length > 0 ? (
+      filteredSemesters
+        .filter(semester => semester.status === 'active') // Add this filter
+        .map((semester) => (
+          <option key={semester._id} value={semester._id}>
+            {`${semester.name} - ${semester.strand.name}`}
+          </option>
+        ))
     ) : (
-      <option>No terms available</option> // Optional message for empty array
+      <option value="" disabled>No active terms available</option>
     )}
   </Form.Select>
 </Form.Group>

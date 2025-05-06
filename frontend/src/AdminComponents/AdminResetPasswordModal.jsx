@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { useContext } from 'react';
+import {toast, ToastContainer} from 'react-toastify';
 import { useUsersDataContext } from '../hooks/useUsersDataContext';
 
-const AdminResetPasswordModal = ({ show, handleClose, selectedUserId }) => {
+const AdminResetPasswordModal = ({ show, setShow, selectedUserId, setSelectedUserId }) => {
     const { handleResetPassword } = useUsersDataContext();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,9 +15,17 @@ const AdminResetPasswordModal = ({ show, handleClose, selectedUserId }) => {
             handleClose();
             setNewPassword('');
             setConfirmPassword('');
+            toast.success('Password reset successfully!');
         } else {
-            alert('Passwords do not match!');
+            toast.warning('Passwords do not match!');
         }
+    };
+
+    const handleClose = () => {
+        setShow(false);
+        setSelectedUserId(null);  // Reset selectedUserId when modal closes
+        setNewPassword('');
+        setConfirmPassword('');
     };
 
     return (

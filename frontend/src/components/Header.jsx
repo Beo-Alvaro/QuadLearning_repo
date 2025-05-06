@@ -22,33 +22,39 @@ const Header = () => {
   }, []); // Empty dependency array to run only once on mount
 
 
-  const logoutHandler = async () => {
+  const handleLogOut = async (e) => {
+    e.preventDefault(); // Prevent the default behavior of the event
+    setLoading(true);   // Set loading state to true
+    setError('');       // Clear any previous errors
+
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
       const baseUrl = apiConfig.getBaseUrl();
       const response = await fetch(`${baseUrl}/users/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include', // Include cookies in the request if they're used for authentication
+        });
 
-      // Remove token and user info from localStorage
-      localStorage.removeItem('token');
-      localStorage.removeItem('userInfo');
-      localStorage.removeItem('sections');
+        if (!response.ok) {
+            throw new Error('Logout failed');
+        }
 
-      // Navigate to login page
-      navigate('/');
-    } catch (error) {
-      console.error('Error during logout:', error);
+        // Clear token and user info from local storage
+        localStorage.removeItem('token'); // Clear token if stored locally
+        localStorage.removeItem('userInfo'); // Remove additional user data if stored
+
+        // Redirect to the login page
+        navigate('/login');
+        console.log('Logout successful');
+    } catch (err) {
+        setError(err.message); // Display error message in the UI
+        console.error('Error during logout:', err.message); // Log the error for debugging
     } finally {
-      setLoading(false);
+        setLoading(false); // Reset the loading state
     }
-  };
+};
 
 
 
@@ -81,7 +87,7 @@ const Header = () => {
                   </Nav.Link>
                 </LinkContainer>
               )}
-              <button onClick={logoutHandler} disabled={loading} className='btn btn-success'>
+              <button onClick={handleLogOut} disabled={loading} className='btn btn-success'>
                 {loading ? 'Logging out...' : 'Log Out'}
               </button>
               {error && <div className="alert alert-danger">{error}</div>}

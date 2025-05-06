@@ -6,6 +6,7 @@ import { FaSearch } from 'react-icons/fa';
 import { useStudentDataContext } from '../hooks/useStudentsDataContext';
 import EnrollStudentModal from '../AdminComponents/EnrollStudentModal';
 import apiConfig from '../config/apiConfig';
+import { ToastContainer } from 'react-toastify';
 
 const AdminPendingStudents = () => {
     const [pendingStudents, setPendingStudents] = useState([]);
@@ -27,12 +28,10 @@ const AdminPendingStudents = () => {
     });
     const [error, setError] = useState('');
     const { strands, sections, yearLevels, semesters, fetchData, subjects } = useStudentDataContext();
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetchPendingStudents();
-        fetchData();
-    }, [fetchData]);
+      fetchData();
+    }, [])
 
     useEffect(() => {
       const safeFilterSections = (strandId) => {
@@ -67,35 +66,31 @@ const AdminPendingStudents = () => {
       setFilteredSections(filteredSectionsResult);
   }, [newUser.strand, sections, showModal]);
 
-    const fetchPendingStudents = async () => {
-        try {
-            setLoading(true);
-            setError(null);
+    useEffect(() => {
+        const fetchPendingStudents = async () => {
             const token = localStorage.getItem('token');
-            
-            const baseUrl = apiConfig.getBaseUrl();
-            const response = await fetch(`${baseUrl}/admin/pending-students`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
+            try {
+                const baseUrl = apiConfig.getBaseUrl();
+                const response = await fetch(`${baseUrl}/admin/pending-students`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    setPendingStudents(data);
+                } else {
+                    console.error('Failed to fetch pending students:', data.message, data.error);
                 }
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                console.log('Pending students data:', data);
-                setPendingStudents(data);
-            } else {
-                setError('Failed to fetch pending students');
-                console.error('Failed to fetch pending students', data);
+            } catch (error) {
+                console.error('Error fetching pending students:', error);
             }
-        } catch (error) {
-            setError('An error occurred while fetching data');
-            console.error('Error fetching pending students:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        };    
+        fetchPendingStudents();
+    }, []);
 
     const filteredStudents = pendingStudents
         .filter((student) => (selectedStrand ? student.strand?._id === selectedStrand : true))
@@ -115,13 +110,15 @@ const AdminPendingStudents = () => {
             yearLevel: '', 
             strand: '', 
             section: '',
-            _id: student._id // <-- Add this
+            semester: '',
+            subjects: [], // Add this to initialize empty subjects array
+            _id: student._id,
+            status: 'active'
         });
         setError('');
         setShowModal(true);
     };
     
-
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedStudent(null);
@@ -130,6 +127,7 @@ const AdminPendingStudents = () => {
     return (
         <>
             <Header />
+            <ToastContainer />
             <div className="d-flex">
                 <AdminSidebar />
                 <Container fluid className="ms-auto me-auto py-4">

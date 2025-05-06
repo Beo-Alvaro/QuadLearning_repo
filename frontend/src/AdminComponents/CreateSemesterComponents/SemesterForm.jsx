@@ -20,6 +20,14 @@ const SemesterForm = ({
 }) => {
   const navigate = useNavigate();
 
+  const handleClear = () => {
+    setSelectedStrand("");
+    setSelectedYearLevel("");
+    setName("");
+    setStartDate("");
+    setEndDate("");
+  }
+
   return (
     <div>
       <Form onSubmit={handleSubmit}>
@@ -95,9 +103,9 @@ const SemesterForm = ({
         <div className="d-flex gap-2">
           <Button
             variant="outline-secondary"
-            onClick={() => navigate("/admin/ManageSemesters")}
+            onClick={() => handleClear()}
           >
-            Cancel
+            Clear
           </Button>
           <Button variant="outline-success" type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create Semester"}

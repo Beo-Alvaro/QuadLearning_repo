@@ -12,6 +12,12 @@ const SectionForm = ({
     handleSubmit,
     navigate
 }) => {
+
+    const handleClear = () => {
+        setLinkedStrand('');
+        setLinkedYearLevel('');
+        setName('');
+    }
     return ( 
         <div>
             <Form onSubmit={handleSubmit}>
@@ -72,9 +78,9 @@ const SectionForm = ({
                 <div className="d-flex gap-2">
                     <Button
                         variant="outline-secondary"
-                        onClick={() => navigate('/admin/ManageSections')}
+                        onClick={() => handleClear()}
                     >
-                        Cancel
+                        Clear
                     </Button>
                     <Button
                         variant="outline-success"

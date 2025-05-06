@@ -1,6 +1,7 @@
 import { createContext, useState } from 'react';
 import apiConfig from '../config/apiConfig';
 
+import { toast } from 'react-toastify';
 export const SemesterDataContext = createContext();
 
 export const SemesterDataProvider = ({ children }) => {
@@ -145,8 +146,10 @@ export const SemesterDataProvider = ({ children }) => {
 
             if (!response.ok) {
                 setError(json.message || 'Failed to create semester');
+                toast.error(json.message || 'Failed to create semester');
             } else {
                 fetchData();
+                toast.success('Semester created successfully!');
             }
         } catch (error) {
             setError('An error occurred while creating the semester');
