@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
@@ -11,8 +11,36 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiStatus, setApiStatus] = useState(null);
   const navigate = useNavigate();
-  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS1234';
+  
+  // Clear any previous token on component mount
+  useEffect(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userInfo');
+  }, []);
+  
+  // Check if the backend API is available
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      try {
+        const baseUrl = apiConfig.getBaseUrl();
+        const response = await fetch(`${baseUrl}/health`);
+        if (response.ok) {
+          setApiStatus('online');
+        } else {
+          setApiStatus('error');
+        }
+      } catch (err) {
+        console.error('API health check failed:', err);
+        setApiStatus('offline');
+      }
+    };
+    
+    checkApiStatus();
+  }, []);
+  
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -22,6 +50,13 @@ const LoginScreen = () => {
       // Get the base URL from config
       const baseUrl = apiConfig.getBaseUrl();
       console.log('Using API URL:', `${baseUrl}/users/auth`);
+      
+      // Basic validation
+      if (!username || !password) {
+        setError('Username and password are required');
+        setLoading(false);
+        return;
+      }
       
       // Encrypt the password
       const encryptedPassword = CryptoJS.AES.encrypt(
@@ -35,6 +70,9 @@ const LoginScreen = () => {
         password: encryptedPassword, 
         isEncrypted: true 
       };
+      
+      console.log('Attempting login for user:', username);
+      console.log('API URL:', `${baseUrl}/users/auth`);
       
       try {
         const response = await fetch(`${baseUrl}/users/auth`, {
@@ -62,11 +100,28 @@ const LoginScreen = () => {
             throw new Error(data.message || 'Invalid credentials');
         }
 
-        // Save the token and user info to localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userInfo', JSON.stringify(data.user));
+        // Make sure user data is properly structured before storing
+        if (!data.user || !data.token) {
+          throw new Error('Invalid response from server: Missing user data or token');
+        }
 
+        // Ensure user object has required properties before saving
+        const userToStore = {
+          ...data.user,
+          username: data.user.username || username // Fallback to entered username if missing
+        };
+
+        // First clear existing items to prevent conflicts
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        
+        // Then save the new token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userInfo', JSON.stringify(userToStore));
+
+        console.log('Login successful, navigating to dashboard');
         setLoading(false);
+        
         // Navigate to dashboard based on role
         if (data.user.role === 'student') {
             navigate('./StudentScreens/StudentHomeScreen');
@@ -76,6 +131,8 @@ const LoginScreen = () => {
             navigate('./AdminScreens/AdminHomeScreen');
         }
       } catch (fetchError) {
+        console.error('Authentication error:', fetchError);
+        
         // Handle network-related errors separately
         if (fetchError.name === 'SyntaxError' || fetchError.message.includes('JSON')) {
           setError('Unable to connect to the server. The backend service may be down or starting up.');
@@ -85,6 +142,7 @@ const LoginScreen = () => {
         setLoading(false);
       }
     } catch (err) {
+        console.error('Login process error:', err);
         setLoading(false);
         setError(err.message);
         
@@ -136,6 +194,13 @@ const LoginScreen = () => {
           {error}
         </Alert>
       )}
+      
+      {apiStatus === 'offline' && (
+        <Alert variant="warning" className="text-center mb-4">
+          <i className="bi bi-wifi-off me-2"></i>
+          The backend server appears to be offline. Login might not work at this time.
+        </Alert>
+      )}
 
       <Form onSubmit={submitHandler}>
         <Form.Group className='mb-3' controlId='lrn'>
@@ -156,7 +221,7 @@ const LoginScreen = () => {
         </Form.Group>
 
         <Form.Group className='mb-3' controlId='password'>
-  <Form.Label className="fw-semibold">Password</Form.Label>
+  
   <InputGroup>
     <InputGroup.Text>
       <i className="bi bi-lock-fill"></i>

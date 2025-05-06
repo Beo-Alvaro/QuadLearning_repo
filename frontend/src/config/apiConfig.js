@@ -8,9 +8,12 @@ const apiConfig = {
   
   // Get the appropriate base URL based on the environment
   getBaseUrl: () => {
-    return import.meta.env.MODE === 'production' 
-      ? apiConfig.baseUrlProd 
-      : apiConfig.baseUrlDev;
+    // Check if we're on Vercel production
+    const isVercelProd = window.location.hostname.includes('vercel.app');
+    // Check if we're in production mode
+    const isProd = import.meta.env.PROD || isVercelProd;
+    
+    return isProd ? apiConfig.baseUrlProd : apiConfig.baseUrlDev;
   }
 };
 

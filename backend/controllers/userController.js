@@ -24,61 +24,76 @@ const getAdminId = async (req, res) => {
 
 const authUser = asyncHandler(async (req, res) => {
     const { username, password: encryptedPassword, isEncrypted } = req.body;
-    const ENCRYPTION_KEY = process.env.VITE_ENCRYPTION_KEY
+    // Check for either ENCRYPTION_KEY or VITE_ENCRYPTION_KEY
+    const ENCRYPTION_KEY = process.env.VITE_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'TROPICALVNHS1234'
+    
+    console.log('Authentication attempt for username:', username);
+    console.log('Is password encrypted:', isEncrypted);
 
     let password;
-    if (isEncrypted) {
-        // Decrypt the password
-        const bytes = CryptoJS.AES.decrypt(encryptedPassword, ENCRYPTION_KEY);
-        password = bytes.toString(CryptoJS.enc.Utf8);
-    } else {
-        password = encryptedPassword;
-    }
+    try {
+        if (isEncrypted) {
+            // Decrypt the password
+            const bytes = CryptoJS.AES.decrypt(encryptedPassword, ENCRYPTION_KEY);
+            password = bytes.toString(CryptoJS.enc.Utf8);
+        } else {
+            password = encryptedPassword;
+        }
 
-    const user = await User.findOne({ username });
+        const user = await User.findOne({ username });
 
-    if (!user) {
-        res.status(401);
-        throw new Error('Invalid username or password');
-    }
+        if (!user) {
+            console.log('User not found:', username);
+            res.status(401);
+            throw new Error('Invalid username or password');
+        }
 
-    // Check if account is locked
-    if (user.lockUntil && user.lockUntil > Date.now()) {
-        const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
-        res.status(423);
-        throw new Error(`Account is locked. Try again in ${minutesLeft} minutes`);
-    }
-
-    // Verify password
-    const isMatch = await bcrypt.compare(password.trim(), user.password);
-
-    if (!isMatch) {
-        await user.incrementLoginAttempts();
-        
-        // Check if this attempt caused a lock
-        if (user.loginAttempts + 1 >= 5) {
+        // Check if account is locked
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
             res.status(423);
-            throw new Error('Account is now locked for 15 minutes due to too many failed attempts');
+            throw new Error(`Account is locked. Try again in ${minutesLeft} minutes`);
         }
 
-        res.status(401);
-        throw new Error(`Invalid password. ${4 - user.loginAttempts} attempts remaining`);
+        // Verify password
+        const isMatch = await bcrypt.compare(password.trim(), user.password);
+
+        if (!isMatch) {
+            await user.incrementLoginAttempts();
+            
+            // Check if this attempt caused a lock
+            if (user.loginAttempts + 1 >= 5) {
+                res.status(423);
+                throw new Error('Account is now locked for 15 minutes due to too many failed attempts');
+            }
+
+            res.status(401);
+            throw new Error(`Invalid password. ${4 - user.loginAttempts} attempts remaining`);
+        }
+
+        // Reset attempts on successful login
+        await user.resetLoginAttempts();
+
+        // Generate token and send response
+        const token = generateToken(user._id, res);
+        
+        console.log('Login successful for user:', username);
+        
+        res.json({
+            success: true,
+            token,
+            user: {
+                _id: user._id,
+                username: user.username,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Authentication error:', error);
+        res.status(res.statusCode === 200 ? 500 : res.statusCode).json({
+            message: error.message || 'Authentication failed'
+        });
     }
-
-    // Reset attempts on successful login
-    await user.resetLoginAttempts();
-
-    // Generate token and send response
-    const token = generateToken(user._id, res);
-    res.json({
-        success: true,
-        token,
-        user: {
-            _id: user._id,
-            username: user.username,
-            role: user.role
-        }
-    });
 });
 
 // @desc    Logout user
