@@ -128,6 +128,9 @@ export const TeacherUserContextProvider = ({ children }) => {
             const studentData = await studentResponse.json();
             console.log('Raw student data from API:', JSON.stringify(studentData));
             
+            // Handle both response formats - either wrapped in a data property or directly returned
+            const actualStudentData = studentData.data ? studentData.data : studentData;
+            
             // Fetch grades with populated semester information
             console.log('Fetching grades from:', `${baseUrl}/teacher/student-grades/${studentId}`);
             const gradesResponse = await fetch(`${baseUrl}/teacher/student-grades/${studentId}`, {
@@ -185,10 +188,10 @@ export const TeacherUserContextProvider = ({ children }) => {
                 strand: 'Not Assigned'
             };
             
-            console.log('Student section data:', JSON.stringify(studentData.section));
+            console.log('Student section data:', JSON.stringify(actualStudentData.section));
             
-            if (studentData.section) {
-                const sectionId = typeof studentData.section === 'object' ? studentData.section._id : studentData.section;
+            if (actualStudentData.section) {
+                const sectionId = typeof actualStudentData.section === 'object' ? actualStudentData.section._id : actualStudentData.section;
                 console.log('Extracted section ID:', sectionId);
                 
                 const matchingSection = sections.find(s => s._id === sectionId);
@@ -208,12 +211,12 @@ export const TeacherUserContextProvider = ({ children }) => {
             
             // Format the student data for display, ensuring all personal info is included
             const formattedStudentData = {
-                ...studentData,
-                firstName: studentData.firstName || '',
-                middleInitial: studentData.middleInitial || '',
-                lastName: studentData.lastName || '',
-                gender: studentData.gender || 'Not Specified',
-                birthdate: studentData.birthdate || 'Not Specified',
+                ...actualStudentData,
+                firstName: actualStudentData.firstName || '',
+                middleInitial: actualStudentData.middleInitial || '',
+                lastName: actualStudentData.lastName || '',
+                gender: actualStudentData.gender || 'Not Specified',
+                birthdate: actualStudentData.birthdate || 'Not Specified',
                 section: sectionInfo.name,
                 yearLevel: sectionInfo.yearLevel,
                 strand: sectionInfo.strand,
@@ -269,7 +272,10 @@ export const TeacherUserContextProvider = ({ children }) => {
         const studentData = await studentResponse.json();
         
         // Check if we have sufficient student data
-        if (!studentData.firstName || !studentData.lastName) {
+        // Handle both response formats - either wrapped in a data property or directly returned
+        const actualStudentData = studentData.data ? studentData.data : studentData;
+        
+        if (!actualStudentData.firstName || !actualStudentData.lastName) {
             toast.update(loadingToastId, {
                 render: "Student profile incomplete. Please complete the student information first.",
                 type: "error",
@@ -326,8 +332,8 @@ export const TeacherUserContextProvider = ({ children }) => {
             strand: 'Not Assigned'
         };
         
-        if (studentData.section) {
-            const sectionId = typeof studentData.section === 'object' ? studentData.section._id : studentData.section;
+        if (actualStudentData.section) {
+            const sectionId = typeof actualStudentData.section === 'object' ? actualStudentData.section._id : actualStudentData.section;
             const matchingSection = sections.find(s => s._id === sectionId);
             if (matchingSection) {
                 sectionInfo = {
@@ -340,12 +346,12 @@ export const TeacherUserContextProvider = ({ children }) => {
         
         // Format the student data for display, ensuring all personal info is included
         const formattedStudentData = {
-            ...studentData,
-            firstName: studentData.firstName || '',
-            middleInitial: studentData.middleInitial || '',
-            lastName: studentData.lastName || '',
-            gender: studentData.gender || 'Not Specified',
-            birthdate: studentData.birthdate || 'Not Specified',
+            ...actualStudentData,
+            firstName: actualStudentData.firstName || '',
+            middleInitial: actualStudentData.middleInitial || '',
+            lastName: actualStudentData.lastName || '',
+            gender: actualStudentData.gender || 'Not Specified',
+            birthdate: actualStudentData.birthdate || 'Not Specified',
             section: sectionInfo.name,
             yearLevel: sectionInfo.yearLevel,
             strand: sectionInfo.strand,

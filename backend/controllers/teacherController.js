@@ -1020,10 +1020,8 @@ const getStudentData = asyncHandler(async (req, res) => {
           school: student.school
       };
 
-      res.status(200).json({
-          success: true,
-          data: studentData
-      });
+      // Return the direct student data without wrapping it in a data property
+      res.status(200).json(studentData);
   } catch (error) {
       console.error('Error fetching student data:', error);
       res.status(500).json({
@@ -1753,7 +1751,7 @@ endDate.setDate(startDate.getDate() + 6); // Always end on Sunday
     const dayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 6 = Saturday
     const dayOfMonth = date.getDate();
   
-    // Calculate adjusted start of the week (so the first week isn’t cut off)
+    // Calculate adjusted start of the week (so the first week isn't cut off)
     const adjustedDay = dayOfMonth + dayOfWeek - 1;
   
     // Calculate the week number (1-indexed)
