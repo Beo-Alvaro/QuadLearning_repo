@@ -26,7 +26,8 @@ app.use((req, res, next) => {
         'https://topicalvillage-p88qp01u7-beo-alvaros-projects.vercel.app', // Old deployment URL
         'https://topicalvillage-i1a1gpubh-beo-alvaros-projects.vercel.app', // Old deployment URL
         'https://topicalvillage-ijtrs19jy-beo-alvaros-projects.vercel.app', // Old deployment URL
-        'https://topicalvillage-bbuhx8avo-beo-alvaros-projects.vercel.app', // Latest deployment URL
+        'https://topicalvillage-bbuhx8avo-beo-alvaros-projects.vercel.app', // Previous deployment URL
+        'https://topicalvillage-h76bbhodd-beo-alvaros-projects.vercel.app', // Latest deployment URL
         'https://topicalvillage-beo-alvaros-projects.vercel.app', // Project URL
         'https://tropicalvillageportal-production.up.railway.app' // Backend Railway URL (for API testing)
     ];
