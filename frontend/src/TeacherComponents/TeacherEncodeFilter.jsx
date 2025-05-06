@@ -143,11 +143,23 @@ useEffect(() => {
                     .filter(semester => semester.status === 'active') // Only show active semesters
                     .map(semester => {
                       const semesterName = semester.name || 'Unnamed Semester';
-                      const strandName = semester.strand?.name || 'No Strand';
-                      const yearLevelName = semester.yearLevel?.name || 'No Year Level';
+                      const strandName = semester.strand?.name || '';
+                      const yearLevelName = semester.yearLevel?.name || '';
+                      
+                      // Format the display text with only available information
+                      let displayText = semesterName;
+                      
+                      if (strandName && yearLevelName) {
+                        displayText += ` - ${strandName} - ${yearLevelName}`;
+                      } else if (strandName) {
+                        displayText += ` - ${strandName}`;
+                      } else if (yearLevelName) {
+                        displayText += ` - ${yearLevelName}`;
+                      }
+                      
                       return (
                         <option key={semester._id} value={semester._id}>
-                          {`${semesterName} - ${strandName} - ${yearLevelName}`}
+                          {displayText}
                         </option>
                       );
                     })}
