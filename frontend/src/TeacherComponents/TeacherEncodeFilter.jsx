@@ -194,7 +194,7 @@ useEffect(() => {
                 <option value="">Choose Subject</option>
                 {semesterSubjects.map((subject) => (
                     <option key={subject._id} value={subject._id}>
-                        {subject.name} ({subject.code || 'No Code'})
+                        {subject.name}
                     </option>
                 ))}
             </Form.Select>
