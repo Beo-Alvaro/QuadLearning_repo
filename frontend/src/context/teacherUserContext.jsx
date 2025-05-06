@@ -140,17 +140,17 @@ export const TeacherUserContextProvider = ({ children }) => {
                 
                 gradesData.forEach(grade => {
                     if (grade.semester && grade.semester._id) {
-                        const key = `${grade.yearLevel}-${grade.semester._id}`;
+                        const key = `${grade.yearLevel || 'Unknown Year Level'}-${grade.semester._id}`;
                         if (!gradeBySemester[key]) {
                             gradeBySemester[key] = {
                                 semesterInfo: grade.semester,
-                                yearLevel: grade.yearLevel,
+                                yearLevel: grade.yearLevel || 'Unknown Year Level',
                                 subjects: []
                             };
                         }
                         gradeBySemester[key].subjects.push(...grade.subjects.map(subject => ({
                             subject: subject.subject,
-                            subjectName: subject.subject?.name,
+                            subjectName: subject.subject?.name || 'Unknown Subject',
                             midterm: subject.midterm,
                             finals: subject.finals,
                             finalRating: subject.finalRating,
@@ -164,28 +164,39 @@ export const TeacherUserContextProvider = ({ children }) => {
             }
             
             // Get section data for display
-            let sectionInfo = null;
+            let sectionInfo = {
+                name: 'Not Assigned',
+                yearLevel: 'Not Assigned',
+                strand: 'Not Assigned'
+            };
+            
             if (studentData.section) {
-                const sectionId = studentData.section;
+                const sectionId = typeof studentData.section === 'object' ? studentData.section._id : studentData.section;
                 const matchingSection = sections.find(s => s._id === sectionId);
                 if (matchingSection) {
                     sectionInfo = {
-                        name: matchingSection.name,
-                        yearLevel: matchingSection.yearLevel?.name,
-                        strand: matchingSection.strand?.name
+                        name: matchingSection.name || 'Not Assigned',
+                        yearLevel: matchingSection.yearLevel?.name || 'Not Assigned',
+                        strand: matchingSection.strand?.name || 'Not Assigned'
                     };
                 }
             }
             
-            // Format the student data for display
+            // Format the student data for display, ensuring all personal info is included
             const formattedStudentData = {
                 ...studentData,
-                section: sectionInfo?.name || 'Not Assigned',
-                yearLevel: sectionInfo?.yearLevel || 'Not Assigned',
-                strand: sectionInfo?.strand || 'Not Assigned',
+                firstName: studentData.firstName || '',
+                middleInitial: studentData.middleInitial || '',
+                lastName: studentData.lastName || '',
+                gender: studentData.gender || 'Not Specified',
+                birthdate: studentData.birthdate || 'Not Specified',
+                section: sectionInfo.name,
+                yearLevel: sectionInfo.yearLevel,
+                strand: sectionInfo.strand,
                 grades
             };
             
+            console.log('Formatted student data:', formattedStudentData);
             setSelectedStudent(formattedStudentData);
             
             toast.update(loadingToastId, {
@@ -260,17 +271,17 @@ export const TeacherUserContextProvider = ({ children }) => {
             
             gradesData.forEach(grade => {
                 if (grade.semester && grade.semester._id) {
-                    const key = `${grade.yearLevel}-${grade.semester._id}`;
+                    const key = `${grade.yearLevel || 'Unknown Year Level'}-${grade.semester._id}`;
                     if (!gradeBySemester[key]) {
                         gradeBySemester[key] = {
                             semesterInfo: grade.semester,
-                            yearLevel: grade.yearLevel,
+                            yearLevel: grade.yearLevel || 'Unknown Year Level',
                             subjects: []
                         };
                     }
                     gradeBySemester[key].subjects.push(...grade.subjects.map(subject => ({
                         subject: subject.subject,
-                        subjectName: subject.subject?.name,
+                        subjectName: subject.subject?.name || 'Unknown Subject',
                         midterm: subject.midterm,
                         finals: subject.finals,
                         finalRating: subject.finalRating,
@@ -283,11 +294,41 @@ export const TeacherUserContextProvider = ({ children }) => {
             grades = Object.values(gradeBySemester);
         }
         
-        // Set the complete student data including grades
-        setSelectedStudent({
+        // Get section data for display
+        let sectionInfo = {
+            name: 'Not Assigned',
+            yearLevel: 'Not Assigned',
+            strand: 'Not Assigned'
+        };
+        
+        if (studentData.section) {
+            const sectionId = typeof studentData.section === 'object' ? studentData.section._id : studentData.section;
+            const matchingSection = sections.find(s => s._id === sectionId);
+            if (matchingSection) {
+                sectionInfo = {
+                    name: matchingSection.name || 'Not Assigned',
+                    yearLevel: matchingSection.yearLevel?.name || 'Not Assigned',
+                    strand: matchingSection.strand?.name || 'Not Assigned'
+                };
+            }
+        }
+        
+        // Format the student data for display, ensuring all personal info is included
+        const formattedStudentData = {
             ...studentData,
+            firstName: studentData.firstName || '',
+            middleInitial: studentData.middleInitial || '',
+            lastName: studentData.lastName || '',
+            gender: studentData.gender || 'Not Specified',
+            birthdate: studentData.birthdate || 'Not Specified',
+            section: sectionInfo.name,
+            yearLevel: sectionInfo.yearLevel,
+            strand: sectionInfo.strand,
             grades
-        });
+        };
+        
+        console.log('Formatted student data for Form 137:', formattedStudentData);
+        setSelectedStudent(formattedStudentData);
         
         toast.update(loadingToastId, {
             render: "Student data loaded successfully!",
