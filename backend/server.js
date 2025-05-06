@@ -20,11 +20,14 @@ const app = express();
 app.use((req, res, next) => {
     const allowedOrigins = [
         process.env.FRONTEND_URL || 'http://localhost:5173', // Vite dev server default
+        'http://localhost:3000', // Alternative local development port
         'https://topicalvillage.vercel.app', // Your actual Vercel domain
         'http://topicalvillage.vercel.app', // Non-HTTPS variant
-        'https://topicalvillage-p88qp01u7-beo-alvaros-projects.vercel.app', // Deployment URL
-        'https://topicalvillage-i1a1gpubh-beo-alvaros-projects.vercel.app', // New deployment URL
-        'https://topicalvillage-ijtrs19jy-beo-alvaros-projects.vercel.app', // Latest deployment URL
+        'https://topicalvillage-p88qp01u7-beo-alvaros-projects.vercel.app', // Old deployment URL
+        'https://topicalvillage-i1a1gpubh-beo-alvaros-projects.vercel.app', // Old deployment URL
+        'https://topicalvillage-ijtrs19jy-beo-alvaros-projects.vercel.app', // Old deployment URL
+        'https://topicalvillage-bbuhx8avo-beo-alvaros-projects.vercel.app', // Latest deployment URL
+        'https://topicalvillage-beo-alvaros-projects.vercel.app', // Project URL
         'https://tropicalvillageportal-production.up.railway.app' // Backend Railway URL (for API testing)
     ];
     const origin = req.headers.origin;
@@ -33,6 +36,8 @@ app.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
         // For development and testing, allow any origin
+        // In production, you might want to remove this fallback for security
+        console.log('Origin not in allowed list:', origin);
         res.setHeader('Access-Control-Allow-Origin', '*');
     }
     
