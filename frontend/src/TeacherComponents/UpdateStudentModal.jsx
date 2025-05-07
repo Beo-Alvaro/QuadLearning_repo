@@ -6,7 +6,7 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    middleInitial: "",
+    middleName: "",
     suffix: "",
     gender: "",
     birthdate: "",
@@ -60,7 +60,7 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
         lrn: data.data.username || "",
         firstName: data.data.firstName || "",
         lastName: data.data.lastName || "",
-        middleInitial: data.data.middleInitial || "",
+        middleName: data.data.middleName || "",
         suffix: data.data.suffix || "",
         gender: data.data.gender || "",
         birthdate: data.data.birthdate ? data.data.birthdate.split("T")[0] : "",
@@ -143,7 +143,7 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
           user: studentId,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          middleInitial: formData.middleInitial,
+          middleName: formData.middleName,
           suffix: formData.suffix,
           gender: formattedGender,
           birthdate: formData.birthdate,
@@ -230,6 +230,9 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
       </Modal>
     )
   }
+  const getMiddleInitial = (middleName) => {
+    return middleName ? `${middleName.charAt(0)}.` : '';
+  };
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered className="student-modal">
@@ -246,10 +249,12 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
               <div className="initials-circle">{getInitials()}</div>
             </div>
             <div className="student-details">
-              <h4 className="mb-1 fw-bold">
-                {formData.firstName} {formData.middleInitial && `${formData.middleInitial}. `}
-                {formData.lastName} {formData.suffix}
-              </h4>
+  <h4 className="mb-1 fw-bold">
+    {formData.firstName}{' '}
+    {formData.middleName && getMiddleInitial(formData.middleName)}{' '}
+    {formData.lastName}{' '}
+    {formData.suffix}
+  </h4>
               <div className="d-flex flex-wrap gap-2 mb-1">
                 <span className="badge bg-light text-dark border">LRN: {formData.lrn}</span>
                 <span className="badge bg-light text-dark border">
@@ -350,11 +355,11 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
                 </Col>
                 <Col md={3}>
                   <Form.Group>
-                    <Form.Label className="form-label">Middle Initial</Form.Label>
+                    <Form.Label className="form-label">Middle Name</Form.Label>
                     <Form.Control
                       type="text"
-                      name="middleInitial"
-                      value={formData.middleInitial}
+                      name="middleName"
+                      value={formData.middleName}
                       onChange={handleChange}
                       disabled={!isEditing}
                       className={!isEditing ? "form-control-static" : ""}

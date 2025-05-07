@@ -12,6 +12,19 @@ const StrandTable = ({
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const SEARCH_MAX_LENGTH = 30;
+    const [sortField, setSortField] = useState('name');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedStrands = (strands) => {
+        return [...strands].sort((a, b) => {
+            let aValue = a[sortField]?.toLowerCase() || '';
+            let bValue = b[sortField]?.toLowerCase() || '';
+            
+            return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        });
+    };
 
     // Filter and Paginate Data
     const filteredStrands = studStrands.filter((strand) =>
@@ -21,7 +34,9 @@ const StrandTable = ({
 
     const totalPages = Math.ceil(filteredStrands.length / entriesPerPage);
 
-    const paginatedStrands = filteredStrands.slice(
+    const sortedAndFilteredStrands = getSortedStrands(filteredStrands);
+
+    const paginatedStrands = sortedAndFilteredStrands.slice(
         (currentPage - 1) * entriesPerPage,
         currentPage * entriesPerPage
     );
@@ -75,13 +90,27 @@ const StrandTable = ({
             <Card className="shadow-sm">
                 <Card.Body className="p-0">
                     <Table responsive hover className='custom-table text-center align-middle'>
-                        <thead className="bg-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
+<thead className="bg-light">
+                <tr>
+                    <th onClick={() => {
+                        setSortDirection(sortField === 'name' && sortDirection === 'asc' ? 'desc' : 'asc');
+                        setSortField('name');
+                    }} style={{ cursor: 'pointer' }}>
+                        Name {sortField === 'name' && (
+                            <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                        )}
+                    </th>
+                    <th onClick={() => {
+                        setSortDirection(sortField === 'description' && sortDirection === 'asc' ? 'desc' : 'asc');
+                        setSortField('description');
+                    }} style={{ cursor: 'pointer' }}>
+                        Description {sortField === 'description' && (
+                            <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                        )}
+                    </th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
                         <tbody className='text-center'>
                             {paginatedStrands.length > 0 ? (
                                 paginatedStrands.map((strand) => (

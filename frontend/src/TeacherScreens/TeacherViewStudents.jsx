@@ -6,6 +6,7 @@ import UpdateStudentModal from '../TeacherComponents/UpdateStudentModal';
 import './TeacherViewStudent.css';
 import TeacherStudentTable from '../TeacherComponents/TeacherStudentTable';
 import { ToastContainer, toast } from 'react-toastify';
+import LoadingSpinner from '../components/LoadingSpinner';
 const TeacherViewStudents = () => {
     const [availableSections, setAvailableSections] = useState([]);
     const [showAdvisoryOnly, setShowAdvisoryOnly] = useState(false);
@@ -73,8 +74,15 @@ const TeacherViewStudents = () => {
     }, [sections, selectedStrand, selectedYearLevel, selectedSection, showAdvisoryOnly]);
     
     
+    if (loading) return (
+        <>
+            <TeacherDashboardNavbar />
+            <Container fluid className="px-4 py-3">
+                <LoadingSpinner />
+            </Container>
+        </>
+    );
 
-    if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
     const handleToggleAdvisoryView = (e) => {

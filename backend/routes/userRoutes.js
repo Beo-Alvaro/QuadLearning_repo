@@ -8,6 +8,9 @@ import {
 } from '../controllers/userController.js';
 
 
+router.get('/verify-token', protect, (req, res) => {
+    res.status(200).json({ valid: true });
+});
 
 router.post('/auth', authUser);
 router.post('/logout', logoutUser);

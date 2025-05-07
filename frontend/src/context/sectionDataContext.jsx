@@ -44,7 +44,7 @@ export const SectionDataProvider = ({ children }) => {
     const handleSaveChanges = async (selectedSectionId) => {
         if (!selectedSectionId) {
             console.error('No section selected for update!');
-            return; 
+            return false; 
         }
     
         const updatedSection = { 
@@ -53,15 +53,18 @@ export const SectionDataProvider = ({ children }) => {
             strand: linkedStrand, 
             yearLevel: linkedYearLevel 
         };
-
+    
+        // Check for required fields
         if (!updatedSection.name || !updatedSection.strand || !updatedSection.yearLevel) {
             toast.error('Please fill in all fields.');
-            return;
+            return false;
         }
     
-        console.log('Updated Section:', updatedSection);
-        console.log('linkedStrand:', linkedStrand);
-        console.log('linkedYearLevel:', linkedYearLevel);
+        // Check for duplicate section, excluding the current section being edited
+        if (checkDuplicateSection(name, linkedStrand, linkedYearLevel, selectedSectionId)) {
+            toast.error('A section with this name already exists for the selected strand and year level');
+            return false;
+        }
     
         const token = localStorage.getItem('token');
     
@@ -76,7 +79,6 @@ export const SectionDataProvider = ({ children }) => {
             });
     
             const result = await response.json();
-            console.log('Update result:', result);
     
             if (response.ok) {
                 // Update the sections state in the context
@@ -85,13 +87,16 @@ export const SectionDataProvider = ({ children }) => {
                         section._id === selectedSectionId ? result : section
                     )
                 );
-                return true; // Return success status to the parent
+                return true;
             } else {
                 console.error('Error updating section:', result.message);
+                toast.error(result.message || 'Failed to update section');
                 return false;
             }
         } catch (error) {
             console.error('Failed to update section:', error);
+            toast.error('An error occurred while updating the section');
+            return false;
         }
     };
     
@@ -117,12 +122,38 @@ export const SectionDataProvider = ({ children }) => {
         fetchData();
     };
 
+// Add after your state declarations
+const checkDuplicateSection = (sectionName, strandId, yearLevelId, currentId = null) => {
+    return studSections.some(section => 
+        section.name.toLowerCase() === sectionName.toLowerCase() &&
+        section.strand._id === strandId &&
+        section.yearLevel._id === yearLevelId &&
+        section._id !== currentId
+    );
+};
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
         const cleanYearLevelId = linkedYearLevel.replace(/[^0-9a-fA-F]/g, '');
+
+            // Check for required fields
+    if (!name || !linkedStrand || !cleanYearLevelId) {
+        setError('Please fill in all fields');
+        setLoading(false);
+        toast.error('Please fill in all fields');
+        return;
+    }
+
+    // Check for duplicate section
+    if (checkDuplicateSection(name, linkedStrand, cleanYearLevelId)) {
+        setError('A section with this name already exists for the selected strand and year level');
+        setLoading(false);
+        toast.error('A section with this name already exists for the selected strand and year level');
+        return;
+    }
 
         const sectionData = {
             name,

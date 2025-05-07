@@ -85,16 +85,23 @@ const authUser = asyncHandler(async (req, res) => {
 // route    POST /api/users/logout
 // @access  Public
 const logoutUser = asyncHandler(async (req, res) => {
-    // Clear the cookie by setting it with an expiration date in the past
-    res.cookie('token', '', {
-        httpOnly: true, // Prevents client-side access to the cookie
-        secure: process.env.NODE_ENV === 'production', // Ensure the cookie is sent over HTTPS in production
-        expires: new Date(0), // Set expiration date to the past
-        path: '/', // Specify the cookie's path (root path, typically)
-    });
+    try {
+        // Clear HTTP-only cookie if you're using one
+        res.cookie('jwt', '', {
+            httpOnly: true,
+            expires: new Date(0),
+        });
 
-    // Respond with a successful logout message
-    res.status(200).json({ message: 'Logout successful' });
+        res.status(200).json({ 
+            success: true,
+            message: 'Logged out successfully' 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false,
+            message: 'Error logging out' 
+        });
+    }
 });
 
 

@@ -84,11 +84,6 @@ const ManageSections = () => {
                                 <h4 className="mb-0">Manage Sections</h4>
                             </Card.Header>
                             <Card.Body>
-                                {error && (
-                                    <div className="alert alert-danger" role="alert">
-                                        {error}
-                                    </div>
-                                )}
 
 <SectionForm 
   name={name}

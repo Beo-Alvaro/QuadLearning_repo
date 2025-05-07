@@ -1,11 +1,14 @@
 import { Table, Button,  Card, Modal, Badge } from 'react-bootstrap';
-import { ToastContainer, toast } from 'react-toastify';
 const TeacherModal = ({
     showModal,
     setShowModal,
     selectedStudent,
     handleGenerateForm
   }) => {
+    const getMiddleInitial = (middleName) => {
+        return middleName ? `${middleName.charAt(0)}.` : '';
+      };
+      
     return ( 
         <div>
             
@@ -37,7 +40,7 @@ const TeacherModal = ({
                     <div className="row">
                         <div className="col-4 text-muted">Full Name:</div>
                         <div className="col-8 fw-bold">
-                            {`${selectedStudent.firstName || ''} ${selectedStudent.middleInitial || ''} ${selectedStudent.lastName || ''}`}
+                        {`${selectedStudent.firstName || ''} ${getMiddleInitial(selectedStudent.middleName)} ${selectedStudent.lastName || ''}`}
                         </div>
                     </div>
                     <hr className="my-2"/>

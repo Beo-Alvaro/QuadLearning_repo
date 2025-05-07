@@ -43,7 +43,11 @@ const createUserAccount = asyncHandler(async (req, res) => {
        console.log('Checking username:', username.trim());
         
        // Check if username already exists before trying to create
-       const existingUser = await User.findOne({ username: username.trim() });
+       const existingUser = await User.findOne({
+        username: { 
+            $regex: new RegExp(`^${username.trim()}$`, 'i') 
+        }
+    });
        console.log('Existing user check result:', existingUser);
 
        if (existingUser) {
@@ -294,6 +298,18 @@ const updateUserAccount = asyncHandler(async (req, res) => {
 
     try {
         let updateData = { username };
+
+        const existingUser = await User.findOne({
+            _id: { $ne: id }, // Exclude current user
+            username: { 
+                $regex: new RegExp(`^${username.trim()}$`, 'i') 
+            }
+        });
+
+        if (existingUser) {
+            res.status(400);
+            throw new Error('This LRN is already registered in the system');
+        }
 
         if (user.role === 'teacher') {
             // Remove teacher from old sections
@@ -979,46 +995,74 @@ const getAllSemesters = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/semesters/:id
 // @access  Private (admin role)
 const updateSemester = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, yearLevel } = req.body;
+    const { name, strand, startDate, endDate, yearLevel } = req.body;
     const { id } = req.params;
 
+    // Find the semester to update
     const semester = await Semester.findById(id);
     if (!semester) {
         res.status(404);
         throw new Error('Semester not found');
     }
 
-    // Validate dates if they're being updated
-    if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (end <= start) {
-            res.status(400);
-            throw new Error('End date must be after start date');
-        }
+    // Validate required fields
+    if (!name || !strand || !startDate || !endDate || !yearLevel) {
+        res.status(400);
+        throw new Error('Please provide all required fields');
     }
 
-    // Update the semester
-    const updatedSemester = await Semester.findByIdAndUpdate(
-        id,
-        { 
-            name: name || semester.name,
-            startDate: startDate || semester.startDate,
-            endDate: endDate || semester.endDate,
-            yearLevel: yearLevel || semester.yearLevel
-        },
-        { 
-            new: true,
-            runValidators: true
-        }
-    ).populate('strand', 'name');
+    // Check if an active semester with the same name, strand, and year level already exists
+    // Exclude the current semester from the check using $ne (not equal)
+    const existingSemester = await Semester.findOne({
+        _id: { $ne: id }, // Exclude current semester
+        name,
+        strand,
+        yearLevel,
+        status: 'active'
+    });
 
-    if (!updatedSemester) {
-        res.status(404);
-        throw new Error('Semester not found');
+    if (existingSemester) {
+        res.status(400);
+        throw new Error(`An active ${name} already exists for this strand and year level`);
     }
 
-    res.json(updatedSemester);
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (end <= start) {
+        res.status(400);
+        throw new Error('End date must be after start date');
+    }
+
+    try {
+        // Update the semester
+        const updatedSemester = await Semester.findByIdAndUpdate(
+            id,
+            { 
+                name,
+                strand,
+                startDate,
+                endDate,
+                yearLevel
+            },
+            { 
+                new: true,
+                runValidators: true
+            }
+        )
+        .populate('strand', 'name')
+        .populate('yearLevel', 'name');
+
+        if (!updatedSemester) {
+            res.status(404);
+            throw new Error('Failed to update semester');
+        }
+
+        res.json(updatedSemester);
+    } catch (error) {
+        res.status(400);
+        throw new Error(`Failed to update semester: ${error.message}`);
+    }
 });
 
 // @desc    Delete a semester

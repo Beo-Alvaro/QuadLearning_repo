@@ -82,32 +82,60 @@ const ManageSemesters = () => {
             console.error("Error adding semester:", error);
         }
     };
+
+    // Add this function after your state declarations
+const checkDuplicateSemester = (semesterName, strandId, yearLevelId, currentId = null) => {
+    return semesters.some(semester => 
+        semester.name.toLowerCase() === semesterName.toLowerCase() &&
+        semester.strand._id === strandId &&
+        semester.yearLevel._id === yearLevelId &&
+        semester._id !== currentId
+    );
+};
     
-    const handleSaveChanges = async () => {
-        try {
-            const updatedSemester = {
-                _id: selectedSemesterId, 
-                name,
-                strand: selectedStrand,
-                yearLevel: selectedYearLevel,
-                startDate,
-                endDate,
-            };
-
-            if (!name || !selectedStrand || !selectedYearLevel || !startDate || !endDate) {
-                toast.error('Please fill in all fields before saving changes.');
-                return;
-            }
-
-            // Call the updateSemester function from context
-            await updateSemester(updatedSemester, selectedSemesterId);
-            
-            setEditModalShow(false);
-            toast.success('Semester updated successfully!')
-        } catch (error) {
-            console.error("Error updating semester:", error);
+const handleSaveChanges = async () => {
+    try {
+        // Validate required fields
+        if (!name || !selectedStrand || !selectedYearLevel || !startDate || !endDate) {
+            toast.error('Please fill in all fields before saving changes.');
+            return;
         }
-    };
+
+        // Validate dates
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (end <= start) {
+            toast.error('End date must be after start date');
+            return;
+        }
+
+        const updatedSemester = {
+            _id: selectedSemesterId, 
+            name,
+            strand: selectedStrand,
+            yearLevel: selectedYearLevel,
+            startDate,
+            endDate,
+        };
+
+        // Call the updateSemester function from context
+        const response = await updateSemester(updatedSemester, selectedSemesterId);
+        
+        // Check if the response contains an error
+        if (response.error) {
+            toast.error(response.error);
+            return;
+        }
+
+        setEditModalShow(false);
+        resetFormState();
+        toast.success('Semester updated successfully!');
+        fetchData(); // Refresh the data
+    } catch (error) {
+        console.error("Error updating semester:", error);
+        toast.error(error.response?.data?.message || 'Failed to update semester');
+    }
+};
 
     const resetFormState = () => {
         setName('');

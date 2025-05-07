@@ -18,6 +18,51 @@ const TeacherEncodeGrade = () => {
     const [localGrades, setLocalGrades] = useState({});
     const [isSaving, setIsSaving] = useState(false);
     const [editModeStudents, setEditModeStudents] = useState({}); // Track which students are in edit mode
+    const [sortField, setSortField] = useState('username');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedStudents = (students) => {
+        return [...students].sort((a, b) => {
+            let aValue = '';
+            let bValue = '';
+    
+            switch(sortField) {
+                case 'username':
+                    aValue = a.username?.toLowerCase() || '';
+                    bValue = b.username?.toLowerCase() || '';
+                    break;
+                case 'section':
+                    aValue = a.sectionName?.toLowerCase() || '';
+                    bValue = b.sectionName?.toLowerCase() || '';
+                    break;
+                case 'midterm':
+                    aValue = getGradeDisplayValue(a._id, 'midterm') || '0';
+                    bValue = getGradeDisplayValue(b._id, 'midterm') || '0';
+                    return sortDirection === 'asc' 
+                        ? parseFloat(aValue) - parseFloat(bValue)
+                        : parseFloat(bValue) - parseFloat(aValue);
+                case 'finals':
+                    aValue = getGradeDisplayValue(a._id, 'finals') || '0';
+                    bValue = getGradeDisplayValue(b._id, 'finals') || '0';
+                    return sortDirection === 'asc' 
+                        ? parseFloat(aValue) - parseFloat(bValue)
+                        : parseFloat(bValue) - parseFloat(aValue);
+                case 'finalRating':
+                    aValue = getFinalRating(a._id) === 'N/A' ? '0' : getFinalRating(a._id);
+                    bValue = getFinalRating(b._id) === 'N/A' ? '0' : getFinalRating(b._id);
+                    return sortDirection === 'asc' 
+                        ? parseFloat(aValue) - parseFloat(bValue)
+                        : parseFloat(bValue) - parseFloat(aValue);
+                default:
+                    aValue = a[sortField]?.toLowerCase() || '';
+                    bValue = b[sortField]?.toLowerCase() || '';
+            }
+    
+            return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        });
+    };
 
     // Toggle edit mode for a specific student
     const toggleEditMode = (studentId) => {
@@ -432,18 +477,53 @@ const handleGradeChange = (e, studentId, gradeType) => {
                             )}
                             <Table responsive hover className='custom-table text-center align-middle'>
                                 <thead className="bg-light">
-                                    <tr>
-                                        <th>Student Name</th>
-                                        <th>Section</th>
-                                        <th>Midterm</th>
-                                        <th>Finals</th>
-                                        <th>Final Rating</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
+    <tr>
+        <th onClick={() => {
+            setSortDirection(sortField === 'username' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('username');
+        }} style={{ cursor: 'pointer' }}>
+            Student Name {sortField === 'username' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'section' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('section');
+        }} style={{ cursor: 'pointer' }}>
+            Section {sortField === 'section' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'midterm' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('midterm');
+        }} style={{ cursor: 'pointer' }}>
+            Midterm {sortField === 'midterm' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'finals' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('finals');
+        }} style={{ cursor: 'pointer' }}>
+            Finals {sortField === 'finals' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'finalRating' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('finalRating');
+        }} style={{ cursor: 'pointer' }}>
+            Final Rating {sortField === 'finalRating' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+</thead>
                                 <tbody>
-                                    {filteredStudents.map((student) => {
+                                {getSortedStudents(filteredStudents).map((student) => {
                                         const finalRating = getFinalRating(student._id);
                                         const hasLocalChanges = !!localGrades[student._id];
                                         const isEditing = editModeStudents[student._id];

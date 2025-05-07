@@ -11,7 +11,6 @@ const studentSchema = mongoose.Schema(
             unique: true
         },
         firstName: {
-
             type: String,
             // required: true removed
         },
@@ -19,10 +18,8 @@ const studentSchema = mongoose.Schema(
             type: String,
             // required: true removed
         },
-        middleInitial: {
-
+        middleName: {
             type: String,
-            maxlength: 1,
         },
         suffix: {
             type: String,

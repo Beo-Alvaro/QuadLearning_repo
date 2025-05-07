@@ -149,7 +149,12 @@ const AdminCreateStudentAccount = () => {
             console.log('Response Data:', data);
     
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to create user');
+                // Important: Move this before any other operations
+                if (response.status === 400 && data.message.includes('Username already exists')) {
+                    toast.error('This LRN is already taken!');
+                    return;
+                }
+                throw new Error(data.message || 'Failed to create teacher account');
             }
     
             setNewUser({
@@ -167,6 +172,7 @@ const AdminCreateStudentAccount = () => {
             fetchData();
             toast.success('User created successfully!');
         } catch (error) {
+            toast.error(error.message || 'Failed to create student account');
             console.error('Error:', error);
             setError(error.message);
         }
@@ -315,13 +321,24 @@ const handleEditSubmit = async (e) => {
         console.log('Response data:', data);
 
         if (!response.ok) {
-            throw new Error(data.message || 'Failed to update user');
+            // Check for specific error types
+            if (response.status === 400) {
+                if (data.message?.includes('E11000') || 
+                    data.message?.includes('duplicate key') || 
+                    data.message?.includes('Username already exists')) {
+                    toast.error('This LRN is already taken!', {
+                    });
+                    return;
+                }
+            }
+            throw new Error(data.message || 'Failed to create student account');
         }
 
         handleEditClose();
         fetchData(); // Refresh the data
         toast.success('User updated successfully!');
     } catch (error) {
+        toast.error(error.message)
         setError(error.message);
         console.error('Error:', error);
     } finally {

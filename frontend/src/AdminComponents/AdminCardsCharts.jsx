@@ -1,24 +1,13 @@
-import { Container, Row, Col, Card, Table, Form, InputGroup } from 'react-bootstrap';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FaUsers, FaGraduationCap, FaBook, FaSearch, FaUserClock, FaClipboardList} from 'react-icons/fa';
+import { Container, Row, Col, Card} from 'react-bootstrap';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { FaUsers, FaGraduationCap, FaBook, FaClipboardList} from 'react-icons/fa';
 import './AdminSidebar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import AdminSidebar from './AdminSidebar';
 import '../AdminComponents/AdminTableList.css';
 import { useState, useEffect } from 'react';
-const getRoleBadgeColor = (role) => {
-    switch (role.toLowerCase()) {
-        case 'admin':
-            return 'danger';
-        case 'teacher':
-            return 'success';
-        case 'student':
-            return 'info';
-        default:
-            return 'secondary';
-    }
-};
+import AdminViewAllUsersScreen from '../AdminScreens/AdminViewAllUsersScreen';
 
 const AdminCardsCharts = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -31,8 +20,6 @@ const AdminCardsCharts = () => {
     const [strandStats, setStrandStats] = useState([]);
     const [sectionDistribution, setSectionDistribution] = useState([]);
     const [users, setUsers] = useState([]);
-    const [entriesPerPage, setEntriesPerPage] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -95,13 +82,6 @@ const AdminCardsCharts = () => {
 
         fetchDashboardData();
     }, []);
-
-    // Filter users for the table
-    const filteredUsers = users.filter(user =>
-        user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     
     return ( 
         <>
@@ -195,74 +175,9 @@ const AdminCardsCharts = () => {
             </Card>
         </Col>
         </Row>
-        
-        {/* User Accounts Table */}
-        <Card>
-        <Card.Body>
-            <Card.Title>User Accounts</Card.Title>
-            
-            {/* Table Controls */}
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="d-flex align-items-center">
-                    <span>Show</span>
-                    <Form.Select 
-                        size="sm"
-                        className="mx-2"
-                        style={{ width: 'auto' }}
-                        value={entriesPerPage}
-                        onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-                    >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </Form.Select>
-                    <span>entries</span>
-                </div>
-                
-                <InputGroup style={{ width: '200px' }}>
-                    <InputGroup.Text>
-                        <FaSearch />
-                    </InputGroup.Text>
-                    <Form.Control
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </InputGroup>
-            </div>
-        
-            <Table responsive hover className='custom-table text-center align-middle'>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Date Created</th>
-                        <th>Role</th>
-                    </tr>
-                </thead>
-             {/* Update the table data */}
-             <tbody>
-                {filteredUsers
-                    .slice(0, entriesPerPage)
-                    .map(user => (
-                        <tr key={user._id}>
-                            <td>{user.username}</td>
-                            <td>{user.createdAt}</td>
-                            <td className='text-capitalize'><span className={`status-badge bg-${getRoleBadgeColor(user.role)}`}>
-                                                        {user.role}
-                                                    </span></td>
-                        </tr>
-                    ))}
-            </tbody>
-            </Table>
-        
-            {/* Showing entries info */}
-            <div className="text-muted">
-                Showing {Math.min(entriesPerPage, filteredUsers.length)} of {filteredUsers.length} entries
-            </div>
-        </Card.Body>
-        </Card>
         </Container>
+
+        <AdminViewAllUsersScreen />
         </main>
         </div>
         </>

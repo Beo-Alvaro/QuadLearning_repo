@@ -3,6 +3,7 @@ import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
+import { useAuth } from '../context/authContext';
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
@@ -11,70 +12,77 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  const { login } = useAuth();
+
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-
-      // Encrypt password before sending
       const encryptedPassword = CryptoJS.AES.encrypt(
         password,
         ENCRYPTION_KEY
-    ).toString();
+      ).toString();
 
-        const response = await fetch('/api/users/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
-        });
+      const response = await fetch('/api/users/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!response.ok) {
-            if (response.status === 423) {
-                // Handle account lockout
-                throw new Error(data.message || 'Account is locked. Please try again later.');
-            }
-            throw new Error(data.message || 'Invalid credentials');
+      if (!response.ok) {
+        if (response.status === 423) {
+          throw new Error(data.message || 'Account is locked. Please try again later.');
         }
+        throw new Error(data.message || 'Invalid credentials');
+      }
 
-        // Debugging: Log data to verify the response structure
-        console.log('Response data:', data);
+      // Store auth data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify(data.user));
+      
+      // Update auth context
+      await login(data.token, data.user);
 
-        // Save the token and user info to localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userInfo', JSON.stringify(data.user));
+      // Navigate based on role
+      const role = data.user.role;
+      setLoading(false);
+      
+      switch(role) {
+        case 'student':
+          navigate('/student/home', { replace: true });
+          break;
+        case 'teacher':
+          navigate('/teacher/home', { replace: true });
+          break;
+        case 'admin':
+          navigate('/admin/home', { replace: true });
+          break;
+        default:
+          navigate('/', { replace: true });
+      }
 
-        setLoading(false);
-        // Navigate to dashboard based on role
-        if (data.user.role === 'student') {
-            navigate('./StudentScreens/StudentHomeScreen');
-        } else if (data.user.role === 'teacher') {
-            navigate('./TeacherScreens/TeacherHomeScreen');
-        } else if (data.user.role === 'admin') {
-            navigate('./AdminScreens/AdminHomeScreen');
-        }
     } catch (err) {
-        setLoading(false);
-        setError(err.message);
-        
-        // Add visual feedback for remaining attempts
-        if (err.message.includes('attempts remaining')) {
-            setError(
-                <div>
-                    <p>{err.message}</p>
-                    <small className="text-danger mb-5">
-                        Warning: Your account will be locked for 15 minutes after 5 failed attempts
-                    </small>
-                </div>
-            );
-        }
+      setLoading(false);
+      setError(err.message);
+      
+      if (err.message.includes('attempts remaining')) {
+        setError(
+          <div>
+            <p>{err.message}</p>
+            <small className="text-danger mb-5">
+              Warning: Your account will be locked for 15 minutes after 5 failed attempts
+            </small>
+          </div>
+        );
+      }
     }
-};
+  };
 
   return (
     <div 

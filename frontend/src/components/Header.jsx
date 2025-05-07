@@ -3,58 +3,39 @@ import { LinkContainer } from 'react-router-bootstrap';
 import { FaSignInAlt, FaSignOutAlt } from 'react-icons/fa';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/authContext'; // Assuming you have an auth context
 const Header = () => {
   const [loading, setLoading] = useState(false); // Define loading state
   const [error, setError] = useState('');
   const [userName, setUserName] = useState(''); // State for username
   const navigate = useNavigate(); // Define navigate
-
+  const { logout } = useAuth(); // Assuming you have a logout function in your auth context
 
   useEffect(() => {
-    // Retrieve user info from localStorage when the component mounts
     const userInfo = localStorage.getItem('userInfo');
     if (userInfo) {
       const user = JSON.parse(userInfo);
-      setUserName(user.username); // Assuming the user object has a 'username' field
+      setUserName(user.username);
     }
-  }, []); // Empty dependency array to run only once on mount
+  }, []);
 
 
   const handleLogOut = async (e) => {
-    e.preventDefault(); // Prevent the default behavior of the event
-    setLoading(true);   // Set loading state to true
-    setError('');       // Clear any previous errors
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
-        const response = await fetch('/api/users/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include', // Include cookies in the request if they're used for authentication
-        });
-
-        if (!response.ok) {
-            throw new Error('Logout failed');
-        }
-
-        // Clear token and user info from local storage
-        localStorage.removeItem('token'); // Clear token if stored locally
-        localStorage.removeItem('userInfo'); // Remove additional user data if stored
-
-        // Redirect to the login page
-        navigate('/login');
-        console.log('Logout successful');
+      await logout();
+      setUserName('');
+      navigate('/');
     } catch (err) {
-        setError(err.message); // Display error message in the UI
-        console.error('Error during logout:', err.message); // Log the error for debugging
+      setError(err.message);
+      console.error('Error during logout:', err.message);
     } finally {
-        setLoading(false); // Reset the loading state
+      setLoading(false);
     }
-};
-
-
-
+  };
 
   return (
     <header>

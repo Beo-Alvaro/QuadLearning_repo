@@ -1,11 +1,9 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Container, Card, Table, Alert, Spinner, Nav, Row, Col, Badge, ProgressBar, Accordion } from "react-bootstrap"
 import { BookOpen, Calendar, Award, BarChart2 } from "lucide-react"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import "./student-view.css"
-
+import LoadingSpinner from "../components/LoadingSpinner"
 const StudentViewGrades = () => {
   const [grades, setGrades] = useState([])
   const [error, setError] = useState(null)
@@ -113,14 +111,9 @@ const StudentViewGrades = () => {
     return (
       <>
         <StudentDashboardNavbar />
-        <Container className="d-flex justify-content-center align-items-center mt-5">
-          <div className="text-center">
-            <Spinner animation="border" variant="primary" className="mb-3" />
-            <p className="text-muted">Loading your academic records...</p>
-          </div>
-        </Container>
+        <LoadingSpinner />
       </>
-    )
+    );
   }
 
   if (error) {

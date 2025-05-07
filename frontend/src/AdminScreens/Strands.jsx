@@ -26,6 +26,14 @@ const AdminCreateStrand = () => {
     const [editModalShow, setEditModalShow] = useState(false);
     const STRAND_NAME_MAX_LENGTH = 50;
     const STRAND_DESC_MAX_LENGTH = 200;
+
+    const checkDuplicateStrand = (strandName, currentId = null) => {
+        return studStrands.some(strand => 
+            strand.name.toLowerCase() === strandName.toLowerCase() && 
+            strand._id !== currentId
+        );
+    };
+
     const handleReset = () => {
         setName('');
         setDescription('');
@@ -63,26 +71,41 @@ const AdminCreateStrand = () => {
 
     const handleSaveChanges = () => {
         const updatedStrand = { name, description };
+        
         if (!updatedStrand.name || !updatedStrand.description) {
             toast.error('Please fill in all fields.');
             return;
         }
+    
+        // Check for duplicate strand name, excluding the current strand
+        if (checkDuplicateStrand(updatedStrand.name, selectedStrandId)) {
+            toast.error('A strand with this name already exists.');
+            return;
+        }
+    
         updateStrand(selectedStrandId, updatedStrand);
         handleCloseModal();
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+const handleSubmit = (e) => {
+    e.preventDefault();
 
-        if(!newStrand.name || !newStrand.description) {
-            toast.error('Please fill in all fields.');
-            return;
-        }
+    const newStrand = { name, description };
 
-        const newStrand = { name, description };
-        addStrand(newStrand);
-        handleReset();
-    };
+    if (!newStrand.name || !newStrand.description) {
+        toast.error('Please fill in all fields.');
+        return;
+    }
+
+    // Check for duplicate strand name
+    if (checkDuplicateStrand(newStrand.name)) {
+        toast.error('A strand with this name already exists.');
+        return;
+    }
+
+    addStrand(newStrand);
+    handleReset();
+};
 
     useEffect(() => {
         fetchStrands();
@@ -101,8 +124,6 @@ const AdminCreateStrand = () => {
                                 <h4 className="mb-0">Create New Strand</h4>
                             </Card.Header>
                             <Card.Body>
-                                {error && <div className="alert alert-danger">{error}</div>}
-
                                 <Form onSubmit={handleSubmit}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Strand Name

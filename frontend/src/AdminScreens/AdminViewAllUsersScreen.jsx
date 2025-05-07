@@ -4,13 +4,11 @@ import '../AdminComponents/AdminSidebar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { useState , useEffect } from 'react';
-import AdminSidebar from "../AdminComponents/AdminSidebar";
 import '../AdminComponents/AdminTableList.css';
 import Button from 'react-bootstrap/Button';
-import Header from '../components/Header';
 import AdminResetPasswordModal from '../AdminComponents/AdminResetPasswordModal';
 import { useUsersDataContext } from '../hooks/useUsersDataContext';
-import {toast, ToastContainer} from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 
 const AdminViewAllUsersScreen = () => {
     const { users, handleResetPassword, fetchUsers  } = useUsersDataContext();
@@ -27,7 +25,31 @@ const AdminViewAllUsersScreen = () => {
         role: ''
     });
 
-    
+    // Add these after your existing state declarations
+const [sortField, setSortField] = useState('username');
+const [sortDirection, setSortDirection] = useState('asc');
+const [roleFilter, setRoleFilter] = useState('all');
+
+// Add this sorting function
+const getSortedAccounts = (accounts) => {
+    return [...accounts].sort((a, b) => {
+        let aValue = a[sortField];
+        let bValue = b[sortField];
+        
+        if (sortField === 'createdAt') {
+            aValue = new Date(aValue);
+            bValue = new Date(bValue);
+        } else {
+            aValue = aValue?.toLowerCase() || '';
+            bValue = bValue?.toLowerCase() || '';
+        }
+        
+        if (sortDirection === 'asc') {
+            return aValue > bValue ? 1 : -1;
+        }
+        return aValue < bValue ? 1 : -1;
+    });
+};
 
     // Add this helper function
 const getRoleBadgeColor = (role) => {
@@ -59,11 +81,18 @@ const getRoleBadgeColor = (role) => {
     };
 
 
-    const filteredAccounts = users?.filter(user => 
+// Replace your existing filteredAccounts const with this
+const filteredAccounts = users
+    ?.filter(user => 
+        roleFilter === 'all' ? true : user.role.toLowerCase() === roleFilter
+    )
+    ?.filter(user => 
         user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user?.role?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
+
+const sortedAndFilteredAccounts = getSortedAccounts(filteredAccounts);
 
     const totalPages = Math.ceil(filteredAccounts.length / entriesPerPage);
 
@@ -74,11 +103,8 @@ const getRoleBadgeColor = (role) => {
     
     return ( 
         <>
-        <Header/>
         <ToastContainer/>
-        <AdminSidebar/>
-        <div className='d-flex'>
-            <main className="main-content flex-grow-1">
+
                 <Container fluid>
                     <Card className="table-container">
                         <Card.Body>
@@ -102,6 +128,19 @@ const getRoleBadgeColor = (role) => {
                                     <span>entries</span>
                                 </div>
 
+                                <Form.Select
+    size="md"
+    className="mx-2"
+    style={{ width: "200px" , height: "38px" }}
+    value={roleFilter}
+    onChange={(e) => setRoleFilter(e.target.value)}
+>
+    <option value="all">All Roles</option>
+    <option value="student">Students</option>
+    <option value="teacher">Teachers</option>
+    <option value="admin">Admins</option>
+</Form.Select>
+
                                         <InputGroup style={{ width: "700px" }}>
                                             <InputGroup.Text>
                                                 <FaSearch />
@@ -116,16 +155,37 @@ const getRoleBadgeColor = (role) => {
                             </div>
                         
                             <Table responsive hover className='custom-table text-center align-middle'>
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Date Created</th>
-                                        <th>Role</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
+                            <thead>
+    <tr>
+        <th onClick={() => {
+            setSortDirection(sortField === 'username' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('username');
+        }} style={{ cursor: 'pointer' }}>
+            Name {sortField === 'username' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'createdAt' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('createdAt');
+        }} style={{ cursor: 'pointer' }}>
+            Date Created {sortField === 'createdAt' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'role' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('role');
+        }} style={{ cursor: 'pointer' }}>
+            Role {sortField === 'role' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th>Actions</th>
+    </tr>
+</thead>
                                 <tbody>
-                                    {filteredAccounts
+                                    {sortedAndFilteredAccounts
                                         .slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage)
                                         .map(user => (
                                             <tr key={user._id}>
@@ -145,7 +205,7 @@ const getRoleBadgeColor = (role) => {
                                                             onClick={() => handleShow(user._id)}
                                                         >
                                                             <i className="bi bi-pencil-square me-1"></i>
-                                                            Edit
+                                                            Reset Password
                                                         </Button>
                                                     </div>
                                                 </td>
@@ -178,8 +238,6 @@ const getRoleBadgeColor = (role) => {
                         </Card.Body>
                     </Card>
                 </Container>
-            </main>
-        </div>
 
         <AdminResetPasswordModal 
       show={show} 

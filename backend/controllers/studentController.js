@@ -46,7 +46,7 @@ const viewStudentProfile = asyncHandler(async (req, res) => {
             data: {
                 firstName: student.firstName || '',
                 lastName: student.lastName || '',
-                middleInitial: student.middleInitial || '',
+                middleName: student.middleName || '',
                 suffix: student.suffix || '',
                 gender: student.gender || '',
                 birthdate: student.birthdate || '',
@@ -199,7 +199,7 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
         const {
             firstName,
             lastName,
-            middleInitial,
+            middleName,
             suffix,
             gender,
             birthdate,
@@ -212,7 +212,7 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
         // Update basic information
         if (firstName) student.firstName = firstName;
         if (lastName) student.lastName = lastName;
-        if (middleInitial) student.middleInitial = middleInitial;
+        if (middleName) student.middleName = middleName;
         if (suffix) student.suffix = suffix;
         if (gender) student.gender = gender;
         if (birthdate) student.birthdate = birthdate;
@@ -236,7 +236,7 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
             student: {
                 firstName: updatedStudent.firstName,
                 lastName: updatedStudent.lastName,
-                middleInitial: updatedStudent.middleInitial,
+                middleName: updatedStudent.middleName,
                 suffix: updatedStudent.suffix,
                 gender: updatedStudent.gender,
                 birthdate: updatedStudent.birthdate,

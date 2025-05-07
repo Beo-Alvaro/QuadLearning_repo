@@ -67,12 +67,12 @@ const TeacherGenerateForm = () => {
                     </small>
                 </div>
             </div>
-            <InputGroup style={{ width: "250px" }}>
+            <InputGroup style={{ width: "500px" }}>
                 <InputGroup.Text className="bg-light border-1">
                     <FaSearch className="text-muted"  />
                 </InputGroup.Text>
                 <Form.Control 
-                    placeholder="Search students..."
+                    placeholder="Search a student (e.g., 0123141)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="border-1 bg-light"
@@ -95,7 +95,7 @@ const TeacherGenerateForm = () => {
 
                 {loading ? (
                     <div className="text-center my-4">
-                        <div className="spinner-border text-primary" role="status">
+                        <div className="spinner-border text-dark" role="status">
                             <span className="visually-hidden">Loading...</span>
                         </div>
                         <p className="mt-2">Loading sections and students...</p>

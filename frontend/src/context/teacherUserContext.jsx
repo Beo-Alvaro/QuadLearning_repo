@@ -186,7 +186,7 @@ const handleSelectStudent = async (studentId) => {
             username: data.data.username,
             firstName: data.data.firstName,
             lastName: data.data.lastName,
-            middleInitial: data.data.middleInitial,
+            middleName: data.data.middleName,
             section: data.data.section,
             yearLevel: data.data.yearLevel,
             strand: data.data.strand,

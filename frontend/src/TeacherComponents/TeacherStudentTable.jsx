@@ -1,6 +1,48 @@
 import { Card, Table, Alert, Button, Badge } from 'react-bootstrap';
-
+import React, { useState } from 'react';
 const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStudent }) => {
+    const [sortField, setSortField] = useState('username');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedStudents = (students) => {
+        return [...students].sort((a, b) => {
+            let aValue = '';
+            let bValue = '';
+
+            switch(sortField) {
+                case 'username':
+                    aValue = a.username?.toLowerCase() || '';
+                    bValue = b.username?.toLowerCase() || '';
+                    break;
+                case 'section':
+                    aValue = a.sectionName?.toLowerCase() || '';
+                    bValue = b.sectionName?.toLowerCase() || '';
+                    break;
+                case 'strand':
+                    aValue = a.strandName?.toLowerCase() || '';
+                    bValue = b.strandName?.toLowerCase() || '';
+                    break;
+                case 'yearLevel':
+                    aValue = a.yearLevelName?.toLowerCase() || '';
+                    bValue = b.yearLevelName?.toLowerCase() || '';
+                    break;
+                case 'advisory':
+                    return sortDirection === 'asc' 
+                        ? (a.isAdvisory === b.isAdvisory ? 0 : a.isAdvisory ? -1 : 1)
+                        : (a.isAdvisory === b.isAdvisory ? 0 : a.isAdvisory ? 1 : -1);
+                default:
+                    aValue = a[sortField]?.toLowerCase() || '';
+                    bValue = b[sortField]?.toLowerCase() || '';
+            }
+
+            return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        });
+    };
+
+    const sortedStudents = getSortedStudents(filteredStudents);
+
     return ( 
         <div>
              {/* Students Table Section */}
@@ -15,18 +57,75 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
                     </Alert>
                 ) : (
                     <Table responsive hover className='custom-table text-center align-middle'>
-                        <thead className="bg-light">
-                            <tr>
-                                <th className="px-4 py-3">Student Name</th>
-                                <th className="px-4 py-3">Section</th>
-                                <th className="px-4 py-3">Strand</th>
-                                <th className="px-4 py-3">Year Level</th>
-                                {!showAdvisoryOnly && <th className="px-4 py-3">Advisory Student</th>}
-                                <th className="px-4 py-3 text-center">Actions</th>
-                            </tr>
-                        </thead>
+                       <thead className="bg-light">
+                                <tr>
+                                    <th 
+                                        className="px-4 py-3" 
+                                        onClick={() => {
+                                            setSortDirection(sortField === 'username' && sortDirection === 'asc' ? 'desc' : 'asc');
+                                            setSortField('username');
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Student Name {sortField === 'username' && (
+                                            <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                                        )}
+                                    </th>
+                                    <th 
+                                        className="px-4 py-3"
+                                        onClick={() => {
+                                            setSortDirection(sortField === 'section' && sortDirection === 'asc' ? 'desc' : 'asc');
+                                            setSortField('section');
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Section {sortField === 'section' && (
+                                            <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                                        )}
+                                    </th>
+                                    <th 
+                                        className="px-4 py-3"
+                                        onClick={() => {
+                                            setSortDirection(sortField === 'strand' && sortDirection === 'asc' ? 'desc' : 'asc');
+                                            setSortField('strand');
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Strand {sortField === 'strand' && (
+                                            <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                                        )}
+                                    </th>
+                                    <th 
+                                        className="px-4 py-3"
+                                        onClick={() => {
+                                            setSortDirection(sortField === 'yearLevel' && sortDirection === 'asc' ? 'desc' : 'asc');
+                                            setSortField('yearLevel');
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Year Level {sortField === 'yearLevel' && (
+                                            <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                                        )}
+                                    </th>
+                                    {!showAdvisoryOnly && (
+                                        <th 
+                                            className="px-4 py-3"
+                                            onClick={() => {
+                                                setSortDirection(sortField === 'advisory' && sortDirection === 'asc' ? 'desc' : 'asc');
+                                                setSortField('advisory');
+                                            }}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            Advisory Student {sortField === 'advisory' && (
+                                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                                            )}
+                                        </th>
+                                    )}
+                                    <th className="px-4 py-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
                         <tbody>
-                            {filteredStudents.map((student) => (
+                            {sortedStudents.map((student) => (
                                 <tr key={student._id}>
                                     <td className="px-4 py-3 fw-medium">{student.username}</td>
                                     <td className="px-4 py-3">{student.sectionName}</td>

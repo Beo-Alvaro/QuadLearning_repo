@@ -182,6 +182,11 @@ const handleAddUser = async (e) => {
         const data = await response.json();
 
         if (!response.ok) {
+            // Important: Move this before any other operations
+            if (response.status === 400 && data.message.includes('Username already exists')) {
+                toast.error('This username is already taken!');
+                return;
+            }
             throw new Error(data.message || 'Failed to create teacher account');
         }
 
@@ -200,7 +205,8 @@ const handleAddUser = async (e) => {
 
     } catch (error) {
         console.error('Error creating teacher:', error);
-        setError(error.message || 'Failed to create teacher account');
+        toast.error(error.message || 'Failed to create teacher account');
+        
     }
 };
 

@@ -353,7 +353,7 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
             <h4 className="section-title">Quick Actions</h4>
             <Row>
               <Col md={3}>
-                <Link to="/login/TeacherScreens/TeacherEncodeGrade" className="text-decoration-none">
+                <Link to="/teacher/encodegrades" className="text-decoration-none">
                   <Card className="action-card">
                     <Card.Body>
                       <div className="action-icon">
@@ -366,7 +366,7 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
                 </Link>
               </Col>
               <Col md={3}>
-                <Link to="/login/TeacherScreens/TeacherGenerateForm" className="text-decoration-none">
+                <Link to="/teacher/generateform" className="text-decoration-none">
                   <Card className="action-card">
                     <Card.Body>
                       <div className="action-icon">
@@ -379,20 +379,20 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
                 </Link>
               </Col>
               <Col md={3}>
-                <Link to="/login/TeacherScreens/TeacherViewStudents" className="text-decoration-none">
+                <Link to="/teacher/viewstudents" className="text-decoration-none">
                   <Card className="action-card">
                     <Card.Body>
                       <div className="action-icon">
                         <Users size={24} />
                       </div>
-                      <h5>View Sections</h5>
+                      <h5>View Students</h5>
                       <p className="action-description">Browse student sections and details</p>
                     </Card.Body>
                   </Card>
                 </Link>
               </Col>
               <Col md={3}>
-                <Link to="/login/TeacherScreens/TeacherAttendance" className="text-decoration-none">
+                <Link to="/teacher/attendance" className="text-decoration-none">
                   <Card className="action-card">
                     <Card.Body>
                       <div className="action-icon">
@@ -463,7 +463,7 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
                                 <Card.Body>
                                     {isLoadingAttendance ? (
                                         <div className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status">
+                                            <div className="spinner-border text-dark" role="status">
                                                 <span className="visually-hidden">Loading...</span>
                                             </div>
                                             <p className="mt-2">Loading attendance data...</p>
@@ -570,7 +570,7 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
   <Card.Body>
     {isLoadingSubjects ? (
       <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
+        <div className="spinner-border text-dark" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
         <p className="mt-2">Loading subject performance data...</p>

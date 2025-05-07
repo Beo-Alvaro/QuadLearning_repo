@@ -4,12 +4,12 @@ import { Container, Card, Row, Col, Spinner } from "react-bootstrap"
 import { User, BarChart2, MessageCircle } from "lucide-react"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import "./StudentHomeScreen.css"
-
+import LoadingSpinner from "../components/LoadingSpinner"
 const StudentHomeScreen = () => {
   const [studentData, setStudentData] = useState({
     firstName: "",
     lastName: "",
-    middleInitial: "",
+    middleName: "",
     gender: "",
     birthdate: "",
     contactNumber: "",
@@ -73,15 +73,18 @@ const StudentHomeScreen = () => {
     fetchStudentProfile();
 }, []);
 
-  if (loading) {
-    return (
-      <div className="loading-spinner">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      </div>
-    )
-  }
+const getMiddleInitial = (middleName) => {
+  return middleName ? `${middleName.charAt(0)}.` : '';
+};
+
+if (loading) {
+  return (
+    <>
+      <StudentDashboardNavbar />
+      <LoadingSpinner />
+    </>
+  );
+}
 
   if (error) {
     return <div className="error-message">Error: {error}</div>
@@ -95,9 +98,9 @@ const StudentHomeScreen = () => {
           <Col lg={8}>
             <Card className="welcome-card mb-4">
               <Card.Body>
-                <Card.Title as="h2">
-                  Welcome, {studentData.firstName} {studentData.lastName}!
-                </Card.Title>
+              <Card.Title as="h2">
+  Welcome, {studentData.firstName} {getMiddleInitial(studentData.middleName)} {studentData.lastName}!
+</Card.Title>
                 <Card.Text>
                   You are currently enrolled in {studentData.yearLevel} {studentData.strand}. Stay focused, keep
                   learning, and make the most of your academic journey.
@@ -131,7 +134,7 @@ const StudentHomeScreen = () => {
             <Card className="quick-actions-card">
               <Card.Header as="h4">Quick Actions</Card.Header>
               <Card.Body>
-                <Link to="/login/StudentScreens/StudentProfile" className="quick-action-link">
+                <Link to="/student/profile" className="quick-action-link">
                   <div className="quick-action-item profile">
                     <User size={40} />
                     <div>
@@ -140,7 +143,7 @@ const StudentHomeScreen = () => {
                     </div>
                   </div>
                 </Link>
-                <Link to="/login/StudentScreens/StudentViewGrades" className="quick-action-link">
+                <Link to="/student/grades" className="quick-action-link">
                   <div className="quick-action-item grades">
                     <BarChart2 size={40} />
                     <div>
@@ -149,7 +152,7 @@ const StudentHomeScreen = () => {
                     </div>
                   </div>
                 </Link>
-                <Link to="/login/StudentScreens/StudentMessages" className="quick-action-link">
+                <Link to="/student/messages" className="quick-action-link">
                   <div className="quick-action-item messages">
                     <MessageCircle size={40} />
                     <div>

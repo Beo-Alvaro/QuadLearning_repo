@@ -73,7 +73,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
     const {
         firstName,
         lastName,
-        middleInitial,
+        middleName,
         suffix,
         gender,
         birthdate,
@@ -89,7 +89,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
 
     if (firstName) student.firstName = firstName;
     if (lastName) student.lastName = lastName;
-    if (middleInitial) student.middleInitial = middleInitial;
+    if (middleName) student.middleName = middleName;
     if (suffix) student.suffix = suffix;
     if (gender) student.gender = gender;
     if (birthdate) student.birthdate = birthdate;
@@ -120,7 +120,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
         student: {
             firstName: updatedStudent.firstName,
             lastName: updatedStudent.lastName,
-            middleInitial: updatedStudent.middleInitial,
+            middleName: updatedStudent.middleName,
             suffix: updatedStudent.suffix,
             gender: updatedStudent.gender,
             birthdate: updatedStudent.birthdate,
@@ -206,7 +206,7 @@ const importStudents = asyncHandler(async (req, res) => {
         const [
             firstName,
             lastName,
-            middleInitial,
+            middleName,
             gender,
             birthdate,
             province,
@@ -233,7 +233,7 @@ const importStudents = asyncHandler(async (req, res) => {
         students.push({
             firstName,
             lastName,
-            middleInitial,
+            middleName,
             gender,
             birthdate: new Date(birthdate),
             birthplace: { province, municipality, barrio },
@@ -1006,7 +1006,7 @@ const getStudentData = asyncHandler(async (req, res) => {
           username: student.user.username,
           firstName: student.firstName,
           lastName: student.lastName,
-          middleInitial: student.middleInitial,
+          middleName: student.middleName,
           suffix: student.suffix,
           gender: student.gender,
           birthdate: student.birthdate,
@@ -1480,7 +1480,7 @@ const getSectionStudents = asyncHandler(async (req, res) => {
 
     // Get all students in this section — convert section to ObjectId
     const students = await Student.find({ section: new mongoose.Types.ObjectId(section) })
-      .select('firstName lastName middleInitial _id')
+      .select('firstName lastName middleName _id')
       .sort({ lastName: 1, firstName: 1 });
       console.log(students);
 

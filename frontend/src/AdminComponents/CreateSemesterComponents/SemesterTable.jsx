@@ -9,6 +9,47 @@ const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
   const [endShow, setEndShow] = useState(false);
   const [selectedSemesterId, setSelectedSemesterId] = useState(null);
   const SEARCH_MAX_LENGTH = 30;
+
+  const [sortField, setSortField] = useState('strand'); // Change to 'strand' or any other valid column
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const getSortedSemesters = (semesters) => {
+    return [...semesters].sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+  
+      switch(sortField) {
+        case 'strand':
+          aValue = a.strand?.name?.toLowerCase() || '';
+          bValue = b.strand?.name?.toLowerCase() || '';
+          break;
+        case 'term':
+          aValue = `${a.name} - ${a.strand?.name}`.toLowerCase();
+          bValue = `${b.name} - ${b.strand?.name}`.toLowerCase();
+          break;
+        case 'yearLevel':
+          aValue = a.yearLevel?.name?.toLowerCase() || '';
+          bValue = b.yearLevel?.name?.toLowerCase() || '';
+          break;
+        case 'startDate':
+          return sortDirection === 'asc' 
+            ? new Date(a.startDate) - new Date(b.startDate)
+            : new Date(b.startDate) - new Date(a.startDate);
+        case 'endDate':
+          return sortDirection === 'asc' 
+            ? new Date(a.endDate) - new Date(b.endDate)
+            : new Date(b.endDate) - new Date(a.endDate);
+        default:
+          aValue = a[sortField]?.toLowerCase() || '';
+          bValue = b[sortField]?.toLowerCase() || '';
+      }
+      
+      return sortDirection === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    });
+  };
+
   // Filtering and Pagination
   const filteredSemesters = semesters
   .filter((semester) => semester.status?.trim().toLowerCase() === "active")
@@ -24,7 +65,8 @@ const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
 
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-  const currentEntries = filteredSemesters.slice(indexOfFirstEntry, indexOfLastEntry);
+  const sortedAndFilteredSemesters = getSortedSemesters(filteredSemesters);
+  const currentEntries = sortedAndFilteredSemesters.slice(indexOfFirstEntry, indexOfLastEntry);
 
   const totalPages = Math.ceil(filteredSemesters.length / entriesPerPage);
 
@@ -83,16 +125,51 @@ const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
 
       {/* Table */}
       <Table responsive hover className="custom-table text-center align-middle">
-        <thead className="text-center">
-          <tr>
-            <th>Strand</th>
-            <th>Term</th>
-            <th>Year Level</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+      <thead className="text-center">
+  <tr>
+    <th onClick={() => {
+      setSortDirection(sortField === 'strand' && sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortField('strand');
+    }} style={{ cursor: 'pointer' }}>
+      Strand {sortField === 'strand' && (
+        <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+      )}
+    </th>
+    <th onClick={() => {
+      setSortDirection(sortField === 'term' && sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortField('term');
+    }} style={{ cursor: 'pointer' }}>
+      Term {sortField === 'term' && (
+        <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+      )}
+    </th>
+    <th onClick={() => {
+      setSortDirection(sortField === 'yearLevel' && sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortField('yearLevel');
+    }} style={{ cursor: 'pointer' }}>
+      Year Level {sortField === 'yearLevel' && (
+        <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+      )}
+    </th>
+    <th onClick={() => {
+      setSortDirection(sortField === 'startDate' && sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortField('startDate');
+    }} style={{ cursor: 'pointer' }}>
+      Start Date {sortField === 'startDate' && (
+        <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+      )}
+    </th>
+    <th onClick={() => {
+      setSortDirection(sortField === 'endDate' && sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortField('endDate');
+    }} style={{ cursor: 'pointer' }}>
+      End Date {sortField === 'endDate' && (
+        <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+      )}
+    </th>
+    <th>Actions</th>
+  </tr>
+</thead>
         <tbody className="text-center">
           {currentEntries.map((semester) => (
             <tr key={semester._id}>

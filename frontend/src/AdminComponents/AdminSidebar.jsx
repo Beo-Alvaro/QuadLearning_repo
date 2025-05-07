@@ -7,17 +7,21 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext'; 
+import UserManagementModal from './UserManagementModal';
 
 const AdminSidebar = () => {
     const [loading, setLoading] = useState(false); // Define loading state
     const [error, setError] = useState('');
     const navigate = useNavigate(); // Define navigate
     const { user } = useAuth();
+    const [showUserManagementModal, setShowUserManagementModal] = useState(false);
+    const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+    const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   
     const handleLogOut = async (e) => {
-        e.preventDefault(); // Prevent the default behavior of the event
-        setLoading(true);   // Set loading state to true
-        setError('');       // Clear any previous errors
+        e.preventDefault();
+        setLoading(true);
+        setError('');
     
         try {
             const response = await fetch('/api/users/logout', {
@@ -25,25 +29,24 @@ const AdminSidebar = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include', // Include cookies in the request if they're used for authentication
+                credentials: 'include',
             });
     
             if (!response.ok) {
                 throw new Error('Logout failed');
             }
     
-            // Clear token and user info from local storage
-            localStorage.removeItem('token'); // Clear token if stored locally
-            localStorage.removeItem('userInfo'); // Remove additional user data if stored
+            // Clear local storage
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
     
-            // Redirect to the login page
-            navigate('/login');
-            console.log('Logout successful');
+            // Redirect to login page and replace the current entry in the history stack
+            navigate('/', { replace: true });
         } catch (err) {
-            setError(err.message); // Display error message in the UI
-            console.error('Error during logout:', err.message); // Log the error for debugging
+            setError(err.message);
+            console.error('Error during logout:', err.message);
         } finally {
-            setLoading(false); // Reset the loading state
+            setLoading(false);
         }
     };
 
@@ -68,51 +71,30 @@ const AdminSidebar = () => {
             </div>
 
             <Nav className="flex-column flex-grow-1">
-                <LinkContainer to="/admin">
+            <LinkContainer to="/admin/home">
                     <Nav.Link className="sidebar-link">
                         <i className="bi bi-house-door icon"></i> Home
                     </Nav.Link>
                 </LinkContainer>
 
-<div className="sidebar-dropdown">
-    <div className="sidebar-link" onClick={() => toggleDropdown('users')}>
-        <i className="bi bi-people-fill"></i>
-        <span>Users Management</span>
-        <i className={`bi bi-chevron-${dropdowns.users ? 'up' : 'down'} ms-auto`}></i>
-    </div>
-    <div className={`sidebar-dropdown-content ${dropdowns.users ? 'show' : ''}`}>
-        <LinkContainer to="/admin/AdminViewAllUsersScreen">
-            <Nav.Link>
-                <i className="bi bi-person-lines-fill"></i>
-                View All Users
+                <Nav.Link 
+                className="sidebar-link" 
+                onClick={() => setShowUserManagementModal(true)}
+            >
+                <i className="bi bi-people-fill icon"></i>
+                Users Management
             </Nav.Link>
-        </LinkContainer>
-        <LinkContainer to="/admin/AdminCreateStudentAccount">
-            <Nav.Link>
-                <i className="bi bi-person-plus-fill"></i>
-                Add Student Account
-            </Nav.Link>
-        </LinkContainer>
-        <LinkContainer to="/admin/AdminPendingStudents">
-            <Nav.Link>
-                <i className="bi bi-person-badge-fill"></i>
-                Pending Students
-            </Nav.Link>
-        </LinkContainer>
-        <LinkContainer to="/admin/AdminCreateTeacherAccount">
-            <Nav.Link>
-                <i className="bi bi-person-badge-fill"></i>
-                Add Teacher Account
-            </Nav.Link>
-        </LinkContainer>
-        <LinkContainer to="/admin/AdminMessages">
-            <Nav.Link>
-                <i className="bi bi-person-badge-fill"></i>
-                Messages
-            </Nav.Link>
-        </LinkContainer>
-    </div>
-</div>
+
+            {/* Simplified UserManagementModal */}
+            <UserManagementModal 
+                show={showUserManagementModal}
+                handleClose={() => setShowUserManagementModal(false)}
+            />
+                <LinkContainer to="/admin/messages">
+                    <Nav.Link className="sidebar-link">
+                        <i className="bi bi-person-badge-fill"></i> <span className='ps-2'>Messages </span>
+                    </Nav.Link>
+                </LinkContainer>
 
                 {/* Academic Management Dropdown */}
                 <div className="sidebar-dropdown">
@@ -122,23 +104,30 @@ const AdminSidebar = () => {
                         <i className={`bi bi-chevron-${dropdowns.academic ? 'up' : 'down'} ms-auto`}></i>
                     </div>
                     <div className={`sidebar-dropdown-content ${dropdowns.academic ? 'show' : ''}`}>
-                        <LinkContainer to="/admin/strands">
-                        <Nav.Link as={Link} to="/admin/strands">
-                            Manage Strands
-                        </Nav.Link>
+                    <LinkContainer to="/admin/strands">
+                            <Nav.Link>Manage Strands</Nav.Link>
                         </LinkContainer>
-                        <LinkContainer to="/admin/ManageSections">
+                        <LinkContainer to="/admin/sections">
                             <Nav.Link>Manage Sections</Nav.Link>
                         </LinkContainer>
-                        <LinkContainer to="/admin/ManageSubjects">
+                        <LinkContainer to="/admin/subjects">
                             <Nav.Link>Manage Subjects</Nav.Link>
                         </LinkContainer>
-                        <LinkContainer to="/admin/ManageSemesters">
+                        <LinkContainer to="/admin/semesters">
                             <Nav.Link>Manage Semesters</Nav.Link>
+                        </LinkContainer>
+                        <LinkContainer to="/admin/pendingstudents">
+                            <Nav.Link>Pending Students</Nav.Link>
                         </LinkContainer>
                     </div>
                 </div>
 
+                <UserManagementModal 
+                show={showUserManagementModal}
+                handleClose={() => setShowUserManagementModal(false)}
+                setShowAddStudentModal={setShowAddStudentModal}
+                setShowAddTeacherModal={setShowAddTeacherModal}
+            />
                      {/* Logout Link */}
                      <div className="sidebar-footer">
                     <div className="logout-link">

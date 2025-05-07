@@ -9,21 +9,17 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [adminId, setAdminId] = useState(null);
-    
-    let storedToken;
 
     useEffect(() => {
+        // Check for stored credentials on mount
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('userInfo');
 
-        if (storedToken) {
+        if (storedToken && storedUser) {
             setToken(storedToken);
-        }
-        if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
-        console.log(storedToken)
-    }, [storedToken]);
+    }, []);
 
     useEffect(() => {
         const getAdmin = async () => {
@@ -39,50 +35,100 @@ export const AuthProvider = ({ children }) => {
         getAdmin();
     }, [token, user, adminId]);
 
-    const login = async (username, password) => {
+    const login = async (newToken, userData) => {
         try {
-            setLoading(true);
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            });
+            setToken(newToken);
+            setUser(userData);
+            localStorage.setItem('token', newToken);
+            localStorage.setItem('userInfo', JSON.stringify(userData));
 
-            if (response.ok) {
-                const data = await response.json();
-                setToken(data.token);
-                setUser(data.user);
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-            
-                // Fetch adminId right after login
-                if (data.user.role === 'student') {
-                    const id = await fetchAdminId();
-                    if (id) setAdminId(id);
-                }
-            }else {
-                const errorData = await response.json();
-                setError(errorData.message || 'Login failed');
+            if (userData.role === 'student') {
+                const id = await fetchAdminId();
+                if (id) setAdminId(id);
             }
         } catch (err) {
-            setError('An error occurred while logging in');
-        } finally {
-            setLoading(false);
+            console.error('Login error:', err);
+            setError('An error occurred during login');
         }
     };
 
-    const logout = () => {
-        setUser(null);
-        setToken('');
-        setAdminId(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    const logout = async () => {
+        const currentToken = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/users/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentToken}`
+                }
+            });
+    
+            // Clear state and storage regardless of response
+            setUser(null);
+            setToken('');
+            setAdminId(null);
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+    
+            if (!response.ok) {
+                throw new Error('Logout failed');
+            }
+    
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Still clear everything even if the request fails
+            setUser(null);
+            setToken('');
+            setAdminId(null);
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+            window.location.href = '/';
+        }
     };
 
+    useEffect(() => {
+        const verifyToken = async () => {
+            const currentToken = localStorage.getItem('token');
+            if (!currentToken) return;
+    
+            try {
+                const response = await fetch('/api/users/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    await logout();
+                    return;
+                }
+    
+                const data = await response.json();
+                if (!data.valid) {
+                    await logout();
+                }
+            } catch (error) {
+                console.error('Token verification failed:', error);
+                await logout();
+            }
+        };
+    
+        verifyToken();
+    }, []);
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, error, login, logout, adminId }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            token, 
+            loading, 
+            error, 
+            login, 
+            logout, 
+            adminId,
+            isAuthenticated: !!token && !!user
+        }}>
             {children}
         </AuthContext.Provider>
     );

@@ -70,51 +70,45 @@ export const SemesterDataProvider = ({ children }) => {
 
     const handleSaveChanges = async (updatedSemester, selectedSemesterId) => {
         const token = localStorage.getItem('token');
-      
-        // Ensure the ID is a string
-        const id = typeof selectedSemesterId === 'object' ? selectedSemesterId._id : selectedSemesterId;
         
-        if (!id) {
-          console.error('Invalid Semester ID:', selectedSemesterId);
-          return;
-        }
-      
         try {
-      
-          const response = await fetch(`/api/admin/semesters/${id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(updatedSemester),
-          });
-      
-          let result;
-          try {
-            result = await response.json();
-          } catch (err) {
-            console.error('Failed to parse response:', err);
-            result = { message: 'Invalid JSON response.' };
-          }
-      
-          if (response.ok) {
+            const response = await fetch(`/api/admin/semesters/${selectedSemesterId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(updatedSemester),
+            });
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                return {
+                    success: false,
+                    error: data.message || 'Failed to update semester'
+                };
+            }
+    
+            // Update the local state only if the API call was successful
             setSemesters((prevSemesters) =>
-              prevSemesters.map((semester) =>
-                semester._id === id ? result : semester
-              )
+                prevSemesters.map((semester) =>
+                    semester._id === selectedSemesterId ? data : semester
+                )
             );
-          } else {
-            console.error('Error updating semester:', result.message || response.statusText);
-          }
+    
+            return {
+                success: true,
+                data: data
+            };
+    
         } catch (error) {
-          console.error('Failed to update semester:', error);
+            return {
+                success: false,
+                error: 'Failed to update semester'
+            };
         }
-      
-        fetchData();
-      };
-      
-      
+    };
 
     const handleSubmit = async (semesterData) => {
         const token = localStorage.getItem('token');

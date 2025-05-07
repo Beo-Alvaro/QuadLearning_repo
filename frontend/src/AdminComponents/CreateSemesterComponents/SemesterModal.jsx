@@ -54,7 +54,6 @@ const SemesterModal = ({
           <Modal.Title>Edit Semester</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {error && <div className="alert alert-danger">{error}</div>}
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Strand

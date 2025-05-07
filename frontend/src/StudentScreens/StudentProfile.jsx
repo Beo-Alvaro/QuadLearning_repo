@@ -3,6 +3,7 @@ import { Container, Card, Row, Col, Spinner, Alert, Nav, Tab, Badge, Form, Butto
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import "./Student.css"
 import { ToastContainer, toast } from 'react-toastify';
+import LoadingSpinner from '../components/LoadingSpinner';
 import {
   FaUser,
   FaGraduationCap,
@@ -31,7 +32,7 @@ const StudentProfile = () => {
   const [studentData, setStudentData] = useState({
     firstName: "",
     lastName: "",
-    middleInitial: "",
+    middleName: "",
     suffix: "",
     gender: "",
     birthdate: "",
@@ -109,10 +110,12 @@ const StudentProfile = () => {
     })
   }
 
-  const getFullName = () => {
-    const middle = studentData.middleInitial ? `${studentData.middleInitial} ` : ""
-    return `${studentData.firstName} ${middle}${studentData.lastName} ${studentData.suffix}`
-  }
+// Update the getFullName function
+const getFullName = () => {
+  const middle = studentData.middleName ? `${getMiddleInitial(studentData.middleName)} ` : '';
+  const suffix = studentData.suffix ? ` ${studentData.suffix}` : '';
+  return `${studentData.firstName} ${middle}${studentData.lastName}${suffix}`;
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -180,14 +183,9 @@ const StudentProfile = () => {
     return (
       <>
         <StudentDashboardNavbar />
-        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "70vh" }}>
-          <div className="text-center">
-            <Spinner animation="border" variant="success" className="mb-3" />
-            <h5 className="text-muted">Loading your profile...</h5>
-          </div>
-        </Container>
+        <LoadingSpinner />
       </>
-    )
+    );
   }
 
   if (error && !isEditing) {
@@ -205,6 +203,11 @@ const StudentProfile = () => {
       </>
     )
   }
+
+  const getMiddleInitial = (middleName) => {
+    return middleName ? `${middleName.charAt(0)}.` : '';
+  };
+  
 
   return (
     <>
@@ -414,20 +417,19 @@ const StudentProfile = () => {
                             <Col md={6}>
                               <div className="mb-3 position-relative">
                                 <label className="text-muted small mb-1 d-flex align-items-center">
-                                  <FaUser className="text-success me-1" size={12} /> Middle Initial
+                                  <FaUser className="text-success me-1" size={12} /> Middle Name
                                 </label>
                                 {isEditing ? (
                                   <Form.Control
                                     type="text"
-                                    name="middleInitial"
-                                    value={formData.middleInitial || ""}
+                                    name="middleName"
+                                    value={formData.middleName || ""}
                                     onChange={handleChange}
-                                    maxLength={1}
                                     className="border-success-subtle"
                                   />
                                 ) : (
                                   <p className="fw-medium mb-0 p-2 bg-light rounded">
-                                    {studentData.middleInitial || "N/A"}
+                                    {studentData.middleName || "N/A"}
                                   </p>
                                 )}
                               </div>

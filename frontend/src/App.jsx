@@ -1,6 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomeScreen from './screens/HomeScreen';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginScreen from './screens/LoginScreen';
 import AdminHomeScreen from './AdminScreens/AdminHomeScreen';
 import AdminViewAllUsersScreen from './AdminScreens/AdminViewAllUsersScreen';
@@ -21,34 +20,73 @@ import StudentMessages from './StudentScreens/StudentMessages';
 import AdminMessages from './AdminScreens/AdminMessages';
 import TeacherAttendance from './TeacherScreens/TeacherAttendance';
 import AdminPendingStudents from './AdminScreens/AdminPendingStudents';
+import PrivateRoute from './components/PrivateRoute';
+import UnauthorizedPage from './components/UnauthorizedPage';
+import NotFoundPage from './components/NotFoundPage';
+import RedirectIfAuthenticated from './components/RedirectIfAuthenticated';
 const App = () => {
   return (
     <Router>
-      <Routes>
-        <Route path='/' element={<HomeScreen />} />
-        <Route path='/login' element={<LoginScreen />} />
-        <Route path='/admin' element={<AdminHomeScreen />} />
-        <Route path='/admin/Strands' element={<Strands />} />
-        <Route path='/login/AdminScreens/AdminHomeScreen' element={<AdminHomeScreen />} />
-        <Route path='/admin/AdminViewAllUsersScreen' element={<AdminViewAllUsersScreen />} />
-        <Route path='/login/StudentScreens/StudentHomeScreen' element={<StudentHomeScreen />} />
-        <Route path='/login/TeacherScreens/TeacherHomeScreen' element={<TeacherHomeScreen />} />
-        <Route path='/admin/AdminCreateStudentAccount/' element={<AdminCreateStudentAccount />} />
-        <Route path='/admin/AdminCreateTeacherAccount' element={<AdminCreateTeacherAccount />} />
-        <Route path='/admin/AdminMessages' element={<AdminMessages />} />
-        <Route path='/admin/AdminPendingStudents' element={<AdminPendingStudents />} />
-        <Route path='/admin/ManageSubjects' element={<ManageSubjects />} />
-        <Route path='/admin/ManageSemesters' element={<ManageSemesters />} />
-        <Route path='/admin/ManageSections' element={<ManageSections />} />
-        <Route path='/login/TeacherScreens/TeacherViewStudents' element={<TeacherViewStudents />} />
-        <Route path='/login/TeacherScreens/TeacherEncodeGrade' element={<TeacherEncodeGrade />} />
-        <Route path='/login/TeacherScreens/TeacherGenerateForm' element={<TeacherGenerateForm />} />
-        <Route path='/login/TeacherScreens/TeacherAttendance' element={<TeacherAttendance />} />
-        <Route path='/login/StudentScreens/StudentProfile' element={<StudentProfile />} />
-        <Route path='/login/StudentScreens/StudentViewGrades' element={<StudentViewGrades />} />
-        <Route path='/login/StudentScreens/StudentMessages' element={<StudentMessages />} />
-      </Routes>
-    </Router>
+    <Routes>
+      {/* Public Route */}
+
+      <Route 
+          path='/' 
+          element={
+            <RedirectIfAuthenticated>
+              <LoginScreen />
+            </RedirectIfAuthenticated>
+          } 
+        />
+
+      <Route path='/unauthorized' element={<UnauthorizedPage />} />
+      {/* Admin Routes */}
+      <Route path='/admin/*' element={
+        <PrivateRoute allowedRoles={['admin']}>
+          <Routes>
+            <Route path='home' element={<AdminHomeScreen />} />
+            <Route path='strands' element={<Strands />} />
+            <Route path='viewallusers' element={<AdminViewAllUsersScreen />} />
+            <Route path='createstudent' element={<AdminCreateStudentAccount />} />
+            <Route path='createteacher' element={<AdminCreateTeacherAccount />} />
+            <Route path='messages' element={<AdminMessages />} />
+            <Route path='pendingstudents' element={<AdminPendingStudents />} />
+            <Route path='subjects' element={<ManageSubjects />} />
+            <Route path='semesters' element={<ManageSemesters />} />
+            <Route path='sections' element={<ManageSections />} />
+          </Routes>
+        </PrivateRoute>
+      }/>
+
+      {/* Teacher Routes */}
+      <Route path='/teacher/*' element={
+        <PrivateRoute allowedRoles={['teacher']}>
+          <Routes>
+            <Route path='home' element={<TeacherHomeScreen />} />
+            <Route path='viewstudents' element={<TeacherViewStudents />} />
+            <Route path='encodegrades' element={<TeacherEncodeGrade />} />
+            <Route path='generateform' element={<TeacherGenerateForm />} />
+            <Route path='attendance' element={<TeacherAttendance />} />
+          </Routes>
+        </PrivateRoute>
+      }/>
+
+      {/* Student Routes */}
+      <Route path='/student/*' element={
+        <PrivateRoute allowedRoles={['student']}>
+          <Routes>
+            <Route path='home' element={<StudentHomeScreen />} />
+            <Route path='profile' element={<StudentProfile />} />
+            <Route path='grades' element={<StudentViewGrades />} />
+            <Route path='messages' element={<StudentMessages />} />
+          </Routes>
+        </PrivateRoute>
+      }/>
+
+      {/* Catch all - replace with 404 component */}
+      <Route path='*' element={<NotFoundPage />} />
+    </Routes>
+  </Router>
   );
 };
 

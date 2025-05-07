@@ -1,16 +1,14 @@
-import { Navbar, Nav, Button, Container, Modal } from 'react-bootstrap';
+import { Navbar, Nav, Container } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useState, useEffect } from 'react';
-import { Table, Form } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/authContext';
 function StudentDashboardNavbar() {
-
-
   const [loading, setLoading] = useState(false); // Define loading state
   const [error, setError] = useState('');
   const [userName, setUserName] = useState(''); // State for username
   const navigate = useNavigate(); // Define navigate
-
+  const { logout, user } = useAuth();
 
   useEffect(() => {
     // Retrieve user info from localStorage when the component mounts
@@ -21,39 +19,21 @@ function StudentDashboardNavbar() {
     }
   }, []); // Empty dependency array to run only once on mount
 
-
   const handleLogOut = async (e) => {
-    e.preventDefault(); // Prevent the default behavior of the event
-    setLoading(true);   // Set loading state to true
-    setError('');       // Clear any previous errors
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
-        const response = await fetch('/api/users/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include', // Include cookies in the request if they're used for authentication
-        });
-
-        if (!response.ok) {
-            throw new Error('Logout failed');
-        }
-
-        // Clear token and user info from local storage
-        localStorage.removeItem('token'); // Clear token if stored locally
-        localStorage.removeItem('userInfo'); // Remove additional user data if stored
-
-        // Redirect to the login page
-        navigate('/login');
-        console.log('Logout successful');
+      await logout(); // Use the logout function from auth context
+      navigate('/', { replace: true });
     } catch (err) {
-        setError(err.message); // Display error message in the UI
-        console.error('Error during logout:', err.message); // Log the error for debugging
+      setError(err.message);
+      console.error('Error during logout:', err.message);
     } finally {
-        setLoading(false); // Reset the loading state
+      setLoading(false);
     }
-};
+  };
 
   return (
     <>
@@ -71,20 +51,20 @@ function StudentDashboardNavbar() {
     <Navbar.Brand className="text-white me-4">TVNHS</Navbar.Brand>
     <Navbar.Toggle aria-controls="basic-navbar-nav" />
     <Navbar.Collapse id="basic-navbar-nav">
-      <Nav className="mx-auto">
-              <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentHomeScreen">Home</Nav.Link>
-              <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentProfile">Profile</Nav.Link>
-              <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentViewGrades">Grades</Nav.Link>
-              <Nav.Link className="mx-3 text-white" href="/login/StudentScreens/StudentMessages">Contact Admin</Nav.Link>
-            </Nav>
+    <Nav className="mx-auto">
+      <Nav.Link as={Link} className="mx-3 text-white" to="/student/home">Home</Nav.Link>
+      <Nav.Link as={Link} className="mx-3 text-white" to="/student/profile">Profile</Nav.Link>
+      <Nav.Link as={Link} className="mx-3 text-white" to="/student/grades">Grades</Nav.Link>
+      <Nav.Link as={Link} className="mx-3 text-white" to="/student/messages">Contact Admin</Nav.Link>
+    </Nav>
             <Nav>
             <Nav.Link 
-          onClick={handleLogOut} 
-          disabled={loading} 
-          className='btn btn-success text-white'
-        >
-          {loading ? 'Logging out...' : 'Log Out'}
-        </Nav.Link>
+              onClick={handleLogOut} 
+              disabled={loading} 
+              className='btn btn-success text-white'
+            >
+              {loading ? 'Logging out...' : 'Log Out'}
+            </Nav.Link>
             </Nav>
           </Navbar.Collapse>
         </Container>

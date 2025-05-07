@@ -10,12 +10,48 @@ const SubjectTable = ({
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const MAX_SEARCH_LENGTH = 30;
-    const filteredSubjects = Array.isArray(studSubjects)
+
+    const [sortField, setSortField] = useState('name');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedSubjects = (subjects) => {
+      return [...subjects].sort((a, b) => {
+          let aValue = '';
+          let bValue = '';
+  
+          // Handle nested properties
+          switch(sortField) {
+              case 'strand':
+                  aValue = a.strand?.name?.toLowerCase() || '';
+                  bValue = b.strand?.name?.toLowerCase() || '';
+                  break;
+              case 'yearLevel':
+                  aValue = a.yearLevel?.name?.toLowerCase() || '';
+                  bValue = b.yearLevel?.name?.toLowerCase() || '';
+                  break;
+              case 'semester':
+                  aValue = a.semester?.name?.toLowerCase() || '';
+                  bValue = b.semester?.name?.toLowerCase() || '';
+                  break;
+              default:
+                  aValue = a[sortField]?.toLowerCase() || '';
+                  bValue = b[sortField]?.toLowerCase() || '';
+          }
+          
+          return sortDirection === 'asc' 
+              ? aValue.localeCompare(bValue)
+              : bValue.localeCompare(aValue);
+      });
+  };
+
+  const filteredAndSortedSubjects = getSortedSubjects(
+    Array.isArray(studSubjects)
         ? studSubjects.filter((subject) => 
             subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             subject.code.toLowerCase().includes(searchTerm.toLowerCase())
         )
-        : [];
+        : []
+);
 
     const handlePageChange = (direction) => {
         if (direction === 'prev' && currentPage > 1) setCurrentPage(currentPage - 1);
@@ -27,10 +63,10 @@ const SubjectTable = ({
       setCurrentPage(1); // Reset to first page when searching
   };
 
-    const totalPages = Math.ceil(filteredSubjects.length / entriesPerPage);
-    const indexOfLastEntry = currentPage * entriesPerPage;
-    const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-    const currentEntries = filteredSubjects.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(filteredAndSortedSubjects.length / entriesPerPage);
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = filteredAndSortedSubjects.slice(indexOfFirstEntry, indexOfLastEntry);
   
     return (
       <div>
@@ -75,16 +111,51 @@ const SubjectTable = ({
         <Card className="shadow-sm">
           <Card.Body className="p-0">
             <Table responsive hover className="custom-table text-center align-middle">
-              <thead className="bg-light">
-                <tr>
-                  <th>Subject Name</th>
-                  <th>Subject Code</th>
-                  <th>Strand</th>
-                  <th>Year Level</th>
-                  <th>Semester</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+            <thead className="bg-light">
+    <tr>
+        <th onClick={() => {
+            setSortDirection(sortField === 'name' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('name');
+        }} style={{ cursor: 'pointer' }}>
+            Subject Name {sortField === 'name' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'code' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('code');
+        }} style={{ cursor: 'pointer' }}>
+            Subject Code {sortField === 'code' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'strand' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('strand');
+        }} style={{ cursor: 'pointer' }}>
+            Strand {sortField === 'strand' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'yearLevel' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('yearLevel');
+        }} style={{ cursor: 'pointer' }}>
+            Year Level {sortField === 'yearLevel' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'semester' && sortDirection === 'asc' ? 'desc' : 'asc');
+            setSortField('semester');
+        }} style={{ cursor: 'pointer' }}>
+            Semester {sortField === 'semester' && (
+                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            )}
+        </th>
+        <th>Actions</th>
+    </tr>
+</thead>
               <tbody>
                 {currentEntries.map((subject) => (
                   <tr key={subject._id}>

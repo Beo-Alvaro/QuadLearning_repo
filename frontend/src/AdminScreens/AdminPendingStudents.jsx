@@ -17,6 +17,42 @@ const AdminPendingStudents = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [filteredSections, setFilteredSections] = useState([]);
+    const [sortField, setSortField] = useState('username');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedStudents = (students) => {
+        return [...students].sort((a, b) => {
+            let aValue = '';
+            let bValue = '';
+    
+            switch(sortField) {
+                case 'username':
+                    aValue = a.username?.toLowerCase() || '';
+                    bValue = b.username?.toLowerCase() || '';
+                    break;
+                case 'yearLevel':
+                    aValue = a.yearLevel?.name?.toLowerCase() || '';
+                    bValue = b.yearLevel?.name?.toLowerCase() || '';
+                    break;
+                case 'strand':
+                    aValue = a.strand?.name?.toLowerCase() || '';
+                    bValue = b.strand?.name?.toLowerCase() || '';
+                    break;
+                case 'section':
+                    aValue = a.sections?.[0]?.name?.toLowerCase() || '';
+                    bValue = b.sections?.[0]?.name?.toLowerCase() || '';
+                    break;
+                default:
+                    aValue = a[sortField]?.toLowerCase() || '';
+                    bValue = b[sortField]?.toLowerCase() || '';
+            }
+            
+            return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        });
+    };
+
     const [newUser, setNewUser] = useState({ 
       strand: '',
       section: '',
@@ -92,10 +128,12 @@ const AdminPendingStudents = () => {
         fetchPendingStudents();
     }, []);
 
-    const filteredStudents = pendingStudents
+const filteredStudents = getSortedStudents(
+    pendingStudents
         .filter((student) => (selectedStrand ? student.strand?._id === selectedStrand : true))
         .filter((student) => (selectedSection ? student.sections?.some(section => section._id === selectedSection) : true))
-        .filter((student) => student.username?.toLowerCase().includes(searchTerm.toLowerCase()));
+        .filter((student) => student.username?.toLowerCase().includes(searchTerm.toLowerCase()))
+);
 
     const totalPages = Math.ceil(filteredStudents.length / entriesPerPage);
 
@@ -178,15 +216,35 @@ const AdminPendingStudents = () => {
                                         </InputGroup>
                                     </div>
                                     <Table responsive hover className="custom-table text-center align-middle">
-                                        <thead className="bg-light">
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Grade Level</th>
-                                                <th>Strand</th>
-                                                <th>Section</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
+                                    <thead className="bg-light">
+    <tr>
+        <th onClick={() => {
+            setSortDirection(sortField === 'username' ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
+            setSortField('username');
+        }} style={{ cursor: 'pointer' }}>
+            Name <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ${sortField === 'username' ? '' : 'invisible'}`}></i>
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'yearLevel' ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
+            setSortField('yearLevel');
+        }} style={{ cursor: 'pointer' }}>
+            Grade Level <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ${sortField === 'yearLevel' ? '' : 'invisible'}`}></i>
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'strand' ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
+            setSortField('strand');
+        }} style={{ cursor: 'pointer' }}>
+            Strand <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ${sortField === 'strand' ? '' : 'invisible'}`}></i>
+        </th>
+        <th onClick={() => {
+            setSortDirection(sortField === 'section' ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
+            setSortField('section');
+        }} style={{ cursor: 'pointer' }}>
+            Section <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ${sortField === 'section' ? '' : 'invisible'}`}></i>
+        </th>
+        <th>Action</th>
+    </tr>
+</thead>
                                         <tbody>
                                             {filteredStudents.map(student => (
                                                 <tr key={student._id}>

@@ -9,9 +9,37 @@ const SectionTable = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
+    const [sortField, setSortField] = useState('name');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedSections = (sections) => {
+        return [...sections].sort((a, b) => {
+            let aValue = '';
+            let bValue = '';
+
+            // Handle nested properties for strand and yearLevel
+            if (sortField === 'strand') {
+                aValue = a.strand?.name?.toLowerCase() || '';
+                bValue = b.strand?.name?.toLowerCase() || '';
+            } else if (sortField === 'yearLevel') {
+                aValue = a.yearLevel?.name?.toLowerCase() || '';
+                bValue = b.yearLevel?.name?.toLowerCase() || '';
+            } else {
+                aValue = a[sortField]?.toLowerCase() || '';
+                bValue = b[sortField]?.toLowerCase() || '';
+            }
+            
+            return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        });
+    };
+
     const filteredSections = studSections.filter((section) =>
         section.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const sortedAndFilteredSections = getSortedSections(filteredSections);
 
     const indexOfLastEntry = currentPage * entriesPerPage;
     const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
@@ -58,16 +86,37 @@ const SectionTable = ({
             <Card className="shadow-sm">
                 <Card.Body className="p-0">
                     <Table responsive hover className='custom-table text-center align-middle'>
-                        <thead className="bg-light">
-                            <tr className='text-center'>
-                                <th>Section Name</th>
-                                <th>Strand</th>
-                                <th>Year Level</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
+                    <thead className="bg-light">
+                    <tr className='text-center'>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'name' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('name');
+                        }} style={{ cursor: 'pointer' }}>
+                            Section Name {sortField === 'name' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'strand' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('strand');
+                        }} style={{ cursor: 'pointer' }}>
+                            Strand {sortField === 'strand' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'yearLevel' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('yearLevel');
+                        }} style={{ cursor: 'pointer' }}>
+                            Year Level {sortField === 'yearLevel' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
                         <tbody className='text-center'>
-                            {currentEntries.map((section) => (
+                            {sortedAndFilteredSections.map((section) => (
                                 <tr key={section._id}>
                                     <td>{section.name}</td>
                                     <td>{section.strand ? section.strand.name : 'N/A'}</td>
