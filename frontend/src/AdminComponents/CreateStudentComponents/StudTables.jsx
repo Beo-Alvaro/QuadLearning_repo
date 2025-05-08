@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { Table, Form, InputGroup, Button } from 'react-bootstrap'
 import { FaSearch } from 'react-icons/fa';
 const StudTables = ({
@@ -20,6 +21,45 @@ const StudTables = ({
     handleShow,
     handlePageChange
   }) => {
+
+    const [sortField, setSortField] = useState('username');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+// Add sorting function
+const getSortedUsers = (users) => {
+  return [...users].sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+
+      switch(sortField) {
+          case 'username':
+              aValue = a.username?.toLowerCase() || '';
+              bValue = b.username?.toLowerCase() || '';
+              break;
+          case 'section':
+              aValue = a.sections?.[0]?.name?.toLowerCase() || '';
+              bValue = b.sections?.[0]?.name?.toLowerCase() || '';
+              break;
+          case 'strand':
+              aValue = a.strand?.name?.toLowerCase() || '';
+              bValue = b.strand?.name?.toLowerCase() || '';
+              break;
+          case 'yearLevel':
+              aValue = a.yearLevel?.name?.toLowerCase() || '';
+              bValue = b.yearLevel?.name?.toLowerCase() || '';
+              break;
+          default:
+              aValue = a[sortField]?.toLowerCase() || '';
+              bValue = b[sortField]?.toLowerCase() || '';
+      }
+
+      return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+  });
+};
+
+const sortedUsers = getSortedUsers(filteredUsers);
 
     const SEARCH_MAX_LENGTH = 30;
     return (
@@ -102,18 +142,46 @@ const StudTables = ({
   
         {/* Table */}
         <Table responsive hover className="custom-table text-center align-middle">
-          <thead>
-            <tr>
-              <th>Student ID</th>
-              <th>Section</th>
-              <th>Strand</th>
-              <th>Year Level</th>
-              <th>Subjects</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        <thead>
+                    <tr>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'username' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('username');
+                        }} style={{ cursor: 'pointer' }}>
+                            Student ID {sortField === 'username' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'section' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('section');
+                        }} style={{ cursor: 'pointer' }}>
+                            Section {sortField === 'section' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'strand' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('strand');
+                        }} style={{ cursor: 'pointer' }}>
+                            Strand {sortField === 'strand' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => {
+                            setSortDirection(sortField === 'yearLevel' && sortDirection === 'asc' ? 'desc' : 'asc');
+                            setSortField('yearLevel');
+                        }} style={{ cursor: 'pointer' }}>
+                            Year Level {sortField === 'yearLevel' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th>Subjects</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
           <tbody>
-            {filteredUsers
+            {sortedUsers
               .slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage)
               .map((user) => (
                 <tr key={user._id}>

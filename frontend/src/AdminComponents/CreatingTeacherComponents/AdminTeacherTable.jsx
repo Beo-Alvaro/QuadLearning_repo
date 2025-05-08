@@ -1,5 +1,6 @@
 // AdminTeacherTable.js
 import { Table, Button } from 'react-bootstrap';
+import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import '../AdminTableList.css';
 
@@ -12,20 +13,76 @@ const AdminTeacherTable = ({
     handlePageChange,
     totalPages
 }) => {
+    const [sortField, setSortField] = useState('username');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const getSortedTeachers = (teachers) => {
+        return [...teachers].sort((a, b) => {
+            let aValue = '';
+            let bValue = '';
+
+            switch(sortField) {
+                case 'username':
+                    aValue = a.username?.toLowerCase() || '';
+                    bValue = b.username?.toLowerCase() || '';
+                    break;
+                case 'sections':
+                    aValue = a.sections?.map(s => s.name).join(',').toLowerCase() || '';
+                    bValue = b.sections?.map(s => s.name).join(',').toLowerCase() || '';
+                    break;
+                case 'advisorySection':
+                    aValue = a.advisorySection?.section?.name?.toLowerCase() || '';
+                    bValue = b.advisorySection?.section?.name?.toLowerCase() || '';
+                    break;
+                case 'subjects':
+                    aValue = a.subjects?.map(s => s.name).join(',').toLowerCase() || '';
+                    bValue = b.subjects?.map(s => s.name).join(',').toLowerCase() || '';
+                    break;
+                default:
+                    return 0;
+            }
+
+            return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        });
+    };
+
+    const sortedTeachers = getSortedTeachers(filteredUsers);
+
+    const handleSort = (field) => {
+        setSortDirection(sortField === field && sortDirection === 'asc' ? 'desc' : 'asc');
+        setSortField(field);
+    };
+
     return (
         <div>
             <Table responsive hover className='custom-table text-center align-middle'>
-                <thead>
+               <thead>
                     <tr>
-                        <th>Teacher ID</th>
-                        <th>Sections Handled</th>
-                        <th>Advisory Section</th>
-                        <th>Subjects</th>
+                        <th onClick={() => handleSort('username')} style={{ cursor: 'pointer' }}>
+                            Teacher ID {sortField === 'username' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => handleSort('sections')} style={{ cursor: 'pointer' }}>
+                            Sections Handled {sortField === 'sections' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th onClick={() => handleSort('advisorySection')} style={{ cursor: 'pointer' }}>
+                            Advisory Section {sortField === 'advisorySection' && (
+                                <i className={`bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                            )}
+                        </th>
+                        <th >
+                            Subjects 
+                        </th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredUsers
+                    {sortedTeachers
                         .slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage)
                         .map(user => (
                             <tr key={user._id}>
