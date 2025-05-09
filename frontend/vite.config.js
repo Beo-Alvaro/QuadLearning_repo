@@ -13,4 +13,28 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Increase the warning threshold to avoid unnecessary warnings
+    chunkSizeWarningLimit: 1200,
+    
+    // Configure code splitting
+    rollupOptions: {
+      output: {
+        // Ensure chunks are properly named for better caching
+        manualChunks: {
+          // React core libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          
+          // UI libraries
+          'ui-vendor': ['bootstrap', 'react-bootstrap', 'react-icons', 'bootstrap-icons'],
+          
+          // Utility libraries
+          'utils': ['crypto-js', 'dayjs', 'file-saver'],
+          
+          // Data visualization
+          'charts': ['recharts']
+        }
+      }
+    }
+  }
 })
