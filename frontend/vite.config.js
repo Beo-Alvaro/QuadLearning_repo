@@ -20,12 +20,14 @@ export default defineConfig({
     // Minimize CSS output
     cssCodeSplit: true,
     
-    // Basic optimization settings
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true
-      }
+    // Use esbuild instead of terser (esbuild is included with Vite)
+    minify: 'esbuild',
+    
+    // esbuild minify options
+    esbuildOptions: {
+      target: 'es2015',
+      // Remove console logs in production
+      drop: ['console', 'debugger'],
     }
   }
 })
