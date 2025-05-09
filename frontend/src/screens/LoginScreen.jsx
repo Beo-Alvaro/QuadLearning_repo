@@ -5,6 +5,8 @@ import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
 import { AuthContext } from '../context/authContext';
 import { apiPost } from '../utils/api';
+import schoolLogo from '../../img/TVNHS.png';
+import backgroundImage from '../../img/bg.jpg';
 
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
@@ -73,7 +75,7 @@ const LoginScreen = () => {
     className='hero-section position-relative' 
     style={{ 
       minHeight: '100vh', 
-      backgroundImage: 'url("/img/bg.jpg")',
+      backgroundImage: `url(${backgroundImage})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat'
@@ -84,7 +86,7 @@ const LoginScreen = () => {
         <Card.Body className="p-5">
           <div className="text-center mb-4">
             <img 
-              src="/img/TVNHS.png" 
+              src={schoolLogo} 
               alt="School Logo" 
               style={{ width: '100px', marginBottom: '20px' }}
             />
