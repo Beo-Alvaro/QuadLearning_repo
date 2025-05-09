@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port:3000,
+    port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
@@ -14,26 +14,17 @@ export default defineConfig({
     },
   },
   build: {
-    // Increase the warning threshold to avoid unnecessary warnings
-    chunkSizeWarningLimit: 1200,
+    // Simply increase the warning threshold to avoid the warnings
+    chunkSizeWarningLimit: 1500,
     
-    // Configure code splitting
-    rollupOptions: {
-      output: {
-        // Ensure chunks are properly named for better caching
-        manualChunks: {
-          // React core libraries
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          
-          // UI libraries
-          'ui-vendor': ['bootstrap', 'react-bootstrap', 'react-icons', 'bootstrap-icons'],
-          
-          // Utility libraries
-          'utils': ['crypto-js', 'dayjs', 'file-saver'],
-          
-          // Data visualization
-          'charts': ['recharts']
-        }
+    // Minimize CSS output
+    cssCodeSplit: true,
+    
+    // Basic optimization settings
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true
       }
     }
   }
