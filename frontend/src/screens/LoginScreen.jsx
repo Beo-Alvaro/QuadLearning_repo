@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
 import { AuthContext } from '../context/authContext';
+import { apiPost } from '../utils/api';
 
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
@@ -27,16 +28,11 @@ const LoginScreen = () => {
         password,
         import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345'
       ).toString();
-
-      // Create the base API URL 
-      const API_URL = import.meta.env.VITE_API_URL || '';
       
-      const response = await fetch(`${API_URL}/api/users/auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
+      const response = await apiPost('/api/users/auth', { 
+        username, 
+        password: encryptedPassword, 
+        isEncrypted: true 
       });
 
       if (!response.ok) {
