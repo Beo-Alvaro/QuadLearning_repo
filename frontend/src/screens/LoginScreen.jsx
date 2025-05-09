@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
 import { useAuth } from '../context/authContext';
+
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
@@ -12,6 +13,7 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  const API_URL = import.meta.env.VITE_API_URL || '';
   const { login } = useAuth();
 
   const submitHandler = async (e) => {
@@ -25,7 +27,7 @@ const LoginScreen = () => {
         ENCRYPTION_KEY
       ).toString();
 
-      const response = await fetch('/api/users/auth', {
+      const response = await fetch(`${API_URL}/api/users/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
