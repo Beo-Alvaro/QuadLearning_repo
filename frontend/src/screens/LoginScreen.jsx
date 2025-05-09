@@ -1,18 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Card, Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
-import { useAuth } from '../context/authContext';
+import { AuthContext } from '../context/authContext';
+
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { setUser } = useContext(AuthContext);
   const navigate = useNavigate();
-  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
-  const { login } = useAuth();
+  const location = useLocation();
+
+  const redirectUrl = new URLSearchParams(location.search).get('redirect') || '/dashboard';
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -22,10 +25,13 @@ const LoginScreen = () => {
     try {
       const encryptedPassword = CryptoJS.AES.encrypt(
         password,
-        ENCRYPTION_KEY
+        import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345'
       ).toString();
 
-      const response = await fetch('/api/users/auth', {
+      // Create the base API URL 
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      
+      const response = await fetch(`${API_URL}/api/users/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,54 +39,36 @@ const LoginScreen = () => {
         body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        if (response.status === 423) {
-          throw new Error(data.message || 'Account is locked. Please try again later.');
-        }
-        throw new Error(data.message || 'Invalid credentials');
+        const data = await response.json();
+        throw new Error(data.message || 'Invalid username or password');
       }
 
-      // Store auth data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userInfo', JSON.stringify(data.user));
+      const data = await response.json();
       
-      // Update auth context
-      await login(data.token, data.user);
-
-      // Navigate based on role
-      const role = data.user.role;
+      // Store user data in context
+      setUser(data);
+      
+      // Store JWT in localStorage
+      localStorage.setItem('userInfo', JSON.stringify(data));
+      
+      // Redirect based on user role
+      if (data.role === 'admin') {
+        navigate('/admin');
+      } else if (data.role === 'teacher') {
+        navigate('/teacher');
+      } else if (data.role === 'student') {
+        navigate('/student');
+      } else if (data.role === 'superadmin') {
+        navigate('/superadmin');
+      } else {
+        navigate(redirectUrl);
+      }
+      
+    } catch (error) {
+      setError(error.message || 'An error occurred during login');
+    } finally {
       setLoading(false);
-      
-      switch(role) {
-        case 'student':
-          navigate('/student/home', { replace: true });
-          break;
-        case 'teacher':
-          navigate('/teacher/home', { replace: true });
-          break;
-        case 'admin':
-          navigate('/admin/home', { replace: true });
-          break;
-        default:
-          navigate('/', { replace: true });
-      }
-
-    } catch (err) {
-      setLoading(false);
-      setError(err.message);
-      
-      if (err.message.includes('attempts remaining')) {
-        setError(
-          <div>
-            <p>{err.message}</p>
-            <small className="text-danger mb-5">
-              Warning: Your account will be locked for 15 minutes after 5 failed attempts
-            </small>
-          </div>
-        );
-      }
     }
   };
 
