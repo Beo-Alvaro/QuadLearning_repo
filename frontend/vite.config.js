@@ -13,4 +13,34 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Increase the warning threshold to avoid unnecessary warnings
+    chunkSizeWarningLimit: 1000, // Default is 500 (in kB)
+    
+    // Configure code splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor code into separate chunks
+          vendor: ['react', 'react-dom', 'react-router-dom', 'bootstrap', 'react-bootstrap'],
+          // Split crypto libraries separately
+          crypto: ['crypto-js'],
+          // Group chart libraries if you use any
+          charts: ['recharts'],
+        },
+      },
+    },
+    
+    // Optimize CSS
+    cssCodeSplit: true,
+    
+    // Minify output
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
 })
