@@ -1,0 +1,60 @@
+.conversation-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .conversation-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  .conversation-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+  
+  .conversation-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  .list-group-item.active {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    color: #212529;
+  }
+  
+  .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .badge {
+    font-weight: 500;
+  }
+  
+  .btn-outline-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .pagination {
+  margin-bottom: 0;
+}
+
+.pagination .page-item .page-link {
+  color: #198754;
+  border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #198754;
+  border-color: #198754;
+  color: white;
+}
+
+.pagination .page-item .page-link:hover {
+  background-color: #e9ecef;
+  color: #198754;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #6c757d;
+  border-color: #dee2e6;
+}
