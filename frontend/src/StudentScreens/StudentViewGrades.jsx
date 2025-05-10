@@ -4,6 +4,8 @@ import { BookOpen, Calendar, Award, BarChart2 } from "lucide-react"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import "./student-view.css"
 import LoadingSpinner from "../components/LoadingSpinner"
+import { studentAPI } from "../services/apiService"
+
 const StudentViewGrades = () => {
   const [grades, setGrades] = useState([])
   const [error, setError] = useState(null)
@@ -15,26 +17,10 @@ const StudentViewGrades = () => {
   useEffect(() => {
     const fetchGrades = async () => {
       try {
-        const token = localStorage.getItem("token")
-        console.log("Attempting to fetch grades with token:", token)
-
-        const response = await fetch("/api/student/grades", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        })
-
-        console.log("Response status:", response.status)
-
-        const data = await response.json()
+        console.log("Attempting to fetch grades")
+        
+        const data = await studentAPI.getGrades()
         console.log("Response data:", data)
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch grades")
-        }
 
         if (data.success) {
           setGrades(data.data)

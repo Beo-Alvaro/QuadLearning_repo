@@ -11,6 +11,7 @@ import { useTeacherDataContext } from '../hooks/useTeacherDataContext';
 import AdminTeacherModals from '../AdminComponents/CreatingTeacherComponents/AdminTeacherModals';
 import AdminTeacherTable from '../AdminComponents/CreatingTeacherComponents/AdminTeacherTable';
 import { ToastContainer, toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
 
 const AdminCreateTeacherAccount = () => {
     const { teacherUsers, sections, semesters, advisorySections, loading, dispatch, fetchData} = useTeacherDataContext()
@@ -103,34 +104,25 @@ const deleteHandler = async (userId) => {
     }
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`/api/admin/users/${userId}`, {
+        await apiRequest(`/api/admin/users/${userId}`, {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             }
         });
 
-        console.log("Response status:", response.status);
-        if (response.ok) {
-            // Ensure the deletion is complete before updating the state
-            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const updatedTeachers = await updatedTeachersRes.json();
+        // Ensure the deletion is complete before updating the state
+        const updatedTeachers = await apiRequest('/api/admin/users?role=teacher', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
 
-            // Dispatch the updated list of teachers to the context
-            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-            handleClose(); // Close modal after successful deletion
-            toast.error('Teacher deleted successfully!')
-        } else {
-            const json = await response.json();
-            console.error('Error response:', json);
-            setError(json.message);
-        }
+        // Dispatch the updated list of teachers to the context
+        dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
+        handleClose(); // Close modal after successful deletion
+        toast.error('Teacher deleted successfully!')
     } catch (error) {
         console.error('Error deleting user:', error);
-        setError('Failed to delete user');
+        setError(error.message || 'Failed to delete user');
     }
 };
    // Update handleAddUser to properly handle the advisory section
@@ -170,87 +162,75 @@ const handleAddUser = async (e) => {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/addUsers', {
+        const data = await apiRequest('/api/admin/addUsers', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(userData)
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            // Important: Move this before any other operations
-            if (response.status === 400 && data.message.includes('Username already exists')) {
-                toast.error('This username is already taken!');
-                return;
-            }
-            throw new Error(data.message || 'Failed to create teacher account');
-        }
-
         // Fetch the updated list of teachers
-        const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+        const updatedTeachers = await apiRequest('/api/admin/users?role=teacher', {
             headers: { Authorization: `Bearer ${token}` }
         });
-        const updatedTeachers = await updatedTeachersRes.json();
 
         // Dispatch the updated list of teachers to the context
         dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-
-        setShowAddModal(false);
-        resetForm();
-        toast.success('Teacher created successfully!')
-
-    } catch (error) {
-        console.error('Error creating teacher:', error);
-        toast.error(error.message || 'Failed to create teacher account');
         
+        // Reset the form and close the modal
+        resetForm();
+        handleClose();
+        toast.success('Teacher account created successfully!');
+    } catch (error) {
+        console.error('Error creating teacher account:', error);
+        
+        // Check for specific error cases
+        if (error.message && error.message.includes('Username already exists')) {
+            toast.error('This username is already taken!');
+        } else {
+            toast.error(error.message || 'Failed to create teacher account');
+            setError(error.message || 'Failed to create teacher account');
+        }
     }
 };
 
     const handleEditShow = async (user) => {
-        console.log('Editing user:', user); // Debug log
+        setSelectedUserId(user._id);
         
-        // Set the initial values
-        const initialEditUser = {
-            id: user._id,
+        // Populate form with the selected user's data
+        const initialEditData = {
+            username: user.username,
+            password: '', // Usually don't populate existing passwords
+            role: 'teacher',
             sections: user.sections?.map(section => section._id) || [],
             subjects: user.subjects?.map(subject => subject._id) || [],
             semesters: user.semesters?.map(semester => semester._id) || [],
-            advisorySection: user.advisorySection?._id || ''
+            advisorySection: user.advisorySection?.section?._id || ''
         };
         
-        setEditUser(initialEditUser);
+        setNewUser(initialEditData);
         
-        // Trigger subject filtering immediately
+        // Fetch available subjects for the selected sections
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/subjects/filter', {
+            const subjectData = await apiRequest('/api/admin/subjects/filter', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    sections: initialEditUser.sections,
-                    semesters: initialEditUser.semesters
+                    sections: initialEditData.sections,
+                    yearLevels: [] // Keep this to maintain API compatibility
                 })
             });
-    
-            if (!response.ok) {
-                throw new Error('Failed to fetch filtered subjects');
-            }
-    
-            const filteredSubjects = await response.json();
-            setAvailableSubjects(filteredSubjects || []);
+            
+            setAvailableSubjects(subjectData || []);
+            setShowEditModal(true);
         } catch (error) {
-            console.error('Error fetching filtered subjects:', error);
-            setAvailableSubjects([]);
+            console.error('Error fetching subjects:', error);
+            toast.error('Failed to load subject data. Please try again.');
         }
-        
-        setShowEditModal(true);
     };
 
 // Update the editUser state
@@ -269,60 +249,69 @@ const [editUser, setEditUser] = useState({
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         setError('');
-
-    // Fix the validation logic
-    if (editUser.sections.length === 0 || editUser.subjects.length === 0 || editUser.semesters.length === 0 || !editUser.semesters
-        || !editUser.sections
-    ) {
-        toast.error('Please fill in all required fields');
-        return;
-    }
-    
-        try {
-            // Format the data to match what the backend expects
-            const userData = {
-                sections: editUser.sections,
-                subjects: editUser.subjects,
-                semesters: editUser.semesters,
-                advisorySection: editUser.advisorySection 
-                ? { section: editUser.advisorySection.toString() }
+        
+        // Skip password validation if they didn't change it
+        if (newUser.password) {
+            const isPasswordValid = Object.values(validations).every(v => v);
+            if (!isPasswordValid) {
+                toast.error('Password is not strong enough. Please meet all requirements.');
+                return;
+            }
+        }
+        
+        // Validation
+        if (!newUser.username || !newUser.sections.length || 
+            !newUser.subjects.length || !newUser.semesters.length) {
+            toast.error('Please fill in all required fields');
+            return;
+        }
+        
+        const userData = {
+            username: newUser.username.trim(),
+            role: 'teacher',
+            sections: newUser.sections.map(id => id.toString()),
+            subjects: newUser.subjects.map(id => id.toString()),
+            semesters: newUser.semesters.map(id => id.toString()),
+            advisorySection: newUser.advisorySection 
+                ? { section: newUser.advisorySection.toString() }
                 : null
-            };
-    
-            console.log('Sending update request:', userData);
-    
-            const response = await fetch(`/api/admin/users/${editUser.id}`, {
+        };
+        
+        // Only include password if it was changed
+        if (newUser.password) {
+            userData.password = newUser.password;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            await apiRequest(`/api/admin/users/${selectedUserId}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(userData),
+                body: JSON.stringify(userData)
             });
-    
-            const data = await response.json();
-            console.log('Response data:', data);
-    
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to update user');
-            }
-    
-            // Re-fetch the updated list of teachers
-            const token = localStorage.getItem('token');
-            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
-                headers: { Authorization: `Bearer ${token}` },
+            
+            // Fetch updated data
+            const updatedTeachers = await apiRequest('/api/admin/users?role=teacher', {
+                headers: { Authorization: `Bearer ${token}` }
             });
-            const updatedTeachers = await updatedTeachersRes.json();
-    
-            // Dispatch the updated list of teachers to the context
+            
+            // Update context
             dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-    
-            // Close the modal and reset the form
-            handleEditClose();
-            toast.success('Teacher updated successfully!')
+            
+            // Reset and close
+            resetForm();
+            handleClose();
+            toast.info('Teacher account updated successfully!');
         } catch (error) {
-            setError(error.message);
-            console.error('Update error:', error);
+            console.error('Error updating teacher account:', error);
+            if (error.message && error.message.includes('Username already exists')) {
+                toast.error('This username is already taken!');
+            } else {
+                toast.error(error.message || 'Failed to update teacher account');
+                setError(error.message || 'Failed to update teacher account');
+            }
         }
     };
 

@@ -1,0 +1,263 @@
+/**
+ * Centralized API service for the application
+ * Uses the apiRequest utility for all API calls
+ */
+
+import { apiRequest } from '../utils/api';
+
+// Helper function to get the auth token
+const getToken = () => localStorage.getItem('token');
+
+// User related API calls
+export const userAPI = {
+  // Get user profile
+  getProfile: async () => {
+    return apiRequest('/api/student/profile', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Update user profile
+  updateProfile: async (userData) => {
+    return apiRequest('/api/student/update-profile', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(userData)
+    });
+  },
+  
+  // Get all users (admin only)
+  getAllUsers: async () => {
+    return apiRequest('/api/admin/getUsers', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Get users by role
+  getUsersByRole: async (role) => {
+    return apiRequest(`/api/admin/users?role=${role}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Add new user
+  addUser: async (userData) => {
+    return apiRequest('/api/admin/addUsers', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(userData)
+    });
+  },
+  
+  // Update user
+  updateUser: async (userId, userData) => {
+    return apiRequest(`/api/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(userData)
+    });
+  },
+  
+  // Delete user
+  deleteUser: async (userId) => {
+    return apiRequest(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Reset user password
+  resetPassword: async (userId, newPassword) => {
+    return apiRequest(`/api/admin/resetPassword/${userId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ newPassword })
+    });
+  }
+};
+
+// Student related API calls
+export const studentAPI = {
+  // Get student grades
+  getGrades: async () => {
+    return apiRequest('/api/student/grades', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Enroll student
+  enrollStudent: async (enrollmentData) => {
+    return apiRequest('/api/admin/enroll-student', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(enrollmentData)
+    });
+  },
+  
+  // Get pending students
+  getPendingStudents: async () => {
+    return apiRequest('/api/admin/pending-students', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Get student by ID
+  getStudentById: async (studentId) => {
+    return apiRequest(`/api/teacher/student/${studentId}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Generate Form 137
+  generateForm137: async (studentId) => {
+    return apiRequest(`/api/teacher/generate-form137/${studentId}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  }
+};
+
+// Teacher related API calls
+export const teacherAPI = {
+  // Get teacher sections
+  getSections: async () => {
+    return apiRequest('/api/teacher/sections', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Get teacher subjects
+  getSubjects: async (semesterId) => {
+    return apiRequest(`/api/teacher/subjects?semesterId=${semesterId}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Add grades
+  addGrades: async (gradesData) => {
+    return apiRequest('/api/teacher/add-grades', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(gradesData)
+    });
+  },
+  
+  // Bulk add grades
+  bulkAddGrades: async (gradesData) => {
+    return apiRequest('/api/teacher/bulk-add-grades', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(gradesData)
+    });
+  },
+  
+  // Get student grades
+  getStudentGrades: async (studentId) => {
+    return apiRequest(`/api/teacher/student-grades/${studentId}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  }
+};
+
+// Admin related API calls
+export const adminAPI = {
+  // Get semesters
+  getSemesters: async () => {
+    return apiRequest('/api/admin/semesters', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // End semester
+  endSemester: async (semesterId) => {
+    return apiRequest(`/api/admin/endSemester/${semesterId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Get sections
+  getSections: async () => {
+    return apiRequest('/api/admin/getSections', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Get strands
+  getStrands: async () => {
+    return apiRequest('/api/admin/getStrands', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Get year levels
+  getYearLevels: async () => {
+    return apiRequest('/api/admin/yearLevels', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Filter subjects
+  filterSubjects: async (filterData) => {
+    return apiRequest('/api/admin/subjects/filter', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(filterData)
+    });
+  }
+};
+
+// Centralized export for all API services
+export default {
+  user: userAPI,
+  student: studentAPI,
+  teacher: teacherAPI,
+  admin: adminAPI
+}; 

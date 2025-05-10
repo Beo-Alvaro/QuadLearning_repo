@@ -4,6 +4,7 @@ import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import "./Student.css"
 import { ToastContainer, toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { apiRequest } from '../utils/api';
 import {
   FaUser,
   FaGraduationCap,
@@ -71,18 +72,11 @@ const StudentProfile = () => {
       try {
         const token = localStorage.getItem("token")
 
-        const response = await fetch("/api/student/profile", {
+        const result = await apiRequest("/api/student/profile", {
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
           },
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const result = await response.json()
+        });
 
         if (result.success) {
           setStudentData(result.data)
@@ -153,16 +147,13 @@ const getFullName = () => {
     try {
       const token = localStorage.getItem("token")
 
-      const response = await fetch("/api/student/update-profile", {
+      const result = await apiRequest("/api/student/update-profile", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(formData),
-      })
-
-      const result = await response.json()
+      });
 
       if (result.success) {
         setStudentData(formData)

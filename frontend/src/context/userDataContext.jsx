@@ -1,4 +1,5 @@
 import React, { createContext, useState } from 'react';
+import { apiRequest } from '../utils/api';
 
 export const UserDataContext = createContext();
 
@@ -19,21 +20,14 @@ export const UserContextProvider = ({ children }) => {
 
         try {
             setLoading(true);
-            const response = await fetch('/api/admin/getUsers', {
+            const json = await apiRequest('/api/admin/getUsers', {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
-
-            if (response.ok) {
-                const json = await response.json();
-                setUsers(json);
-            } else {
-                console.error('Failed to fetch users:', response.status);
-                setError('Failed to fetch users');
-            }
+            
+            setUsers(json);
         } catch (error) {
             console.error('Error fetching users:', error.message);
             setError('Error fetching users');
@@ -49,25 +43,18 @@ export const UserContextProvider = ({ children }) => {
 
         try {
             setLoading(true);
-            const response = await fetch(`/api/admin/resetPassword/${userId}`, {
+            await apiRequest(`/api/admin/resetPassword/${userId}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ newPassword }),
             });
-
-            if (response.ok) {
-                console.log('New password set')
-            } else {
-                const data = await response.json();
-                setError(data.message || 'Failed to reset password');
-                alert('Failed to reset password');
-            }
+            
+            console.log('New password set');
         } catch (error) {
-            setError('An error occurred while resetting the password');
-            alert('An error occurred while resetting the password');
+            setError(error.message || 'An error occurred while resetting the password');
+            alert(error.message || 'An error occurred while resetting the password');
         } finally {
             setLoading(false);
         }

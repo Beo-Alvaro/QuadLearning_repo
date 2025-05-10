@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { fetchAdminId } from '../services/messageService';
+import { apiRequest } from '../utils/api';
 
 export const AuthContext = createContext();
 
@@ -55,10 +56,9 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         const currentToken = localStorage.getItem('token');
         try {
-            const response = await fetch('/api/users/logout', {
+            await apiRequest('/api/users/logout', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${currentToken}`
                 }
             });
@@ -69,10 +69,6 @@ export const AuthProvider = ({ children }) => {
             setAdminId(null);
             localStorage.removeItem('token');
             localStorage.removeItem('userInfo');
-    
-            if (!response.ok) {
-                throw new Error('Logout failed');
-            }
     
             window.location.href = '/';
         } catch (error) {
@@ -93,19 +89,12 @@ export const AuthProvider = ({ children }) => {
             if (!currentToken) return;
     
             try {
-                const response = await fetch('/api/users/verify-token', {
+                const data = await apiRequest('/api/users/verify-token', {
                     headers: {
-                        'Authorization': `Bearer ${currentToken}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${currentToken}`
                     }
                 });
                 
-                if (!response.ok) {
-                    await logout();
-                    return;
-                }
-    
-                const data = await response.json();
                 if (!data.valid) {
                     await logout();
                 }
