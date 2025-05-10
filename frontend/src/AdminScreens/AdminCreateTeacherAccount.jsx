@@ -158,13 +158,20 @@ const handleAddUser = async (e) => {
     };
 
     console.log('Sending user data:', userData); // Debug log
-    console.log('Advisory Section:', newUser.advisorySection);
-
+    // Add detailed logging for debugging
+    console.log('Username:', userData.username, 'Type:', typeof userData.username);
+    console.log('Password:', 'Password provided: ' + (userData.password ? 'Yes' : 'No'), 'Type:', typeof userData.password);
+    console.log('Role:', userData.role, 'Type:', typeof userData.role);
+    console.log('Sections:', userData.sections, 'Length:', userData.sections.length, 'Type:', typeof userData.sections);
+    console.log('Subjects:', userData.subjects, 'Length:', userData.subjects.length, 'Type:', typeof userData.subjects);
+    console.log('Semesters:', userData.semesters, 'Length:', userData.semesters.length, 'Type:', typeof userData.semesters);
+    
     try {
         const token = localStorage.getItem('token');
         const data = await apiRequest('/api/admin/addUsers', {
             method: 'POST',
             headers: {
+                'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(userData)
@@ -282,11 +289,21 @@ const [editUser, setEditUser] = useState({
             userData.password = newUser.password;
         }
         
+        console.log('Updating user data:', userData);
+        // Add detailed logging for debugging
+        console.log('Username:', userData.username, 'Type:', typeof userData.username);
+        console.log('Password:', 'Password provided: ' + (userData.password ? 'Yes' : 'No'), 'Type:', typeof userData.password);
+        console.log('Role:', userData.role, 'Type:', typeof userData.role);
+        console.log('Sections:', userData.sections, 'Length:', userData.sections.length, 'Type:', typeof userData.sections);
+        console.log('Subjects:', userData.subjects, 'Length:', userData.subjects.length, 'Type:', typeof userData.subjects);
+        console.log('Semesters:', userData.semesters, 'Length:', userData.semesters.length, 'Type:', typeof userData.semesters);
+        
         try {
             const token = localStorage.getItem('token');
             await apiRequest(`/api/admin/users/${selectedUserId}`, {
                 method: 'PUT',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(userData)
