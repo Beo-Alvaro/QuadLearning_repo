@@ -1,5 +1,7 @@
 import { createContext, useState } from 'react';
 import { toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
+
 export const SemesterDataContext = createContext();
 
 export const SemesterDataProvider = ({ children }) => {
@@ -13,25 +15,13 @@ export const SemesterDataProvider = ({ children }) => {
         try {
             const token = localStorage.getItem('token');
             const headers = {
-                'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             };
 
-            const [semestersRes, strandsRes, yearLevelsRes] = await Promise.all([
-                fetch('/api/admin/semesters', { headers }),
-                fetch('/api/admin/getStrands', { headers }),
-                fetch('/api/admin/yearLevels', { headers })
-            ]);
-
-            const checkResponse = async (res) => {
-                if (!res.ok) throw new Error(`Error ${res.status}: ${await res.text()}`);
-                return res.json();
-            };
-
             const [semestersData, strandsData, yearLevelsData] = await Promise.all([
-                checkResponse(semestersRes),
-                checkResponse(strandsRes),
-                checkResponse(yearLevelsRes)
+                apiRequest('/api/admin/semesters', { headers }),
+                apiRequest('/api/admin/getStrands', { headers }),
+                apiRequest('/api/admin/yearLevels', { headers })
             ]);
 
             const sanitizeData = (data) => Array.isArray(data) ? data.filter(item => item?._id) : [];
@@ -49,20 +39,14 @@ export const SemesterDataProvider = ({ children }) => {
     const deleteHandler = async (semesterId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`/api/admin/semesters/${semesterId}`, {
+            await apiRequest(`/api/admin/semesters/${semesterId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            if (response.ok) {
-                setSemesters(prevSemesters => prevSemesters.filter(semester => semester._id !== semesterId));
-            } else {
-                const error = await response.json();
-                console.error('Error deleting semester:', error.message);
-            }
+            setSemesters(prevSemesters => prevSemesters.filter(semester => semester._id !== semesterId));
         } catch (error) {
             console.error('Error deleting semester:', error.message);
         }
@@ -72,23 +56,13 @@ export const SemesterDataProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         
         try {
-            const response = await fetch(`/api/admin/semesters/${selectedSemesterId}`, {
+            const data = await apiRequest(`/api/admin/semesters/${selectedSemesterId}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(updatedSemester),
             });
-    
-            const data = await response.json();
-    
-            if (!response.ok) {
-                return {
-                    success: false,
-                    error: data.message || 'Failed to update semester'
-                };
-            }
     
             // Update the local state only if the API call was successful
             setSemesters((prevSemesters) =>
@@ -105,7 +79,7 @@ export const SemesterDataProvider = ({ children }) => {
         } catch (error) {
             return {
                 success: false,
-                error: 'Failed to update semester'
+                error: error.message || 'Failed to update semester'
             };
         }
     };
@@ -122,26 +96,19 @@ export const SemesterDataProvider = ({ children }) => {
         }
 
         try {
-            const response = await fetch('/api/admin/addSemesters', {
+            await apiRequest('/api/admin/addSemesters', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(semesterData),
             });
 
-            const json = await response.json();
-
-            if (!response.ok) {
-                setError(json.message || 'Failed to create semester');
-                toast.error(json.message || 'Failed to create semester');
-            } else {
-                fetchData();
-                toast.success('Semester created successfully!');
-            }
+            fetchData();
+            toast.success('Semester created successfully!');
         } catch (error) {
-            setError('An error occurred while creating the semester');
+            setError(error.message || 'An error occurred while creating the semester');
+            toast.error(error.message || 'Failed to create semester');
         } finally {
             setLoading(false);
         }

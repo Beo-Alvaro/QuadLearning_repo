@@ -1,6 +1,8 @@
 import React, { createContext, useState } from 'react';
 import { useAuth } from './authContext';
 import { ToastContainer, toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
+
 export const StrandDataContext = createContext();
 
 export const StrandDataProvider = ({ children }) => {
@@ -15,15 +17,11 @@ export const StrandDataProvider = ({ children }) => {
     setLoading(true);
     const storedToken = localStorage.getItem("token")
     try {
-      const response = await fetch('/api/admin/getStrands', {
-        method: 'GET',
+      const data = await apiRequest('/api/admin/getStrands', {
         headers: {
           Authorization: `Bearer ${storedToken}`,
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch strands');
-
-      const data = await response.json();
       setStudStrands(data);
     } catch (err) {
       setError(err.message);
@@ -34,21 +32,16 @@ export const StrandDataProvider = ({ children }) => {
 
   // Create a new strand
   const addStrand = async (newStrand) => {
-    const token = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/addStrands', {
+      await apiRequest('/api/admin/addStrands', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${storedToken}`,
         },
         body: JSON.stringify(newStrand),
       });
-      if (!response.ok) {
-        const json = await response.json();
-        throw new Error(json.message || 'Failed to create strand');
-      }
       await fetchStrands();
       toast.success('Strand created successfully!')
     } catch (err) {
@@ -60,20 +53,15 @@ export const StrandDataProvider = ({ children }) => {
 
   // Update a strand
   const updateStrand = async (id, updatedData) => {
+    const storedToken = localStorage.getItem('token');
     try {
-      const response = await fetch(`/api/admin/strands/${id}`, {
+      await apiRequest(`/api/admin/strands/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${storedToken}`,
         },
         body: JSON.stringify(updatedData),
       });
-
-      if (!response.ok) {
-        const json = await response.json();
-        throw new Error(json.message || 'Failed to update strand');
-      }
 
       await fetchStrands();
       toast.success('Strand updated successfully!')
@@ -84,15 +72,14 @@ export const StrandDataProvider = ({ children }) => {
 
   // Delete a strand
   const deleteStrand = async (id) => {
+    const storedToken = localStorage.getItem('token');
     try {
-      const response = await fetch(`/api/admin/strands/${id}`, {
+      await apiRequest(`/api/admin/strands/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${storedToken}`,
         },
       });
-
-      if (!response.ok) throw new Error('Failed to delete strand');
 
       setStudStrands((prevStrands) => prevStrands.filter((strand) => strand._id !== id));
       toast.error('Strand deleted successfully!')

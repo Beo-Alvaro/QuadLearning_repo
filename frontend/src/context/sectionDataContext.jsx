@@ -1,5 +1,7 @@
 import React, { createContext, useState } from 'react';
 import { toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
+
 export const SectionDataContext = createContext();
 
 export const SectionDataProvider = ({ children }) => {
@@ -16,20 +18,12 @@ export const SectionDataProvider = ({ children }) => {
     const fetchData = async () => {
         const token = localStorage.getItem('token');
         try {
-            const [sectionsResponse, strandsResponse, yearLevelsResponse] = await Promise.all([
-                fetch('/api/admin/getSections', { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
-                fetch('/api/admin/getStrands', { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
-                fetch('/api/admin/yearLevels', { method: 'GET', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }),
-            ]);
-
-            if (!sectionsResponse.ok || !strandsResponse.ok || !yearLevelsResponse.ok) {
-                throw new Error('Failed to fetch one or more resources');
-            }
-
+            const headers = { Authorization: `Bearer ${token}` };
+            
             const [sectionsData, strandsData, yearLevelsData] = await Promise.all([
-                sectionsResponse.json(),
-                strandsResponse.json(),
-                yearLevelsResponse.json(),
+                apiRequest('/api/admin/getSections', { headers }),
+                apiRequest('/api/admin/getStrands', { headers }),
+                apiRequest('/api/admin/yearLevels', { headers }),
             ]);
 
             setStudSections(sectionsData || []);
@@ -69,33 +63,24 @@ export const SectionDataProvider = ({ children }) => {
         const token = localStorage.getItem('token');
     
         try {
-            const response = await fetch(`/api/admin/sections/${selectedSectionId}`, {
+            const result = await apiRequest(`/api/admin/sections/${selectedSectionId}`, {
                 method: 'PUT',
                 headers: { 
-                    'Content-Type': 'application/json', 
                     Authorization: `Bearer ${token}` 
                 },
                 body: JSON.stringify(updatedSection),
             });
     
-            const result = await response.json();
-    
-            if (response.ok) {
-                // Update the sections state in the context
-                setStudSections((prevSections) =>
-                    prevSections.map((section) =>
-                        section._id === selectedSectionId ? result : section
-                    )
-                );
-                return true;
-            } else {
-                console.error('Error updating section:', result.message);
-                toast.error(result.message || 'Failed to update section');
-                return false;
-            }
+            // Update the sections state in the context
+            setStudSections((prevSections) =>
+                prevSections.map((section) =>
+                    section._id === selectedSectionId ? result : section
+                )
+            );
+            return true;
         } catch (error) {
             console.error('Failed to update section:', error);
-            toast.error('An error occurred while updating the section');
+            toast.error(error.message || 'An error occurred while updating the section');
             return false;
         }
     };
@@ -105,17 +90,12 @@ export const SectionDataProvider = ({ children }) => {
     const deleteHandler = async (sectionId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`/api/admin/sections/${sectionId}`, {
+            await apiRequest(`/api/admin/sections/${sectionId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
 
-            if (response.ok) {
-                setStudSections((prevSections) => prevSections.filter((section) => section._id !== sectionId));
-            } else {
-                const json = await response.json();
-                setError(json.message);
-            }
+            setStudSections((prevSections) => prevSections.filter((section) => section._id !== sectionId));
         } catch (error) {
             setError('Failed to delete section');
         }
@@ -163,28 +143,21 @@ const checkDuplicateSection = (sectionName, strandId, yearLevelId, currentId = n
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/addSections', {
+            await apiRequest('/api/admin/addSections', {
                 method: 'POST',
                 body: JSON.stringify(sectionData),
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            const json = await response.json();
-
-            if (!response.ok) {
-                setError(json.message || 'Failed to create section');
-            } else {
-                setName('');
-                setLinkedStrand('');
-                setLinkedYearLevel('');
-                fetchData();
-                toast.success('Section created successfully!')
-            }
+            setName('');
+            setLinkedStrand('');
+            setLinkedYearLevel('');
+            fetchData();
+            toast.success('Section created successfully!')
         } catch (error) {
-            setError('An error occurred while creating the section');
+            setError(error.message || 'An error occurred while creating the section');
         } finally {
             setLoading(false);
         }

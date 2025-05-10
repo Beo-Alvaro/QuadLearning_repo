@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
+
 export const SubjectDataContext = createContext();
 
 export const SubjectDataProvider = ({ children }) => {
@@ -21,23 +23,15 @@ export const SubjectDataProvider = ({ children }) => {
     const fetchAllData = async () => {
         const token = localStorage.getItem('token');
         const headers = {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         };
     
         try {
-            const [subjectsResponse, semestersResponse, strandsResponse, yearLevelsResponse] = await Promise.all([
-                fetch('/api/admin/getSubjects', { headers }),
-                fetch('/api/admin/semesters', { headers }),
-                fetch('/api/admin/getStrands', { headers }),
-                fetch('/api/admin/yearLevels', { headers })
-            ]);
-    
             const [subjectsData, semestersData, strandsData, yearLevelsData] = await Promise.all([
-                subjectsResponse.json(),
-                semestersResponse.json(),
-                strandsResponse.json(),
-                yearLevelsResponse.json()
+                apiRequest('/api/admin/getSubjects', { headers }),
+                apiRequest('/api/admin/semesters', { headers }),
+                apiRequest('/api/admin/getStrands', { headers }),
+                apiRequest('/api/admin/yearLevels', { headers })
             ]);
     
             setStudSubjects(subjectsData);
@@ -57,27 +51,21 @@ export const SubjectDataProvider = ({ children }) => {
         setError('');
     
         try {
-            const response = await fetch('/api/admin/addSubjects', {
+            await apiRequest('/api/admin/addSubjects', {
                 method: 'POST',
                 body: JSON.stringify(subjectData),
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
     
-            const json = await response.json();
-    
-            if (!response.ok) {
-                toast.error(json.message || 'Failed to create subject');
-            } else {
-                fetchAllData();
-                console.log('Subject created successfully');
-                toast.success('Subject created successfully!')
-            }
+            fetchAllData();
+            console.log('Subject created successfully');
+            toast.success('Subject created successfully!')
         } catch (error) {
-            setError('An error occurred while creating the subject');
+            setError(error.message || 'An error occurred while creating the subject');
             console.error('Error:', error);
+            toast.error(error.message || 'Failed to create subject');
         } finally {
             setLoading(false);
         }
@@ -88,31 +76,23 @@ export const SubjectDataProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         
         try {
-          const response = await fetch(`/api/admin/subjects/${selectedSubjectId}`, {
+          const result = await apiRequest(`/api/admin/subjects/${selectedSubjectId}`, {
             method: 'PUT',
             headers: {
-              'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(updatedSubject),
           });
           
-          const result = await response.json();
-          
-          if (response.ok) {
-            setStudSubjects((prevSubjects) =>
-              prevSubjects.map((subject) =>
-                subject._id === selectedSubjectId ? result : subject
-              )
-            );
-            toast.success('Subject updated successfully!')
-          } else {
-            console.error('Error updating subject:', result);
-            toast.error(result.message || 'Failed to update subject');
-          }
+          setStudSubjects((prevSubjects) =>
+            prevSubjects.map((subject) =>
+              subject._id === selectedSubjectId ? result : subject
+            )
+          );
+          toast.success('Subject updated successfully!')
         } catch (error) {
           console.error('Failed to update subject:', error);
-          toast.error('An error occurred while updating the subject');
+          toast.error(error.message || 'An error occurred while updating the subject');
         }
         fetchAllData();
       };
@@ -123,22 +103,16 @@ export const SubjectDataProvider = ({ children }) => {
     const handleDeleteSubject = async (subjectId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`/api/admin/subjects/${subjectId}`, {
+            await apiRequest(`/api/admin/subjects/${subjectId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 }
             });
     
-            if (response.ok) {
-                setStudSubjects(prevSubjects => prevSubjects.filter(subject => subject._id !== subjectId));
-            } else {
-                const json = await response.json();
-                setError(json.message);
-            }
+            setStudSubjects(prevSubjects => prevSubjects.filter(subject => subject._id !== subjectId));
         } catch (error) {
-            setError('Failed to delete subject');
+            setError(error.message || 'Failed to delete subject');
         }
         fetchAllData();
     };
