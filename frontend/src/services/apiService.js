@@ -196,6 +196,15 @@ export const teacherAPI = {
 
 // Admin related API calls
 export const adminAPI = {
+  // Get all users
+  getAllUsers: async () => {
+    return apiRequest('/api/admin/getUsers', {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
   // Get semesters
   getSemesters: async () => {
     return apiRequest('/api/admin/semesters', {

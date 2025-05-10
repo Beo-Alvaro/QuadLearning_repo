@@ -8,6 +8,8 @@ import AdminSidebar from './AdminSidebar';
 import '../AdminComponents/AdminTableList.css';
 import { useState, useEffect } from 'react';
 import AdminViewAllUsersScreen from '../AdminScreens/AdminViewAllUsersScreen';
+import { apiRequest } from '../utils/api';
+import { adminAPI } from '../services/apiService';
 
 const AdminCardsCharts = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -23,24 +25,12 @@ const AdminCardsCharts = () => {
 
     useEffect(() => {
         const fetchDashboardData = async () => {
-            const token = localStorage.getItem('token');
             try {
-                const [usersRes, strandsRes, sectionsRes] = await Promise.all([
-                    fetch('/api/admin/getUsers', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }),
-                    fetch('/api/admin/getStrands', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }),
-                    fetch('/api/admin/getSections', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    })
-                ]);
-
+                // Use the apiRequest function or adminAPI from the service
                 const [users, strands, sections] = await Promise.all([
-                    usersRes.json(),
-                    strandsRes.json(),
-                    sectionsRes.json()
+                    adminAPI.getAllUsers(),
+                    adminAPI.getStrands(),
+                    adminAPI.getSections()
                 ]);
 
                 // Calculate dashboard stats
@@ -54,8 +44,8 @@ const AdminCardsCharts = () => {
                     totalSections: sections.length
                 });
 
-                 // Calculate students per strand
-                 const strandDistribution = strands.map(strand => ({
+                // Calculate students per strand
+                const strandDistribution = strands.map(strand => ({
                     name: strand.name,
                     Students: students.filter(student => 
                         student.strand && student.strand._id === strand._id
@@ -64,15 +54,13 @@ const AdminCardsCharts = () => {
 
                 setStrandStats(strandDistribution);
 
-                
                 // Calculate sections per strand
-             const sectionsPerStrand = strands.map(strand => ({
-                name: strand.name,
-                Sections: sections.filter(section => section.strand && section.strand._id === strand._id).length
-            }));
+                const sectionsPerStrand = strands.map(strand => ({
+                    name: strand.name,
+                    Sections: sections.filter(section => section.strand && section.strand._id === strand._id).length
+                }));
 
-            setSectionDistribution(sectionsPerStrand); // Update the state with sections per strand
-
+                setSectionDistribution(sectionsPerStrand); // Update the state with sections per strand
                 setUsers(users);
 
             } catch (error) {
