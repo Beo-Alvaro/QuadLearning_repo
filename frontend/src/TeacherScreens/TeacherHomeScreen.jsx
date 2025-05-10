@@ -8,7 +8,7 @@ import {
 import { Calendar, Users, BookOpen, Award, BarChart2 } from 'lucide-react';
 import TeacherDashboardNavbar from '../TeacherComponents/TeacherDashboardNavbar';
 import './Teacher.css';
-import axios from 'axios';
+import { apiRequest } from '../utils/api';
 
 const TeacherHomeScreen = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -43,12 +43,12 @@ const fetchSemesters = useCallback(async () => {
   try {
     setIsLoadingAttendance(true); // Add loading state
     const config = getAuthConfig();
-    const response = await axios.get('/api/teacher/getSemesters', config);
-    console.log('Fetched semesters:', response.data);
+    const data = await apiRequest('/api/teacher/getSemesters', config);
+    console.log('Fetched semesters:', data);
     
-    if (response.data && response.data.length > 0) {
-      setSemesters(response.data);
-      setSelectedSemester(response.data[0]._id);
+    if (data && data.length > 0) {
+      setSemesters(data);
+      setSelectedSemester(data[0]._id);
     } else {
       console.log('No semesters found');
       setSemesters([]);
@@ -69,8 +69,7 @@ const fetchSemesters = useCallback(async () => {
     const token = localStorage.getItem('token');
     return {
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: token ? `Bearer ${token}` : ''
+        Authorization: `Bearer ${token}`
       }
     };
   };
@@ -79,13 +78,13 @@ const fetchSemesters = useCallback(async () => {
 const fetchSectionAverages = useCallback(async () => {
   try {
     const config = getAuthConfig();
-    const response = await axios.get(
+    const data = await apiRequest(
       `/api/teacher/section-averages?semester=${selectedSemester}`,
       config
     );
 
-    if (response.data.success) {
-      setSectionAverages(response.data.data);
+    if (data.success) {
+      setSectionAverages(data.data);
     }
   } catch (error) {
     console.error('Error fetching section averages:', error);
@@ -111,7 +110,7 @@ const fetchSubjectPerformance = useCallback(async () => {
     console.log('Fetching subject performance for semester:', selectedSemester);
     const config = getAuthConfig();
     
-    const response = await axios.get(
+    const data = await apiRequest(
       `/api/teacher/subject-performance`,
       {
         ...config,
@@ -121,10 +120,10 @@ const fetchSubjectPerformance = useCallback(async () => {
       }
     );
 
-    console.log('Subject performance API response:', response.data);
+    console.log('Subject performance API response:', data);
 
-    if (response.data.success && Array.isArray(response.data.data)) {
-      setSubjectPerformance(response.data.data);
+    if (data.success && Array.isArray(data.data)) {
+      setSubjectPerformance(data.data);
     }
   } catch (error) {
     console.error('Error fetching subject performance:', error);
@@ -146,8 +145,8 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
   const fetchDashboardData = useCallback(async () => {
     try {
       const config = getAuthConfig();
-      const response = await axios.get('/api/teacher/dashboard', config);
-      setDashboardData(response.data.data);
+      const data = await apiRequest('/api/teacher/dashboard', config);
+      setDashboardData(data.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -191,17 +190,17 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
       const config = getAuthConfig();
       
       console.log(`Fetching attendance data for ${weekType} week...`);
-      const response = await axios.get(
+      const data = await apiRequest(
         `/api/teacher/attendance/summary?week=${weekType}&semester=${selectedSemester}`,
         config
       );
       
-      if (response.data && response.data.success) {
-        const formattedData = transformAttendanceData(response.data.data);
+      if (data && data.success) {
+        const formattedData = transformAttendanceData(data.data);
         setAttendanceData(formattedData);
         
-        if (response.data.data.dateRange) {
-          setDateRange(response.data.data.dateRange);
+        if (data.data.dateRange) {
+          setDateRange(data.data.dateRange);
         }
       } else {
         setAttendanceData([]);
