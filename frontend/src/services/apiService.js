@@ -195,11 +195,18 @@ export const teacherAPI = {
   
   // Get student by ID
   getStudentById: async (studentId) => {
-    return apiRequest(`/api/teacher/student/${studentId}`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    });
+    try {
+      console.log('Getting student by ID:', studentId);
+      const response = await apiRequest(`/api/teacher/student/${studentId}`, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`
+        }
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching student by ID:', error);
+      throw error;
+    }
   },
   
   // Update student data

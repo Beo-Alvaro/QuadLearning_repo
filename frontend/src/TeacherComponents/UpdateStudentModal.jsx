@@ -44,15 +44,20 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const [downloading, setDownloading] = useState(false)
 
   const fetchStudentData = useCallback(async () => {
-    if (!studentId) return
+    if (!studentId) {
+      console.log('No studentId provided to fetchStudentData');
+      return;
+    }
 
     try {
-      setIsLoading(true)
-      const response = await teacherAPI.getStudentById(studentId)
+      setIsLoading(true);
+      console.log('Fetching student data for ID:', studentId);
+      
+      const response = await teacherAPI.getStudentById(studentId);
       console.log('Student data response:', response);
       
       if (response && response.data) {
-        const studentData = response.data
+        const studentData = response.data;
         setFormData({
           firstName: studentData.firstName || "",
           middleName: studentData.middleName || "",
@@ -85,17 +90,18 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
           },
           contactNumber: studentData.contactNumber || "",
           lrn: studentData.lrn || "",
-        })
+        });
       } else {
-        toast.error("No student data found or invalid response format")
+        console.error("Invalid or empty student data received:", response);
+        toast.error("No student data found or invalid response format");
       }
     } catch (error) {
-      console.error("Error fetching student data:", error)
-      toast.error("Failed to fetch student data")
+      console.error("Error fetching student data:", error);
+      toast.error(`Failed to fetch student data: ${error.message || "Unknown error"}`);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [studentId])
+  }, [studentId]);
 
   useEffect(() => {
     if (show && studentId) {

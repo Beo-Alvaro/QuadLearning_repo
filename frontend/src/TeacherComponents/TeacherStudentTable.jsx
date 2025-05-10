@@ -142,7 +142,14 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
                                     <Button 
     variant="outline-success" 
     size="sm"
-    onClick={() => handleViewStudent(student.user || student._id)} // Update this line
+    onClick={() => {
+        console.log('Student data:', student);
+        // Ensure we're passing the correct user ID
+        // User ID might be stored in different properties depending on API response format
+        const userId = student.user?._id || student.user || student._id;
+        console.log('Passing user ID to handleViewStudent:', userId);
+        handleViewStudent(userId);
+    }}
     className="action-button"
 >
     <i className="bi bi-eye me-1"></i>

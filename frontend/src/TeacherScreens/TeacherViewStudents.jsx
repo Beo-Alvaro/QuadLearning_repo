@@ -28,8 +28,29 @@ const TeacherViewStudents = () => {
     }, [])
 
     const handleViewStudent = (student) => {
-        // Make sure we're passing the user ID, not the student record ID
-        const userId = typeof student === 'string' ? student : student.user;
+        console.log('handleViewStudent called with:', student);
+        
+        // Handle different formats of student data
+        let userId;
+        if (typeof student === 'string') {
+            // If already a string ID
+            userId = student;
+        } else if (student?.user && typeof student.user === 'string') {
+            // If student object with user as string ID
+            userId = student.user;
+        } else if (student?.user?._id) {
+            // If student object with user as object
+            userId = student.user._id;
+        } else if (student?._id) {
+            // Fallback to _id if user property is not available
+            userId = student._id;
+        } else {
+            console.error('Unable to extract user ID from student data:', student);
+            toast.error('Unable to view student details. Invalid student data.');
+            return;
+        }
+        
+        console.log('Setting selectedStudentId to:', userId);
         setSelectedStudentId(userId);
         setShowModal(true);
     };
