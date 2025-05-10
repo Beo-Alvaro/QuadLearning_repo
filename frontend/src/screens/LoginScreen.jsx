@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 import './LoginScreen.css';
 import { useAuth } from '../context/authContext';
+import { loginUser } from '../utils/api';
 
 const LoginScreen = () => {
   const [username, setUserName] = useState('');
@@ -12,7 +13,7 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'TROPICALVNHS12345';
+  const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY;
   const API_URL = import.meta.env.VITE_API_URL || '';
   const { login } = useAuth();
 
@@ -22,31 +23,17 @@ const LoginScreen = () => {
     setError('');
 
     try {
+      // Encrypt the password
       const encryptedPassword = CryptoJS.AES.encrypt(
         password,
         ENCRYPTION_KEY
       ).toString();
-
-      const response = await fetch(`${API_URL}/api/users/auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password: encryptedPassword, isEncrypted: true }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 423) {
-          throw new Error(data.message || 'Account is locked. Please try again later.');
-        }
-        throw new Error(data.message || 'Invalid credentials');
-      }
-
-      // Store auth data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userInfo', JSON.stringify(data.user));
+      
+      console.log('Making login request to API');
+      
+      // Use our API helper for login
+      const data = await loginUser(username, encryptedPassword, true);
+      console.log('Login successful');
       
       // Update auth context
       await login(data.token, data.user);
@@ -70,6 +57,7 @@ const LoginScreen = () => {
       }
 
     } catch (err) {
+      console.error('Login error:', err);
       setLoading(false);
       setError(err.message);
       
