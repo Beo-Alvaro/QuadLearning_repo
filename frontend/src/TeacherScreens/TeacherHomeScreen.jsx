@@ -77,17 +77,28 @@ const fetchSemesters = useCallback(async () => {
 // Add function to fetch section averages
 const fetchSectionAverages = useCallback(async () => {
   try {
+    if (!selectedSemester) {
+      console.log('No semester selected, skipping section averages fetch');
+      return;
+    }
+    
+    console.log('Fetching section averages for semester:', selectedSemester);
     const config = getAuthConfig();
     const data = await apiRequest(
       `/api/teacher/section-averages?semester=${selectedSemester}`,
       config
     );
 
+    console.log('Section averages API response:', data);
+
     if (data.success) {
       setSectionAverages(data.data);
+    } else {
+      console.error('Failed to fetch section averages:', data.message);
     }
   } catch (error) {
     console.error('Error fetching section averages:', error);
+    setSectionAverages([]); // Reset to empty array on error
   }
 }, [selectedSemester]);
 
@@ -111,13 +122,8 @@ const fetchSubjectPerformance = useCallback(async () => {
     const config = getAuthConfig();
     
     const data = await apiRequest(
-      `/api/teacher/subject-performance`,
-      {
-        ...config,
-        params: {
-          semesterId: selectedSemester
-        }
-      }
+      `/api/teacher/subject-performance?semesterId=${selectedSemester}`,
+      config
     );
 
     console.log('Subject performance API response:', data);
