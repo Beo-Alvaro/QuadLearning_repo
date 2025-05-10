@@ -293,11 +293,12 @@ const handleEditSubmit = async (e) => {
         !editUser.section || !editUser.yearLevel || !editUser.semester || 
         !editUser.subjects || editUser.subjects.length === 0) {
         toast.error('Please fill in all required fields');
+        setLoading(false);
         return;
     }
     try {
         const userData = {
-            username: editUser.username,
+            username: editUser.username && typeof editUser.username === 'string' ? editUser.username.trim() : editUser.username,
             role: 'student',
             sections: [editUser.section || null], // Ensure null if undefined or empty
             strand: editUser.strand,
@@ -306,9 +307,20 @@ const handleEditSubmit = async (e) => {
             subjects: editUser.subjects,
         };
 
+        console.log('Updating student data:', userData);
+        // Add detailed logging for debugging
+        console.log('Username:', userData.username, 'Type:', typeof userData.username);
+        console.log('Role:', userData.role, 'Type:', typeof userData.role);
+        console.log('Sections:', userData.sections, 'Type:', typeof userData.sections);
+        console.log('Strand:', userData.strand, 'Type:', typeof userData.strand);
+        console.log('YearLevel:', userData.yearLevel, 'Type:', typeof userData.yearLevel);
+        console.log('Semester:', userData.semester, 'Type:', typeof userData.semester);
+        console.log('Subjects:', userData.subjects, 'Type:', typeof userData.subjects);
+
         const data = await apiRequest(`/api/admin/users/${editUser.id}`, {
             method: 'PUT',
             headers: {
+                'Content-Type': 'application/json',
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
             body: JSON.stringify(userData),
@@ -316,26 +328,12 @@ const handleEditSubmit = async (e) => {
 
         console.log('Response data:', data);
 
-        if (!data.ok) {
-            // Check for specific error types
-            if (data.status === 400) {
-                if (data.message?.includes('E11000') || 
-                    data.message?.includes('duplicate key') || 
-                    data.message?.includes('Username already exists')) {
-                    toast.error('This LRN is already taken!', {
-                    });
-                    return;
-                }
-            }
-            throw new Error(data.message || 'Failed to create student account');
-        }
-
         handleEditClose();
         fetchData(); // Refresh the data
         toast.success('User updated successfully!');
     } catch (error) {
-        toast.error(error.message)
-        setError(error.message);
+        toast.error(error.message || 'Failed to update student account')
+        setError(error.message || 'Failed to update student account');
         console.error('Error:', error);
     } finally {
         setLoading(false);

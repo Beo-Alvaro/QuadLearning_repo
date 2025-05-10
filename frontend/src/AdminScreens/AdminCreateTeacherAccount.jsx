@@ -203,11 +203,18 @@ const handleAddUser = async (e) => {
 };
 
     const handleEditShow = async (user) => {
+        console.log("Edit user clicked:", user);
+        if (!user || !user._id) {
+            console.error("Invalid user object:", user);
+            toast.error("Could not edit - invalid user data");
+            return;
+        }
+        
         setSelectedUserId(user._id);
         
         // Populate form with the selected user's data
         const initialEditData = {
-            username: user.username,
+            username: user.username || '',
             password: '', // Usually don't populate existing passwords
             role: 'teacher',
             sections: user.sections?.map(section => section._id) || [],
@@ -216,6 +223,7 @@ const handleAddUser = async (e) => {
             advisorySection: user.advisorySection?.section?._id || ''
         };
         
+        console.log("Setting form data:", initialEditData);
         setNewUser(initialEditData);
         
         // Fetch available subjects for the selected sections
@@ -224,16 +232,19 @@ const handleAddUser = async (e) => {
             const subjectData = await apiRequest('/api/admin/subjects/filter', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     sections: initialEditData.sections,
-                    yearLevels: [] // Keep this to maintain API compatibility
+                    semesters: initialEditData.semesters
                 })
             });
             
+            console.log("Fetched subjects:", subjectData);
             setAvailableSubjects(subjectData || []);
             setShowEditModal(true);
+            console.log("Edit modal should be shown now");
         } catch (error) {
             console.error('Error fetching subjects:', error);
             toast.error('Failed to load subject data. Please try again.');
@@ -343,22 +354,9 @@ const [editUser, setEditUser] = useState({
         if (direction === 'next' && currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
     
-    // Check if the data exists before rendering
-    {filteredUsers?.length > 0 && (
-        <AdminTeacherTable
-            filteredUsers={filteredUsers}
-            showEditModal={handleEditShow}
-            handleShow={handleShow}
-            currentPage={currentPage}
-            entriesPerPage={entriesPerPage}
-            handlePageChange={handlePageChange}
-            totalPages={totalPages}
-        />
-    )}
-    
     useEffect(() => {
         fetchData();
-      }, []); 
+      }, []);
 
     useEffect(() => {
         const filterSubjects = async () => {
