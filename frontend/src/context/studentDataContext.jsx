@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiRequest } from '../utils/api';
 
 export const StudentDataContext = createContext();
 
@@ -17,6 +18,8 @@ export const StudentDataProvider = ({ children }) => {
     const token = localStorage.getItem('token');
 
     try {
+      const headers = { Authorization: `Bearer ${token}` };
+      
       const endpoints = [
         { url: '/api/admin/users?role=student', label: 'Users', setter: setUsers },
         { url: '/api/admin/getStrands', label: 'Strands', setter: setStrands },
@@ -26,43 +29,24 @@ export const StudentDataProvider = ({ children }) => {
         { url: '/api/admin/yearLevels', label: 'Year Levels', setter: setYearLevels },
       ];
 
-      const fetchPromises = endpoints.map(({ url }) => 
-        fetch(url, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+      const apiPromises = endpoints.map(({ url }) => 
+        apiRequest(url, { headers })
       );
 
-      const responses = await Promise.all(fetchPromises);
+      const results = await Promise.all(apiPromises);
 
-      const handleResponse = async (res, label) => {
-        if (!res.ok) {
-          const errorDetails = await res.clone().text();
-          console.error(`${label} Error:`, {
-            status: res.status,
-            statusText: res.statusText,
-            errorDetails,
-          });
-          return null;
-        }
-        return await res.json();
-      };
-
-      const data = await Promise.all(responses.map((res, index) =>
-        handleResponse(res, endpoints[index].label)
-      ));
-
-      data.forEach((result, index) => {
-        if (result !== null) {
-          endpoints[index].setter(sanitizeData(result));
+      // Update state with the results
+      endpoints.forEach((endpoint, index) => {
+        if (results[index] !== null) {
+          endpoint.setter(sanitizeData(results[index]));
         }
       });
 
     } catch (error) {
-      console.error('Comprehensive Error fetching dropdown data:', error);
-      setError('An unexpected error occurred while fetching data');
+      console.error('Error fetching data:', error);
+      setError(error.message || 'An unexpected error occurred while fetching data');
     }
   };
-
-
-  
 
   return (
     <StudentDataContext.Provider value={{ users, strands, sections, subjects, semesters, yearLevels, error, fetchData }}>
