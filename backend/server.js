@@ -15,6 +15,32 @@ const port = process.env.PORT || 5000;
 
 const app = express();
 
+// CORS configuration for production
+app.use((req, res, next) => {
+    // Allow frontend domain in production
+    const allowedOrigins = [
+        'http://localhost:3000',  // Development frontend
+        process.env.FRONTEND_URL, // Production frontend URL (set in Render)
+    ];
+    
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    // Allow credentials and necessary headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
+
 // Middleware setup
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(express.json()); // For parsing application/json
