@@ -191,6 +191,53 @@ export const teacherAPI = {
         Authorization: `Bearer ${getToken()}`
       }
     });
+  },
+  
+  // Get student by ID
+  getStudentById: async (studentId) => {
+    return apiRequest(`/api/teacher/student/${studentId}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    });
+  },
+  
+  // Generate Form 137
+  generateForm137: async (studentId) => {
+    try {
+      const response = await fetch(`/api/teacher/generate-form137/${studentId}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${getToken()}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate Form 137');
+      }
+      
+      // Check if response is a blob
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/pdf')) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Form137_${studentId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return { success: true };
+      } else {
+        // If not a blob, parse as JSON
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      console.error('Error generating Form 137:', error);
+      throw error;
+    }
   }
 };
 

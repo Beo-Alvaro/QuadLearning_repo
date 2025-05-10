@@ -48,6 +48,7 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
     try {
       setIsLoading(true)
       const response = await teacherAPI.getStudentById(studentId)
+      console.log('Student data response:', response);
       
       if (response && response.data) {
         const studentData = response.data
@@ -55,11 +56,37 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
           firstName: studentData.firstName || "",
           middleName: studentData.middleName || "",
           lastName: studentData.lastName || "",
+          suffix: studentData.suffix || "",
           gender: studentData.gender || "",
           address: studentData.address || "",
           birthdate: studentData.birthdate ? new Date(studentData.birthdate).toISOString().split("T")[0] : "",
-          guardian: studentData.guardian?.name || "",
+          birthplace: {
+            province: studentData.birthplace?.province || "",
+            municipality: studentData.birthplace?.municipality || "",
+            barrio: studentData.birthplace?.barrio || "",
+          },
+          yearLevel: studentData.yearLevel || "",
+          section: studentData.section || "",
+          strand: studentData.strand || "",
+          guardian: {
+            name: studentData.guardian?.name || "",
+            occupation: studentData.guardian?.occupation || "",
+            contactNumber: studentData.guardian?.contactNumber || "",
+            motherFullName: studentData.guardian?.motherFullName || "",
+            fatherFullName: studentData.guardian?.fatherFullName || "",
+          },
+          school: {
+            name: studentData.school?.name || "Tropical Village National Highschool",
+            year: studentData.school?.year || "",
+          },
+          attendance: {
+            totalYears: studentData.attendance?.totalYears || "",
+          },
+          contactNumber: studentData.contactNumber || "",
+          lrn: studentData.lrn || "",
         })
+      } else {
+        toast.error("No student data found or invalid response format")
       }
     } catch (error) {
       console.error("Error fetching student data:", error)
