@@ -170,21 +170,22 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
 
       console.log('Updating student with data:', payload)
 
-      // Use the new teacherAPI.updateStudent method
+      // Use the teacherAPI.updateStudent method
       const response = await teacherAPI.updateStudent(studentId, payload)
 
       console.log('Update student response:', response)
 
-      if (response.success) {
+      if (response && response.success) {
         setIsEditing(false)
         toast.success("Student information updated successfully!")
         await fetchStudentData()
       } else {
-        throw new Error(response.message || "Failed to update student")
+        throw new Error(response?.message || "Failed to update student")
       }
     } catch (error) {
       console.error("Error updating student:", error)
-      toast.error(`Failed to update student: ${error.message || "Unknown error"}`)
+      const errorMessage = error.message || "Unknown error occurred"
+      toast.error(`Failed to update student: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }

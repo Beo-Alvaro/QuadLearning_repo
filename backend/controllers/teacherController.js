@@ -24,118 +24,127 @@ const __dirname = path.dirname(__filename)
 // @route   PUT /api/teachers/student/:studentId/form
 // @access  Private (teacher role)
 const fillOutStudentForm = asyncHandler(async (req, res) => {
-    const { studentId } = req.params;
-    const teacherId = req.user._id; // Authenticated teacher's ID
+    try {
+        const { studentId } = req.params;
+        const teacherId = req.user._id; // Authenticated teacher's ID
 
+        console.log('Updating student form for ID:', studentId, 'by teacher:', teacherId);
 
-      // First get the user to get their section
-      const user = await User.findById(studentId)
-      .populate('sections')
-      .populate('strand')
-      .populate('yearLevel')
+        // First get the user to get their section
+        const user = await User.findById(studentId)
+            .populate('sections')
+            .populate('strand')
+            .populate('yearLevel');
 
-    if (!user) {
-        res.status(404);
-        throw new Error('User not found');
-    }
-
-    // Get the user's first section
-    const userSection = user.sections?.[0];
-    if (!userSection) {
-        res.status(400);
-        throw new Error('Student not assigned to any section');
-    }
-
-    // Fetch teacher's assigned sections
-    const teacherSections = await Section.find({ teacher: teacherId });
-    
-    // Check if teacher is authorized for this section
-    const isAuthorized = teacherSections.some(section => 
-        section._id.toString() === userSection._id.toString()
-    );
-
-
-    if (!isAuthorized) {
-        res.status(403);
-        throw new Error('Not authorized to update this student');
-    }
-
-
-    // Find the student record
-    const student = await Student.findOne({ user: studentId });
-    if (!student) {
-        res.status(404);
-        throw new Error('Student record not found');
-    }
-
-
-    // Update fields based on the student model
-    const {
-        firstName,
-        lastName,
-        middleName,
-        suffix,
-        gender,
-        birthdate,
-        birthplace,
-        address,
-        guardian,
-        school,
-        attendance,
-        contactNumber,
-    } = req.body;
-
-    // Update basic information
-
-    if (firstName) student.firstName = firstName;
-    if (lastName) student.lastName = lastName;
-    if (middleName) student.middleName = middleName;
-    if (suffix) student.suffix = suffix;
-    if (gender) student.gender = gender;
-    if (birthdate) student.birthdate = birthdate;
-    if (birthplace) student.birthplace = birthplace;
-    if (address) student.address = address;
-    if (guardian) student.guardian = { ...student.guardian, ...guardian };
-    if (school) student.school = { ...student.school, ...school };
-    if (attendance) student.attendance = { ...student.attendance, ...attendance };
-    if (contactNumber) student.contactNumber = contactNumber;
-
-    // Update academic information from the User model
-    student.yearLevel = user.yearLevel?._id;
-    student.section = user.sections?.[0]?._id;
-    student.strand = user.strand?._id;
-
-    // Save the student
-    await student.save();
-
-    // Fetch the updated student with populated fields
-    const updatedStudent = await Student.findOne({ user: studentId })
-        .populate('yearLevel')
-        .populate('section')
-        .populate('strand');
-
-    res.status(200).json({
-        success: true,
-        message: 'Student profile updated successfully',
-        student: {
-            firstName: updatedStudent.firstName,
-            lastName: updatedStudent.lastName,
-            middleName: updatedStudent.middleName,
-            suffix: updatedStudent.suffix,
-            gender: updatedStudent.gender,
-            birthdate: updatedStudent.birthdate,
-            birthplace: updatedStudent.birthplace,
-            address: updatedStudent.address,
-            guardian: updatedStudent.guardian,
-            school: updatedStudent.school,
-            attendance: updatedStudent.attendance,
-            contactNumber: updatedStudent.contactNumber,
-            yearLevel: updatedStudent.yearLevel?.name,
-            section: updatedStudent.section?.name,
-            strand: updatedStudent.strand?.name,
+        if (!user) {
+            console.log('User not found with ID:', studentId);
+            res.status(404);
+            throw new Error('User not found');
         }
 
-    });
+        // Get the user's first section
+        const userSection = user.sections?.[0];
+        if (!userSection) {
+            console.log('Student not assigned to any section:', studentId);
+            res.status(400);
+            throw new Error('Student not assigned to any section');
+        }
+
+        // Fetch teacher's assigned sections
+        const teacherSections = await Section.find({ teacher: teacherId });
+        
+        // Check if teacher is authorized for this section
+        const isAuthorized = teacherSections.some(section => 
+            section._id.toString() === userSection._id.toString()
+        );
+
+        if (!isAuthorized) {
+            console.log('Teacher not authorized for this section. Teacher:', teacherId, 'Section:', userSection._id);
+            res.status(403);
+            throw new Error('Not authorized to update this student');
+        }
+
+        // Find the student record
+        const student = await Student.findOne({ user: studentId });
+        if (!student) {
+            console.log('Student record not found for user:', studentId);
+            res.status(404);
+            throw new Error('Student record not found');
+        }
+
+        console.log('Found student record:', student._id);
+
+        // Update fields based on the student model
+        const {
+            firstName,
+            lastName,
+            middleName,
+            suffix,
+            gender,
+            birthdate,
+            birthplace,
+            address,
+            guardian,
+            school,
+            attendance,
+            contactNumber,
+        } = req.body;
+
+        // Update basic information
+        if (firstName) student.firstName = firstName;
+        if (lastName) student.lastName = lastName;
+        if (middleName) student.middleName = middleName;
+        if (suffix) student.suffix = suffix;
+        if (gender) student.gender = gender;
+        if (birthdate) student.birthdate = birthdate;
+        if (birthplace) student.birthplace = birthplace;
+        if (address) student.address = address;
+        if (guardian) student.guardian = { ...student.guardian, ...guardian };
+        if (school) student.school = { ...student.school, ...school };
+        if (attendance) student.attendance = { ...student.attendance, ...attendance };
+        if (contactNumber) student.contactNumber = contactNumber;
+
+        // Update academic information from the User model
+        student.yearLevel = user.yearLevel?._id;
+        student.section = user.sections?.[0]?._id;
+        student.strand = user.strand?._id;
+
+        // Save the student
+        await student.save();
+        console.log('Student updated successfully:', student._id);
+
+        // Fetch the updated student with populated fields
+        const updatedStudent = await Student.findOne({ user: studentId })
+            .populate('yearLevel')
+            .populate('section')
+            .populate('strand');
+
+        res.status(200).json({
+            success: true,
+            message: 'Student profile updated successfully',
+            student: {
+                firstName: updatedStudent.firstName,
+                lastName: updatedStudent.lastName,
+                middleName: updatedStudent.middleName,
+                suffix: updatedStudent.suffix,
+                gender: updatedStudent.gender,
+                birthdate: updatedStudent.birthdate,
+                birthplace: updatedStudent.birthplace,
+                address: updatedStudent.address,
+                guardian: updatedStudent.guardian,
+                school: updatedStudent.school,
+                attendance: updatedStudent.attendance,
+                contactNumber: updatedStudent.contactNumber,
+                yearLevel: updatedStudent.yearLevel?.name,
+                section: updatedStudent.section?.name,
+                strand: updatedStudent.strand?.name,
+            }
+        });
+    } catch (error) {
+        console.error('Error updating student form:', error);
+        res.status(res.statusCode === 200 ? 500 : res.statusCode);
+        throw error;
+    }
 });
 
 
@@ -1753,7 +1762,7 @@ endDate.setDate(startDate.getDate() + 6); // Always end on Sunday
     const dayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 6 = Saturday
     const dayOfMonth = date.getDate();
   
-    // Calculate adjusted start of the week (so the first week isn’t cut off)
+    // Calculate adjusted start of the week (so the first week isn't cut off)
     const adjustedDay = dayOfMonth + dayOfWeek - 1;
   
     // Calculate the week number (1-indexed)

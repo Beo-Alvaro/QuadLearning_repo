@@ -204,13 +204,23 @@ export const teacherAPI = {
   
   // Update student data
   updateStudent: async (studentId, studentData) => {
-    return apiRequest(`/api/teacher/student/${studentId}/form`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      },
-      body: JSON.stringify(studentData)
-    });
+    try {
+      const response = await apiRequest(`/api/teacher/student/${studentId}/form`, {
+        method: 'POST', 
+        headers: {
+          Authorization: `Bearer ${getToken()}`
+        },
+        body: JSON.stringify(studentData)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error updating student:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update student information'
+      };
+    }
   },
   
   // Generate Form 137
