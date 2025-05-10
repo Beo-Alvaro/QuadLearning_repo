@@ -80,27 +80,20 @@ const AdminCreateStudentAccount = () => {
         const token = localStorage.getItem('token'); // Retrieve the token from localStorage
         console.log("Deleting user with ID:", userId);
         try {
-            const response = await fetch(`/api/admin/users/${userId}`, {
+            await apiRequest(`/api/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`, // Ensure token is included
                 }
             });
     
-            console.log("Response status:", response.status);
-            if (response.ok) {
-                handleClose(); // Close the modal after deletion
-                fetchData(); // Refresh the user list after deletion
-                toast.error('User deleted successfully!');
-            } else {
-                const json = await response.json();
-                console.error('Error response:', json);
-                setError(json.message);
-            }
+            // If we reach here, the request was successful
+            handleClose(); // Close the modal after deletion
+            fetchData(); // Refresh the user list after deletion
+            toast.error('User deleted successfully!');
         } catch (error) {
             console.error('Error deleting user:', error);
-            setError('Failed to delete user');
+            setError(error.message || 'Failed to delete user');
         }
     };
     
