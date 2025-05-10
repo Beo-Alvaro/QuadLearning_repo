@@ -55,6 +55,7 @@ export const SubjectDataProvider = ({ children }) => {
                 method: 'POST',
                 body: JSON.stringify(subjectData),
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
@@ -79,6 +80,7 @@ export const SubjectDataProvider = ({ children }) => {
           const result = await apiRequest(`/api/admin/subjects/${selectedSubjectId}`, {
             method: 'PUT',
             headers: {
+              'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(updatedSubject),

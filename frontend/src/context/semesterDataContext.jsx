@@ -59,6 +59,7 @@ export const SemesterDataProvider = ({ children }) => {
             const data = await apiRequest(`/api/admin/semesters/${selectedSemesterId}`, {
                 method: 'PUT',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(updatedSemester),
@@ -99,6 +100,7 @@ export const SemesterDataProvider = ({ children }) => {
             await apiRequest('/api/admin/addSemesters', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(semesterData),

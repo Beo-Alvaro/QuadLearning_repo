@@ -38,6 +38,7 @@ export const StrandDataProvider = ({ children }) => {
       await apiRequest('/api/admin/addStrands', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${storedToken}`,
         },
         body: JSON.stringify(newStrand),
@@ -58,6 +59,7 @@ export const StrandDataProvider = ({ children }) => {
       await apiRequest(`/api/admin/strands/${id}`, {
         method: 'PUT',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${storedToken}`,
         },
         body: JSON.stringify(updatedData),

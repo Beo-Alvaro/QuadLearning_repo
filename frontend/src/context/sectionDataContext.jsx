@@ -66,6 +66,7 @@ export const SectionDataProvider = ({ children }) => {
             const result = await apiRequest(`/api/admin/sections/${selectedSectionId}`, {
                 method: 'PUT',
                 headers: { 
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}` 
                 },
                 body: JSON.stringify(updatedSection),
@@ -147,6 +148,7 @@ const checkDuplicateSection = (sectionName, strandId, yearLevelId, currentId = n
                 method: 'POST',
                 body: JSON.stringify(sectionData),
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
