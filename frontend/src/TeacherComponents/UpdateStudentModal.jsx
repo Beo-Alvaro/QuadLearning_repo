@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { Modal, Button, Form, Row, Col, Card, Spinner } from "react-bootstrap"
 import { toast } from "react-toastify"
 import { teacherAPI } from "../services/apiService"
+import { apiRequest } from "../utils/api"
 
 const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const [formData, setFormData] = useState({
@@ -132,62 +133,58 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
         ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).toLowerCase()
         : undefined
 
-      const response = await fetch(`/api/teacher/student/${studentId}/form`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      // Create the payload
+      const payload = {
+        user: studentId,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        middleName: formData.middleName,
+        suffix: formData.suffix,
+        gender: formattedGender,
+        birthdate: formData.birthdate,
+        birthplace: {
+          province: formData.birthplace.province,
+          municipality: formData.birthplace.municipality,
+          barrio: formData.birthplace.barrio,
         },
-        body: JSON.stringify({
-          user: studentId,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          middleName: formData.middleName,
-          suffix: formData.suffix,
-          gender: formattedGender,
-          birthdate: formData.birthdate,
-          birthplace: {
-            province: formData.birthplace.province,
-            municipality: formData.birthplace.municipality,
-            barrio: formData.birthplace.barrio,
-          },
-          yearLevel: formData.yearLevel,
-          section: formData.section,
-          strand: formData.strand,
-          address: formData.address,
-          guardian: {
-            name: formData.guardian?.name,
-            occupation: formData.guardian?.occupation,
-            motherFullName: formData.guardian?.motherFullName,
-            fatherFullName: formData.guardian?.fatherFullName,
-          },
-          school: {
-            name: "Tropical Village National Highschool",
-            year: formData.school?.year,
-          },
-          attendance: {
-            totalYears: formData.attendance?.totalYears,
-          },
-          contactNumber: formData.contactNumber,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to update student")
+        yearLevel: formData.yearLevel,
+        section: formData.section,
+        strand: formData.strand,
+        address: formData.address,
+        guardian: {
+          name: formData.guardian?.name,
+          occupation: formData.guardian?.occupation,
+          contactNumber: formData.guardian?.contactNumber,
+          motherFullName: formData.guardian?.motherFullName,
+          fatherFullName: formData.guardian?.fatherFullName,
+        },
+        school: {
+          name: "Tropical Village National Highschool",
+          year: formData.school?.year,
+        },
+        attendance: {
+          totalYears: formData.attendance?.totalYears,
+        },
+        contactNumber: formData.contactNumber,
       }
 
-      const data = await response.json()
-      if (data.success) {
+      console.log('Updating student with data:', payload)
+
+      // Use the new teacherAPI.updateStudent method
+      const response = await teacherAPI.updateStudent(studentId, payload)
+
+      console.log('Update student response:', response)
+
+      if (response.success) {
         setIsEditing(false)
         toast.success("Student information updated successfully!")
         await fetchStudentData()
       } else {
-        throw new Error(data.message || "Failed to update student")
+        throw new Error(response.message || "Failed to update student")
       }
     } catch (error) {
       console.error("Error updating student:", error)
-      toast.error("Failed to update student")
+      toast.error(`Failed to update student: ${error.message || "Unknown error"}`)
     } finally {
       setIsLoading(false)
     }

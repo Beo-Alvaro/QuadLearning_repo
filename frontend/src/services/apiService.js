@@ -202,6 +202,17 @@ export const teacherAPI = {
     });
   },
   
+  // Update student data
+  updateStudent: async (studentId, studentData) => {
+    return apiRequest(`/api/teacher/student/${studentId}/form`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(studentData)
+    });
+  },
+  
   // Generate Form 137
   generateForm137: async (studentId) => {
     try {
