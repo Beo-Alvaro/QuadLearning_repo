@@ -351,7 +351,7 @@ const [editUser, setEditUser] = useState({
             if (activeUser?.sections?.length > 0 && activeUser?.semesters?.length > 0) {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch('/api/admin/subjects/filter', {
+                    const filteredSubjects = await apiRequest('/api/admin/subjects/filter', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -363,11 +363,6 @@ const [editUser, setEditUser] = useState({
                         })
                     });
 
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch filtered subjects');
-                    }
-
-                    const filteredSubjects = await response.json();
                     console.log('Filtered subjects:', filteredSubjects); // Debug log
                     setAvailableSubjects(filteredSubjects || []); // Ensure it's always an array
                 } catch (error) {
