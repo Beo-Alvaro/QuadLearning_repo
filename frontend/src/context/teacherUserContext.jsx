@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
+import { teacherAPI } from '../services/apiService';
+
 export const TeacherUserContext = createContext();
 
 export const TeacherUserContextProvider = ({ children }) => {
@@ -14,8 +17,7 @@ export const TeacherUserContextProvider = ({ children }) => {
     // Use useCallback to memoize the fetchData function
     const fetchData = useCallback(async () => {
         // Use a local variable to track if we're already fetching
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const token = userInfo.token || localStorage.getItem('token');
+        const token = localStorage.getItem('token');
         
         try {
             setLoading(true);
@@ -25,25 +27,10 @@ export const TeacherUserContextProvider = ({ children }) => {
                 throw new Error('No authentication token found. Please log in again.');
             }
 
-            console.log('Fetching sections with token:', token.substring(0, 10) + '...');
+            console.log('Fetching teacher sections data');
             
-            const sectionsResponse = await fetch('/api/teacher/sections', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            console.log('Sections response status:', sectionsResponse.status);
-
-            if (!sectionsResponse.ok) {
-                if (sectionsResponse.status === 401) {
-                    throw new Error('Your session has expired. Please log in again.');
-                }
-                throw new Error(`Failed to fetch sections (Status: ${sectionsResponse.status})`);
-            }
-
-            const sectionsData = await sectionsResponse.json();
+            // Use the teacherAPI service to fetch sections
+            const sectionsData = await teacherAPI.getSections();
             console.log('Fetched sections:', sectionsData);
 
             // Check if we got valid data
@@ -83,30 +70,38 @@ export const TeacherUserContextProvider = ({ children }) => {
     try {
         if (!studentId) throw new Error('Invalid Student ID');
 
-        const response = await fetch(`/api/teacher/generate-form137/${studentId}`, {
+        // Use the teacherAPI service to generate the form
+        // Special handling for blob download since we need to process the response differently
+        const url = `${import.meta.env.VITE_API_URL || ''}/api/teacher/generate-form137/${studentId}`;
+        const token = localStorage.getItem('token');
+        
+        // For binary/blob responses, we still need to use fetch directly
+        // This is one of the few exceptions where direct fetch is appropriate
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             },
         });
-         // Get filename from headers
-         const filename = response.headers.get("X-Filename") || `Form137_${studentId}.xlsx`;
-         // Convert response to a Blob
-         const blob = await response.blob();
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Error: ${response.status} ${response.statusText}`);
+        }
+        
+        // Get filename from headers
+        const filename = response.headers.get("X-Filename") || `Form137_${studentId}.xlsx`;
+        // Convert response to a Blob
+        const blob = await response.blob();
 
         // Save the file
         saveAs(blob, filename);
         toast.success('Form generated successfully!')
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to generate Form 137');
-        }
 
         console.log(`✅ Form 137 downloaded successfully as ${filename}`);
     } catch (error) {
         console.error("❌ Error downloading Form 137:", error);
-
         setError(`Failed to generate Form 137: ${error.message}`);
     }
 };
@@ -115,30 +110,14 @@ const handleSelectStudent = async (studentId) => {
     try {
         if (!studentId) throw new Error('Invalid Student ID');
 
-        // Fetch student details
-        const response = await fetch(`/api/teacher/student/${studentId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch student details');
-        }
-
-        const data = await response.json();
-
-        // Fetch grades with populated semester information
-        const gradesResponse = await fetch(`/api/teacher/student-grades/${studentId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-        });
-
+        // Use the teacherAPI to fetch student details
+        const data = await teacherAPI.getStudentById(studentId);
+        
+        // Fetch grades with the teacherAPI
+        const gradesData = await teacherAPI.getStudentGrades(studentId);
+        
         let grades = [];
-        if (gradesResponse.ok) {
-            const gradesData = await gradesResponse.json();
+        if (gradesData) {
             console.log('Received grades data:', gradesData);
             
             // Group grades by year level and semester

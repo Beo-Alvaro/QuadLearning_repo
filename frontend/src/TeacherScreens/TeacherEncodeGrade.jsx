@@ -6,6 +6,9 @@ import TeacherGradeHeader from '../TeacherComponents/TeacherGradeHeader';
 import TeacherEncodeGradeFilter from '../TeacherComponents/TeacherEncodeFilter';
 import { useGradeDataContext } from '../hooks/useGradeDataContext';
 import { ToastContainer, toast } from 'react-toastify';
+import { teacherAPI } from '../services/apiService';
+import { apiRequest } from '../utils/api';
+
 const TeacherEncodeGrade = () => {
     const [error, setError] = useState(null);
     const { selectedSubject, currentSemester, studentGrades, setStudentGrades,
@@ -147,30 +150,17 @@ const handleGradeChange = (e, studentId, gradeType) => {
             });
             
     
-            const response = await fetch('/api/teacher/add-grades', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    studentId,
-                    subjectId: selectedSubject,
-                    semesterId: currentSemester,
-                    midterm,
-                    finals,
-                    section: student.sectionName,      // Updated this line
-                    yearLevel: student.yearLevelName   // And this one
-                })
+            const response = await teacherAPI.addGrades({
+                studentId,
+                subjectId: selectedSubject,
+                semesterId: currentSemester,
+                midterm,
+                finals,
+                section: student.sectionName,
+                yearLevel: student.yearLevelName
             });
     
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to save grade');
-            }
-    
-            const result = await response.json();
-            console.log('Grade save result:', result);
+            console.log('Grade save result:', response);
     
             const updatedGrades = { ...studentGrades };
             if (!updatedGrades[studentId]) {
@@ -180,8 +170,8 @@ const handleGradeChange = (e, studentId, gradeType) => {
             updatedGrades[studentId][selectedSubject] = {
                 midterm,
                 finals,
-                finalRating: result.data.finalRating,
-                action: result.data.action
+                finalRating: response.data.finalRating,
+                action: response.data.action
             };
             
     
@@ -236,22 +226,9 @@ const handleGradeChange = (e, studentId, gradeType) => {
                 return;
             }
 
-            const response = await fetch('/api/teacher/bulk-add-grades', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${localStorage.getItem('token')}`
-              },
-                body: JSON.stringify({ updates })
-            });
+            const response = await teacherAPI.bulkAddGrades({ updates });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to save grades');
-            }
-
-            const result = await response.json();
-            console.log('Bulk save result:', result);
+            console.log('Bulk save result:', response);
             
             // Update the UI immediately with the saved data
             const updatedGrades = { ...studentGrades };
@@ -318,21 +295,10 @@ const handleGradeChange = (e, studentId, gradeType) => {
 
             console.log(`Fetching grades for subject: ${selectedSubject}, semester: ${currentSemester}`);
 
-            const response = await fetch(
-                `/api/teacher/subject-grades/${selectedSubject}?semesterId=${currentSemester}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    },
-                }
+            const data = await apiRequest(
+                `/api/teacher/subject-grades/${selectedSubject}?semesterId=${currentSemester}`
             );
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch grades with status: ${response.status}, message: ${errorText}`);
-            }
-
-            const data = await response.json();
             console.log('Fetched grades data:', data);
             
             // Check if data is empty

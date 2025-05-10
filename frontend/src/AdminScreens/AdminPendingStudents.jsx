@@ -6,6 +6,7 @@ import { FaSearch } from 'react-icons/fa';
 import { useStudentDataContext } from '../hooks/useStudentsDataContext';
 import EnrollStudentModal from '../AdminComponents/EnrollStudentModal';
 import { ToastContainer } from 'react-toastify';
+import { apiRequest } from '../utils/api';
 
 const AdminPendingStudents = () => {
     const [pendingStudents, setPendingStudents] = useState([]);
@@ -105,22 +106,14 @@ const AdminPendingStudents = () => {
 
     useEffect(() => {
         const fetchPendingStudents = async () => {
-            const token = localStorage.getItem('token');
             try {
-                const response = await fetch('/api/admin/pending-students', {
-                    method: 'GET',
+                const data = await apiRequest('/api/admin/pending-students', {
                     headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
                     },
                 });
 
-                const data = await response.json();
-                if (response.ok) {
-                    setPendingStudents(data);
-                } else {
-                    console.error('Failed to fetch pending students:', data.message, data.error);
-                }
+                setPendingStudents(data);
             } catch (error) {
                 console.error('Error fetching pending students:', error);
             }

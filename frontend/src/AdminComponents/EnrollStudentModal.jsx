@@ -1,6 +1,8 @@
 import { Modal, Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
+import { apiRequest } from '../utils/api';
+
 const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, strands, filteredSections, semesters, error, subjects, setPendingStudents, pendingStudents, setError}) => {
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -37,13 +39,11 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
             return;
         }
     
-        const token = localStorage.getItem('token');
         try {
-            const response = await fetch('/api/admin/enroll-student', {
+            const data = await apiRequest('/api/admin/enroll-student', {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
                 body: JSON.stringify({
                     userId: userId,
@@ -55,29 +55,24 @@ const EnrollStudentModal = ({ show, onClose, newUser, setNewUser, yearLevels, st
                     status: 'active'
                 }),
             });    
-            const data = await response.json();
             
-            if (response.ok) {
-                if (setPendingStudents && pendingStudents) {
-                    setPendingStudents(pendingStudents.filter(pending => pending._id !== userId));
-                }
-                setNewUser({
-                    yearLevel: '',
-                    strand: '',
-                    section: '',
-                    semester: '',
-                    subjects: [],
-                    status: 'active'
-                });
-                setSelectAll(false);
-                setAvailableSubjects([]);
-                onClose();
-                toast.success('Student enrolled successfully!');
-            } else {
-                setError(data.message || 'Failed to enroll student');
+            if (setPendingStudents && pendingStudents) {
+                setPendingStudents(pendingStudents.filter(pending => pending._id !== userId));
             }
+            setNewUser({
+                yearLevel: '',
+                strand: '',
+                section: '',
+                semester: '',
+                subjects: [],
+                status: 'active'
+            });
+            setSelectAll(false);
+            setAvailableSubjects([]);
+            onClose();
+            toast.success('Student enrolled successfully!');
         } catch (error) {
-            setError('Error enrolling student');
+            setError(error.message || 'Error enrolling student');
             console.error('Error enrolling student:', error);
         }
     };

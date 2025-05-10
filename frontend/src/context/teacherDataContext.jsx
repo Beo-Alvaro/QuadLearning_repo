@@ -1,4 +1,5 @@
 import React, { createContext, useReducer } from 'react';
+import { apiRequest } from '../utils/api';
 
 export const TeacherDataContext = createContext();
 
@@ -40,25 +41,27 @@ export const TeacherDataContextProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING' });
 
     try {
-      const [usersRes, sectionsRes, subjectsRes, semestersRes, advisorySectionsRes] = await Promise.all([
-        fetch('/api/admin/users?role=teacher', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/getSections', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/getSubjects', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/semesters', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/advisorySections', { headers: { Authorization: `Bearer ${token}` } })
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const [teacherUsers, sections, subjects, semesters, advisorySections] = await Promise.all([
+        apiRequest('/api/admin/users?role=teacher', { headers }),
+        apiRequest('/api/admin/getSections', { headers }),
+        apiRequest('/api/admin/getSubjects', { headers }),
+        apiRequest('/api/admin/semesters', { headers }),
+        apiRequest('/api/admin/advisorySections', { headers })
       ]);
 
       const payload = {
-        teacherUsers: await usersRes.json(),
-        sections: await sectionsRes.json(),
-        subjects: await subjectsRes.json(),
-        semesters: await semestersRes.json(),
-        advisorySections: await advisorySectionsRes.json(),
+        teacherUsers,
+        sections,
+        subjects,
+        semesters,
+        advisorySections,
       };
 
       dispatch({ type: 'SET_DATA', payload });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', error: 'Failed to load data' });
+      dispatch({ type: 'SET_ERROR', error: error.message || 'Failed to load data' });
     }
   };
 

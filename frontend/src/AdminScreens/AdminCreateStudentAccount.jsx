@@ -11,6 +11,8 @@ import StudModals from '../AdminComponents/CreateStudentComponents/StudModals';
 import StudTables from '../AdminComponents/CreateStudentComponents/StudTables';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { apiRequest } from '../utils/api';
+
 const AdminCreateStudentAccount = () => {
 
         const { users, strands, sections, subjects, semesters, yearLevels,fetchData } = useStudentDataContext()
@@ -136,26 +138,15 @@ const AdminCreateStudentAccount = () => {
         console.log('Sending User Data:', userData);
     
         try {
-            const response = await fetch('/api/admin/addUsers', {
+            const data = await apiRequest('/api/admin/addUsers', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(userData),
             });
     
-            const data = await response.json();
             console.log('Response Data:', data);
-    
-            if (!response.ok) {
-                // Important: Move this before any other operations
-                if (response.status === 400 && data.message.includes('Username already exists')) {
-                    toast.error('This LRN is already taken!');
-                    return;
-                }
-                throw new Error(data.message || 'Failed to create teacher account');
-            }
     
             setNewUser({
                 username: '',
@@ -172,6 +163,10 @@ const AdminCreateStudentAccount = () => {
             fetchData();
             toast.success('User created successfully!');
         } catch (error) {
+            if (error.message.includes('Username already exists')) {
+                toast.error('This LRN is already taken!');
+                return;
+            }
             toast.error(error.message || 'Failed to create student account');
             console.error('Error:', error);
             setError(error.message);
@@ -308,21 +303,19 @@ const handleEditSubmit = async (e) => {
             subjects: editUser.subjects,
         };
 
-        const response = await fetch(`/api/admin/users/${editUser.id}`, {
+        const data = await apiRequest(`/api/admin/users/${editUser.id}`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
             body: JSON.stringify(userData),
         });
 
-        const data = await response.json();
         console.log('Response data:', data);
 
-        if (!response.ok) {
+        if (!data.ok) {
             // Check for specific error types
-            if (response.status === 400) {
+            if (data.status === 400) {
                 if (data.message?.includes('E11000') || 
                     data.message?.includes('duplicate key') || 
                     data.message?.includes('Username already exists')) {

@@ -5,6 +5,8 @@ import { User, BarChart2, MessageCircle } from "lucide-react"
 import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
 import "./StudentHomeScreen.css"
 import LoadingSpinner from "../components/LoadingSpinner"
+import { apiRequest } from "../utils/api"
+
 const StudentHomeScreen = () => {
   const [studentData, setStudentData] = useState({
     firstName: "",
@@ -43,19 +45,12 @@ const StudentHomeScreen = () => {
     const fetchStudentProfile = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await fetch("/api/student/profile", {
+            
+            const result = await apiRequest("/api/student/profile", {
                 headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
             });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || `HTTP error! status: ${response.status}`);
-            }
 
             if (result.success) {
                 setStudentData(result.data);

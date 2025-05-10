@@ -8,12 +8,13 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext'; 
 import UserManagementModal from './UserManagementModal';
+import { apiRequest } from '../utils/api';
 
 const AdminSidebar = () => {
     const [loading, setLoading] = useState(false); // Define loading state
     const [error, setError] = useState('');
     const navigate = useNavigate(); // Define navigate
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [showUserManagementModal, setShowUserManagementModal] = useState(false);
     const [showAddStudentModal, setShowAddStudentModal] = useState(false);
     const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
@@ -24,27 +25,19 @@ const AdminSidebar = () => {
         setError('');
     
         try {
-            const response = await fetch('/api/users/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-            });
-    
-            if (!response.ok) {
-                throw new Error('Logout failed');
-            }
-    
-            // Clear local storage
-            localStorage.removeItem('token');
-            localStorage.removeItem('userInfo');
-    
-            // Redirect to login page and replace the current entry in the history stack
-            navigate('/', { replace: true });
+            // Use the logout method from authContext
+            await logout();
+            
+            // Navigation is handled in the logout method already
+            
         } catch (err) {
             setError(err.message);
             console.error('Error during logout:', err.message);
+            
+            // If there's an error in the logout method, we'll handle the fallback here
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+            navigate('/', { replace: true });
         } finally {
             setLoading(false);
         }

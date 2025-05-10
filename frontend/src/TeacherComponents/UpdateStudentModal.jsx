@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Modal, Button, Form, Row, Col, Card, Spinner } from "react-bootstrap"
 import { toast } from "react-toastify"
+import { teacherAPI } from "../services/apiService"
 
 const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
   const [formData, setFormData] = useState({
@@ -39,63 +40,34 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
 
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   const fetchStudentData = useCallback(async () => {
-    setIsLoading(true)
+    if (!studentId) return
+
     try {
-      const response = await fetch(`/api/teacher/student/${studentId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch student data")
+      setIsLoading(true)
+      const response = await teacherAPI.getStudentById(studentId)
+      
+      if (response && response.data) {
+        const studentData = response.data
+        setFormData({
+          firstName: studentData.firstName || "",
+          middleName: studentData.middleName || "",
+          lastName: studentData.lastName || "",
+          gender: studentData.gender || "",
+          address: studentData.address || "",
+          birthdate: studentData.birthdate ? new Date(studentData.birthdate).toISOString().split("T")[0] : "",
+          guardian: studentData.guardian?.name || "",
+        })
       }
-
-      const data = await response.json()
-
-      setFormData((prevData) => ({
-        ...prevData,
-        lrn: data.data.username || "",
-        firstName: data.data.firstName || "",
-        lastName: data.data.lastName || "",
-        middleName: data.data.middleName || "",
-        suffix: data.data.suffix || "",
-        gender: data.data.gender || "",
-        birthdate: data.data.birthdate ? data.data.birthdate.split("T")[0] : "",
-        contactNumber: data.data.contactNumber || "",
-        birthplace: {
-          province: data.data.birthplace?.province || "",
-          municipality: data.data.birthplace?.municipality || "",
-          barrio: data.data.birthplace?.barrio || "",
-        },
-        address: data.data.address || "",
-        guardian: {
-          name: data.data.guardian?.name || "",
-          occupation: data.data.guardian?.occupation || "",
-          contactNumber: data.data.guardian?.contactNumber || "",
-          motherFullName: data.data.guardian?.motherFullName || "",
-          fatherFullName: data.data.guardian?.fatherFullName || "",
-        },
-        yearLevel: data.data.yearLevel || "",
-        section: data.data.section || "",
-        strand: data.data.strand || "",
-        school: {
-          name: data.data.school?.name || "Tropical Village National Highschool",
-          year: data.data.school?.year || "",
-        },
-        attendance: {
-          totalYears: data.data.attendance?.totalYears || "",
-        },
-      }))
     } catch (error) {
       console.error("Error fetching student data:", error)
       toast.error("Failed to fetch student data")
     } finally {
       setIsLoading(false)
     }
-  }, [studentId, token])
+  }, [studentId])
 
   useEffect(() => {
     if (show && studentId) {
@@ -216,6 +188,22 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
       <Card.Body className="p-4">{children}</Card.Body>
     </Card>
   )
+
+  const handleDownloadForm = async () => {
+    try {
+      setDownloading(true)
+      
+      // Use the teacherAPI.generateForm137 method which should be added to handle blob downloads
+      await teacherAPI.generateForm137(studentId)
+      
+      toast.success("Form 137 downloaded successfully")
+    } catch (error) {
+      console.error("Error downloading Form 137:", error)
+      toast.error("Failed to download Form 137")
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   if (isLoading && !formData.firstName) {
     return (
@@ -660,6 +648,19 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token }) => {
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>
             Close
+          </Button>
+          <Button variant="success" onClick={handleDownloadForm} disabled={downloading}>
+            {downloading ? (
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+              />
+            ) : (
+              "Download Form 137"
+            )}
           </Button>
         </Modal.Footer>
       )}
