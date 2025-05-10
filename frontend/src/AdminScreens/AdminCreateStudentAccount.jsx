@@ -129,11 +129,21 @@ const AdminCreateStudentAccount = () => {
         };
     
         console.log('Sending User Data:', userData);
+        // Add detailed logging for debugging
+        console.log('Username:', userData.username, 'Type:', typeof userData.username);
+        console.log('Password:', 'Password provided: ' + (userData.password ? 'Yes' : 'No'), 'Type:', typeof userData.password);
+        console.log('Role:', userData.role, 'Type:', typeof userData.role);
+        console.log('Sections:', userData.sections, 'Type:', typeof userData.sections);
+        console.log('Strand:', userData.strand, 'Type:', typeof userData.strand);
+        console.log('YearLevel:', userData.yearLevel, 'Type:', typeof userData.yearLevel);
+        console.log('Semester:', userData.semester, 'Type:', typeof userData.semester);
+        console.log('Subjects:', userData.subjects, 'Type:', typeof userData.subjects);
     
         try {
             const data = await apiRequest('/api/admin/addUsers', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(userData),
@@ -156,7 +166,7 @@ const AdminCreateStudentAccount = () => {
             fetchData();
             toast.success('User created successfully!');
         } catch (error) {
-            if (error.message.includes('Username already exists')) {
+            if (error.message && error.message.includes('Username already exists')) {
                 toast.error('This LRN is already taken!');
                 return;
             }
