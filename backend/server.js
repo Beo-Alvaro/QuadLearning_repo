@@ -10,6 +10,13 @@ import teacherRoutes from './routes/teacherRoutes.js';
 import semesterRoutes from './routes/semesterRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config(); // Load environment variables
 const port = process.env.PORT || 5000;
 
@@ -69,8 +76,21 @@ app.use('/api/teacher', teacherRoutes);
 app.use('/api/admin', semesterRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/messages', messageRoutes);
-// Basic route
-app.get('/', (req, res) => res.send('Server is ready'));
+
+// Serve static assets in production
+if (process.env.NODE_ENV === 'production') {
+    // Set the static folder
+    const frontendBuildPath = path.resolve(__dirname, '../frontend/build');
+    app.use(express.static(frontendBuildPath));
+    
+    // Any routes not matched by API will be handled by the React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(frontendBuildPath, 'index.html'));
+    });
+} else {
+    // Basic route for development
+    app.get('/', (req, res) => res.send('Server is ready'));
+}
 
 // Error handling middleware
 app.use(notFound);

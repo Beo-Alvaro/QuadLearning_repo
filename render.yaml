@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: quadlearning-app
+    env: node
+    buildCommand: |
+      cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && NODE_ENV=production node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: "https://tropical-village.onrender.com"
+    routes:
+      - type: rewrite
+        source: /(.*)
+        destination: / 
