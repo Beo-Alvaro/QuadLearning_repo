@@ -22,7 +22,7 @@ router.get('/sections', getTeacherSections);
 
 // Update these routes
 router.get('/student/:studentId', protect, teacher, getStudentData);
-router.post('/student/:studentId/form', protect, teacher, fillOutStudentForm);
+router.put('/student/:studentId/form', protect, teacher, fillOutStudentForm);
 router.get('/subjects', protect, teacher, getTeacherSubjects);
 router.get('/subject-grades/:subjectId', protect, teacher, getSubjectGrades);
 router.get('/subject-students', protect, teacher, getSubjectStudents);

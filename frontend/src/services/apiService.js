@@ -213,7 +213,7 @@ export const teacherAPI = {
   updateStudent: async (studentId, studentData) => {
     try {
       const response = await apiRequest(`/api/teacher/student/${studentId}/form`, {
-        method: 'POST', 
+        method: 'PUT', 
         headers: {
           Authorization: `Bearer ${getToken()}`
         },
