@@ -1,0 +1,96 @@
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+  }
+  
+  .welcome-card {
+    background-color: #f8f9fa;
+    border-left: 5px solid #007bff;
+  }
+  
+  .subjects-card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+  
+  .subjects-card .card-header {
+    background-color: #198754;
+    color: white;
+  }
+  
+  .subject-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .subject-item:last-child {
+    border-bottom: none;
+  }
+  
+  .quick-actions-card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+  
+  .quick-actions-card .card-header {
+    background-color: #198754;
+    color: white;
+  }
+  
+  .quick-action-link {
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .quick-action-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+  }
+  
+  .quick-action-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  
+  .quick-action-item svg {
+    margin-right: 1rem;
+  }
+  
+  .quick-action-item.profile {
+    background-color: #f8f9fa;
+    border-left: 5px solid #ffc107;
+  }
+  
+  .quick-action-item.grades {
+    background-color: #f8f9fa;
+    border-left: 5px solid #28a745;
+  }
+  
+  .quick-action-item.messages {
+    background-color: #f8f9fa;
+    border-left: 5px solid #17a2b8;
+  }
+  
+  @media (max-width: 992px) {
+    .quick-actions-card {
+      margin-top: 1rem;
+    }
+  }
+  
+  

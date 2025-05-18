@@ -1,0 +1,169 @@
+import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
+import { Container, Card, Row, Col, Spinner } from "react-bootstrap"
+import { User, BarChart2, MessageCircle } from "lucide-react"
+import StudentDashboardNavbar from "../StudentComponents/StudentDashboardNavbar"
+import "./StudentHomeScreen.css"
+import LoadingSpinner from "../components/LoadingSpinner"
+import { apiRequest } from "../utils/api"
+
+const StudentHomeScreen = () => {
+  const [studentData, setStudentData] = useState({
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    gender: "",
+    birthdate: "",
+    contactNumber: "",
+    birthplace: {
+      province: "",
+      municipality: "",
+      barrio: "",
+    },
+    address: "",
+    guardian: {
+      name: "",
+      occupation: "",
+    },
+    yearLevel: "",
+    section: "",
+    strand: "",
+    school: {
+      name: "Tropical Village National Highschool",
+      year: "",
+    },
+    grades: {
+      subjects: [],
+      semester: "",
+    },
+  })
+
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStudentProfile = async () => {
+        try {
+            setLoading(true);
+            
+            const result = await apiRequest("/api/student/profile", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+
+            if (result.success) {
+                setStudentData(result.data);
+            } else {
+                throw new Error(result.message || "Failed to fetch profile");
+            }
+        } catch (error) {
+            console.error("Error fetching student profile:", error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchStudentProfile();
+}, []);
+
+const getMiddleInitial = (middleName) => {
+  return middleName ? `${middleName.charAt(0)}.` : '';
+};
+
+if (loading) {
+  return (
+    <>
+      <StudentDashboardNavbar />
+      <LoadingSpinner />
+    </>
+  );
+}
+
+  if (error) {
+    return <div className="error-message">Error: {error}</div>
+  }
+
+  return (
+    <>
+      <StudentDashboardNavbar />
+      <Container className="mt-4">
+        <Row>
+          <Col lg={8}>
+            <Card className="welcome-card mb-4">
+              <Card.Body>
+              <Card.Title as="h2">
+  Welcome, {studentData.firstName} {getMiddleInitial(studentData.middleName)} {studentData.lastName}!
+</Card.Title>
+                <Card.Text>
+                  You are currently enrolled in {studentData.yearLevel} {studentData.strand}. Stay focused, keep
+                  learning, and make the most of your academic journey.
+                </Card.Text>
+              </Card.Body>
+            </Card>
+
+            <Card className="subjects-card">
+              <Card.Header as="h4">Current Semester Subjects</Card.Header>
+              <Card.Body>
+    {studentData.grades?.subjects?.length > 0 ? (
+        studentData.grades.subjects.map((subject, index) => (
+            <div key={index} className="subject-item">
+                <h5>{subject.name || 'Unknown Subject'}</h5>
+                <p>
+                    <strong>Code:</strong> {subject.code || 'N/A'} |
+                    <strong>Section:</strong> {subject.section || 'N/A'} - {subject.yearLevel || 'N/A'}
+                </p>
+            </div>
+        ))
+    ) : (
+        <div>
+            <p>No subjects found for this semester.</p>
+        </div>
+    )}
+</Card.Body>
+            </Card>
+          </Col>
+
+          <Col lg={4}>
+            <Card className="quick-actions-card">
+              <Card.Header as="h4">Quick Actions</Card.Header>
+              <Card.Body>
+                <Link to="/student/profile" className="quick-action-link">
+                  <div className="quick-action-item profile">
+                    <User size={40} />
+                    <div>
+                      <h5>View Profile</h5>
+                      <p>Manage your personal information</p>
+                    </div>
+                  </div>
+                </Link>
+                <Link to="/student/grades" className="quick-action-link">
+                  <div className="quick-action-item grades">
+                    <BarChart2 size={40} />
+                    <div>
+                      <h5>View Grades</h5>
+                      <p>Check your academic performance</p>
+                    </div>
+                  </div>
+                </Link>
+                <Link to="/student/messages" className="quick-action-link">
+                  <div className="quick-action-item messages">
+                    <MessageCircle size={40} />
+                    <div>
+                      <h5>Send a Message</h5>
+                      <p>Communicate with the admin</p>
+                    </div>
+                  </div>
+                </Link>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+    </>
+  )
+}
+
+export default StudentHomeScreen
+

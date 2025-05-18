@@ -1,0 +1,212 @@
+*{
+    font-family: 'Open Sans', sans-serif;
+}
+
+/* Base sidebar styles */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 260px;
+    background-color: #198754;
+    color: white;
+    padding: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header styles */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Dropdown and link styles */
+.sidebar-dropdown {
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    color: white !important;
+    text-decoration: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    gap: 10px;
+}
+
+.sidebar-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left: 4px solid #fff;
+    padding-left: 11px; /* Compensate for border */
+}
+
+.sidebar-link i {
+    width: 24px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.sidebar-link span {
+    flex-grow: 1;
+    text-align: left;
+}
+
+/* Dropdown content styles */
+.sidebar-dropdown-content {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease-out;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+/* Update the dropdown content styles */
+.sidebar-dropdown-content .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px 10px 48px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    gap: 12px; /* Add gap between icon and text */
+}
+
+.sidebar-dropdown-content .nav-link i {
+    width: 20px; /* Fixed width for icons */
+    text-align: center;
+    margin-right: 10px; /* Add right margin to icons */
+}
+
+.icon{
+    margin-right: 10px;
+}
+
+.sidebar-dropdown-content.show {
+    max-height: 500px;
+    opacity: 1;
+}
+
+.sidebar-dropdown-content a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px 10px 48px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.sidebar-dropdown-content a:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding-left: 53px;
+}
+
+/* Chevron animation */
+.sidebar-link i.bi-chevron-down {
+    transition: transform 0.3s ease-in-out;
+}
+
+.sidebar-dropdown.active .sidebar-link i.bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Footer styles */
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logout-link i {
+    color: #ffffff;
+}
+
+.logout-link:hover i {
+    color: #ff2b2b;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .main-content .container-fluid {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-toggle-btn {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1001;
+        background: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .close-sidebar-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: white;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+}
+
+/* Add this to your CSS file */
+.button-group {
+    display: flex;
+    gap: 10px; /* Adjust the gap as needed */
+    justify-content: center; /* Center the buttons */
+}
