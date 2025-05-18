@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginScreen from './screens/LoginScreen';
 import AdminHomeScreen from './AdminScreens/AdminHomeScreen';
 import AdminViewAllUsersScreen from './AdminScreens/AdminViewAllUsersScreen';
@@ -27,6 +27,7 @@ import RedirectIfAuthenticated from './components/RedirectIfAuthenticated';
 
 const App = () => {
   return (
+    <Router>
     <Routes>
       {/* Public Route */}
 
@@ -86,6 +87,7 @@ const App = () => {
       {/* Catch all - replace with 404 component */}
       <Route path='*' element={<NotFoundPage />} />
     </Routes>
+  </Router>
   );
 };
 
