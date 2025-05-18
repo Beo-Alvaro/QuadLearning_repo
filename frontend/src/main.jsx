@@ -14,7 +14,6 @@ import { SubjectDataProvider } from './context/subjectDataContext.jsx'
 import { TeacherUserContextProvider } from './context/teacherUserContext.jsx'
 import { GradeDataContextProvider } from './context/gradeDataContext.jsx'
 import { AuthProvider } from './context/authContext.jsx';
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>

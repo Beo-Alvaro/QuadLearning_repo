@@ -24,7 +24,6 @@ import PrivateRoute from './components/PrivateRoute';
 import UnauthorizedPage from './components/UnauthorizedPage';
 import NotFoundPage from './components/NotFoundPage';
 import RedirectIfAuthenticated from './components/RedirectIfAuthenticated';
-
 const App = () => {
   return (
     <Router>
