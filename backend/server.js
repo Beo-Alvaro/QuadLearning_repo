@@ -79,13 +79,27 @@ app.use('/api/messages', messageRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
-    // Set the static folder
-    const frontendBuildPath = path.resolve(__dirname, '../frontend/build');
+    console.log('Running in production mode, serving static files');
+    
+    // Set the static folder - use absolute path for Render.com
+    // For Render deployment, the directory structure may differ
+    const frontendBuildPath = path.resolve(
+        process.env.RENDER ? '/opt/render/project/src/frontend/build' : 
+        __dirname, '../frontend/build'
+    );
+    
+    console.log('Static files path:', frontendBuildPath);
+    
+    // Serve static files
     app.use(express.static(frontendBuildPath));
     
     // Any routes not matched by API will be handled by the React app
     app.get('*', (req, res) => {
-        res.sendFile(path.resolve(frontendBuildPath, 'index.html'));
+        console.log('Serving index.html for route:', req.originalUrl);
+        res.sendFile(path.join(
+            process.env.RENDER ? '/opt/render/project/src/frontend/build/index.html' : 
+            frontendBuildPath, 'index.html'
+        ));
     });
 } else {
     // Basic route for development
