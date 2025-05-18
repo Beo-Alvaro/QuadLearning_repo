@@ -115,6 +115,10 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
 
         // Fetch the updated student with populated fields
         const updatedStudent = await Student.findOne({ user: studentId })
+            .populate({
+                path: 'user',
+                select: 'username'
+            })
             .populate('yearLevel')
             .populate('section')
             .populate('strand');
@@ -138,6 +142,7 @@ const fillOutStudentForm = asyncHandler(async (req, res) => {
                 yearLevel: updatedStudent.yearLevel?.name,
                 section: updatedStudent.section?.name,
                 strand: updatedStudent.strand?.name,
+                lrn: updatedStudent.user?.username
             }
         });
     } catch (error) {
@@ -1053,7 +1058,8 @@ const getStudentData = asyncHandler(async (req, res) => {
           yearLevel: student.yearLevel?.name,
           section: student.section?.name,
           strand: student.strand?.name,
-          school: student.school
+          school: student.school,
+          lrn: student.user.username // Add the LRN (stored as username)
       };
 
       res.status(200).json({

@@ -197,16 +197,19 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token, onStudentUpda
         setIsEditing(false)
         toast.success("Student information updated successfully!")
         
-        // Refresh student data after update
-        await fetchStudentData()
-        
-        // Call the onStudentUpdated callback to refresh the main student list
-        if (typeof onStudentUpdated === 'function') {
-          console.log('Calling onStudentUpdated callback');
-          onStudentUpdated();
-        } else {
-          console.warn('onStudentUpdated is not a function');
-        }
+        // Wait a moment before fetching the data again to ensure backend has processed it
+        setTimeout(async () => {
+          // Refresh student data after update
+          await fetchStudentData()
+          
+          // Call the onStudentUpdated callback to refresh the main student list
+          if (typeof onStudentUpdated === 'function') {
+            console.log('Calling onStudentUpdated callback');
+            onStudentUpdated();
+          } else {
+            console.warn('onStudentUpdated is not a function');
+          }
+        }, 300);
       } else {
         throw new Error(response?.message || "Failed to update student")
       }
@@ -297,7 +300,7 @@ const UpdateStudentModal = ({ show, handleClose, studentId, token, onStudentUpda
     {formData.suffix}
   </h4>
               <div className="d-flex flex-wrap gap-2 mb-1">
-                <span className="badge bg-light text-dark border">LRN: {formData.lrn}</span>
+                <span className="badge bg-light text-dark border">LRN: {formData.lrn || "N/A"}</span>
                 <span className="badge bg-light text-dark border">
                   {formData.yearLevel} - {formData.section}
                 </span>
