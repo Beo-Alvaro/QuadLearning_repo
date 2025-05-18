@@ -11,8 +11,13 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
 
             switch(sortField) {
                 case 'username':
-                    aValue = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
-                    bValue = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
+                    // First try to use firstName/lastName, fall back to username
+                    aValue = a.firstName && a.lastName 
+                        ? `${a.firstName} ${a.lastName}`.toLowerCase() 
+                        : (a.username?.toLowerCase() || '');
+                    bValue = b.firstName && b.lastName 
+                        ? `${b.firstName} ${b.lastName}`.toLowerCase() 
+                        : (b.username?.toLowerCase() || '');
                     break;
                 case 'section':
                     aValue = a.sectionName?.toLowerCase() || '';
@@ -42,6 +47,17 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
     };
 
     const sortedStudents = getSortedStudents(filteredStudents);
+
+    // Function to display student name, falling back to username if needed
+    const getDisplayName = (student) => {
+        // Check if we have firstName and lastName
+        if (student.firstName && student.lastName) {
+            return `${student.firstName} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName}`.trim();
+        }
+        
+        // Fall back to username
+        return student.username || 'Unknown';
+    };
 
     return ( 
         <div>
@@ -128,7 +144,7 @@ const TeacherStudentTable = ({ filteredStudents, showAdvisoryOnly, handleViewStu
                             {sortedStudents.map((student) => (
                                 <tr key={student._id}>
                                     <td className="px-4 py-3 fw-medium">
-                                        {`${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim()}
+                                        {getDisplayName(student)}
                                     </td>
                                     <td className="px-4 py-3">{student.sectionName}</td>
                                     <td className="px-4 py-3">{student.strandName}</td>

@@ -627,7 +627,7 @@ const generateForm137 = asyncHandler(async (req, res) => {
               { path: "section" },
               { path: "strand" }
           ])
-          .lean(); // Convert to plain JSON for better performance
+          .lean();
 
       if (!student) {
           res.status(404);
@@ -938,7 +938,10 @@ const getTeacherSections = asyncHandler(async (req, res) => {
     const sections = await Section.find({ teacher: req.user._id })
       .populate('yearLevel')
       .populate('strand')
-      .populate('students')
+      .populate({
+        path: 'students',
+        select: 'username _id' // Get basic user info
+      })
       .lean();
     
     // Get the teacher's advisory section
@@ -954,16 +957,40 @@ const getTeacherSections = asyncHandler(async (req, res) => {
       studentCount: s.students?.length || 0
     })));
     
-    // Format the response
+    // Get corresponding student info for all student users
+    const studentUserIds = sections
+      .flatMap(section => section.students?.map(student => student._id) || []);
+    
+    // Fetch all student documents that match these user IDs
+    const studentDocs = await Student.find({ 
+      user: { $in: studentUserIds } 
+    }).lean();
+    
+    // Create a map for quick lookup
+    const studentInfoMap = {};
+    studentDocs.forEach(student => {
+      if (student.user) {
+        studentInfoMap[student.user.toString()] = student;
+      }
+    });
+    
+    // Format the response with enhanced student data
     const formattedSections = sections.map(section => {
       const isAdvisory = teacher.advisorySection && 
       section._id.toString() === teacher.advisorySection.section.toString();
 
-      // Mark students in advisory section
-      const studentsWithAdvisory = (section.students || []).map(student => ({
-        ...student,
-        isAdvisory: isAdvisory // If the section is advisory, all students in it are advisory students
-      }));
+      // Enhance student data with firstName, lastName
+      const studentsWithAdvisory = (section.students || []).map(student => {
+        const studentInfo = studentInfoMap[student._id.toString()];
+        return {
+          ...student,
+          isAdvisory: isAdvisory, // If the section is advisory, all students in it are advisory students
+          firstName: studentInfo?.firstName || '',
+          middleName: studentInfo?.middleName || '',
+          lastName: studentInfo?.lastName || '',
+          // Keep the original username if no name info available
+        };
+      });
       
       return {
         _id: section._id,
