@@ -193,15 +193,6 @@ const SemesterTable = ({ handleEdit, handleShow, semesters, endSemester }) => {
                     variant="outline-danger"
                     size="sm"
                     className="btn-action"
-                    onClick={() => handleShow(semester._id)}
-                  >
-                    <i className="bi bi-trash me-1"></i>
-                    Delete
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    className="btn-action"
                     onClick={() => handleEndShow(semester._id)}
                   >
                     End

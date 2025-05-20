@@ -126,15 +126,6 @@ const AdminTeacherTable = ({
                                     Edit
                                 </Button>
 
-                                <Button 
-    variant="outline-danger" 
-    size="sm" 
-    className="btn-action"
-    onClick={() => handleShow(user._id)} // Directly call handleShow here
->
-    <i className="bi bi-trash me-1"></i>
-    Delete
-</Button>
 
                                     </div>
                                 </td>

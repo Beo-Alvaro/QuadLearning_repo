@@ -128,15 +128,6 @@ const StrandTable = ({
                                                     <i className="bi bi-pencil-square me-1"></i>
                                                     Edit
                                                 </Button>
-                                                <Button
-                                                    variant="outline-danger"
-                                                    size="sm"
-                                                    className="btn-action"
-                                                    onClick={() => handleDeleteShow(strand._id)}
-                                                >
-                                                    <i className="bi bi-trash me-1"></i>
-                                                    Delete
-                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
