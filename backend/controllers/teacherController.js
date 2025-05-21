@@ -1228,59 +1228,58 @@ const getSubjectGrades = asyncHandler(async (req, res) => {
 
 const getTeacherAdvisoryClass = asyncHandler(async (req, res) => {
   try {
-      // Get the teacher user with populated advisorySection.section
-      const teacher = await User.findById(req.user._id)
-          .populate({
-              path: 'advisorySection.section',
-              populate: [
-                  { 
-                      path: 'yearLevel',
-                      select: 'name' 
-                  },
-                  { 
-                      path: 'strand',
-                      select: 'name' 
-                  }
-              ]
-          });
-
-      console.log('Teacher data:', JSON.stringify(teacher, null, 2)); // Debug log
-
-      if (!teacher.advisorySection?.section) {
-          return res.status(404).json({
-              success: false,
-              message: 'No advisory section assigned'
-          });
-      }
-
-      // Get the section with populated students
-      const section = await Section.findById(teacher.advisorySection.section._id)
-          .populate('yearLevel', 'name')
-          .populate('strand', 'name')
-          .populate('students');
-
-      const response = {
-          success: true,
-          advisorySection: {
-              _id: section._id,
-              name: section.name,
-              yearLevel: section.yearLevel?.name || 'Not Set',
-              strand: section.strand?.name || 'Not Set',
-              status: teacher.advisorySection.status,
-              studentCount: section.students?.length || 0
+    // Get the teacher user with populated advisorySection.section
+    const teacher = await User.findById(req.user._id)
+      .populate({
+        path: 'advisorySection.section',
+        populate: [
+          { 
+            path: 'yearLevel',
+            select: 'name' 
+          },
+          { 
+            path: 'strand',
+            select: 'name' 
           }
-      };
+        ]
+      });
 
-      console.log('Response:', JSON.stringify(response, null, 2)); // Debug log
-      res.json(response);
+    if (!teacher.advisorySection?.section) {
+      return res.status(404).json({
+        success: false,
+        message: 'No advisory section assigned'
+      });
+    }
+
+    // Get the section with populated data
+    const section = await Section.findById(teacher.advisorySection.section._id)
+      .populate('yearLevel', 'name')
+      .populate('strand', 'name')
+      .populate('students');
+
+    const response = {
+      success: true,
+      advisorySection: {
+        _id: section._id,
+        name: section.name,
+        yearLevel: section.yearLevel?.name || 'Not Set',
+        strand: section.strand?.name || 'Not Set',
+        status: teacher.advisorySection.status,
+        studentCount: section.students?.length || 0,
+        adviser: `${teacher.firstName} ${teacher.lastName}`
+      }
+    };
+
+    console.log('Sending advisory section data:', response);
+    res.json(response);
 
   } catch (error) {
-      console.error('Error fetching advisory class:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Error fetching advisory section',
-          error: error.message
-      });
+    console.error('Error fetching advisory class:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching advisory section',
+      error: error.message
+    });
   }
 });
 
@@ -1498,38 +1497,35 @@ const getSectionStudents = asyncHandler(async (req, res) => {
  * @access  Private/Teacher
  */
 const getAttendanceData = asyncHandler(async (req, res) => {
-  const { section, month } = req.query;
+  const { section, month, semester } = req.query;
 
   try {
-    // Check if the teacher has an advisory section
+    // Get teacher's advisory section
     const teacher = await User.findById(req.user._id)
-      .populate({
-        path: 'advisorySection.section',
-        select: 'name yearLevel strand'
-      });
+      .populate('advisorySection.section');
 
-    console.log('Teacher advisory data:', teacher.advisorySection); // Debug log
-
+    // Check if teacher has an advisory section
     if (!teacher.advisorySection?.section) {
       res.status(403);
-      throw new Error('Only advisory teachers can manage attendance');
+      throw new Error('Only advisory teachers can view attendance');
     }
 
-    // Check if the requested section matches teacher's advisory section
+    // Verify if the section matches teacher's advisory section
     if (teacher.advisorySection.section._id.toString() !== section) {
       res.status(403);
-      throw new Error('You can only manage attendance for your advisory section');
+      throw new Error('You can only view attendance for your advisory section');
     }
 
     // Find attendance records
     const attendance = await Attendance.findOne({
-      section: section,
-      month: month,
+      section,
+      month,
+      semester,
       teacher: req.user._id
     }).populate('records.student');
 
+    // Return empty records if no attendance found
     if (!attendance) {
-      // Return empty records if no attendance found
       return res.json({
         success: true,
         data: {
@@ -1545,8 +1541,10 @@ const getAttendanceData = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Error in getAttendanceData:', error);
-    res.status(error.status || 500);
-    throw new Error(error.message || 'Error fetching attendance data');
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || 'Error fetching attendance data'
+    });
   }
 });
 
@@ -1556,44 +1554,79 @@ const getAttendanceData = asyncHandler(async (req, res) => {
  * @access  Private/Teacher
  */
 const saveAttendanceData = asyncHandler(async (req, res) => {
-  const { section, month, records } = req.body;
-
   try {
-    // Check if the teacher has an advisory section
-    const teacher = await User.findById(req.user._id)
-      .populate({
-        path: 'advisorySection.section',
-        select: 'name yearLevel strand'
+    const { section, month, schoolYear, semester, records } = req.body;
+
+    // Validate required fields
+    if (!section || !month || !schoolYear || !semester || !records) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
       });
+    }
 
-    console.log('Teacher advisory data:', teacher.advisorySection); // Debug log
+    // Get teacher's advisory section
+    const teacher = await User.findById(req.user._id)
+      .populate('advisorySection.section');
 
+    // Check if teacher has an advisory section
     if (!teacher.advisorySection?.section) {
-      res.status(403);
-      throw new Error('Only advisory teachers can manage attendance');
+      return res.status(403).json({
+        success: false,
+        message: 'Only advisory teachers can manage attendance'
+      });
     }
 
-    // Check if the requested section matches teacher's advisory section
+    // Verify if the section matches teacher's advisory section
     if (teacher.advisorySection.section._id.toString() !== section) {
-      res.status(403);
-      throw new Error('You can only manage attendance for your advisory section');
+      return res.status(403).json({
+        success: false,
+        message: 'You can only manage attendance for your advisory section'
+      });
     }
 
-    // Find or create attendance record
-    let attendance = await Attendance.findOneAndUpdate(
-      {
-        section: section,
-        month: month,
-        teacher: req.user._id
-      },
-      {
-        $set: { records: records }
-      },
-      {
-        new: true,
-        upsert: true
-      }
-    );
+    // Find and update or create attendance record
+    const attendanceData = {
+      section,
+      month,
+      schoolYear,
+      semester,
+      teacher: req.user._id,
+      records: records.map(record => ({
+        student: record.student,
+        weeks: {
+          week1: record.weeks.week1 || {},
+          week2: record.weeks.week2 || {},
+          week3: record.weeks.week3 || {},
+          week4: record.weeks.week4 || {},
+          week5: record.weeks.week5 || {}
+        },
+        absent: record.absent || 0,
+        tardy: record.tardy || 0,
+        remarks: record.remarks || ''
+      }))
+    };
+
+    // Try to find existing record first
+    let attendance = await Attendance.findOne({
+      section,
+      month,
+      schoolYear,
+      semester,
+      teacher: req.user._id
+    });
+
+    if (attendance) {
+      // Update existing record
+      attendance.records = attendanceData.records;
+      attendance = await attendance.save();
+    } else {
+      // Create new record
+      attendance = new Attendance(attendanceData);
+      attendance = await attendance.save();
+    }
+
+    await attendance.populate('records.student');
 
     res.json({
       success: true,
@@ -1603,149 +1636,164 @@ const saveAttendanceData = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Error in saveAttendanceData:', error);
-    res.status(error.status || 500);
-    throw new Error(error.message || 'Error saving attendance data');
+    res.status(500).json({
+      success: false,
+      message: 'Error saving attendance data',
+      error: error.message
+    });
   }
 });
 
-  const getAttendanceSummary = async (req, res) => {
-    try {
-      const { week = 'current', semester } = req.query;
-      const teacherId = req.user._id;
+const getAttendanceSummary = async (req, res) => {
+  try {
+    const { week = 'current', semester } = req.query;
+    const teacherId = req.user._id;
 
-      
     if (!semester) {
-        return res.status(400).json({
-          success: false,
-          message: 'Semester ID is required'
-        });
-      }
-  
-      // Calculate date range based on the selected week
-      const today = new Date();
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1); // Always the 1st day of the month
-
-      let startDate, endDate;
-  
-   // Determine the correct start date based on the week requested
-switch (week) {
-  case 'current':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - today.getDay() + 1); // Start on Monday
-      break;
-  case 'previous':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - today.getDay() - 6); // Previous Monday
-      break;
-  case 'twoWeeksAgo':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - today.getDay() - 13); // Two Mondays ago
-      break;
-  default:
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - today.getDay() + 1); // Fallback to current week
-}
-
-endDate = new Date(startDate);
-endDate.setDate(startDate.getDate() + 6); // Always end on Sunday
-
-
-        // Ensure endDate is always 6 days after startDate
-        endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-  
-      console.log(`Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
-  
-      const sections = await Section.find({ teacher: teacherId }).populate('students');
-      const sectionIds = sections.map(section => section._id);
-  
-      const totalStudents = sections.reduce((count, section) => count + (section.students?.length || 0), 0);
-      console.log(`Teacher sections: ${sections.length}, Total students: ${totalStudents}`);
-  
-      const dailyCounts = {
-        mon: { present: 0, absent: 0 },
-        tue: { present: 0, absent: 0 },
-        wed: { present: 0, absent: 0 },
-        thu: { present: 0, absent: 0 },
-        fri: { present: 0, absent: 0 },
-        sat: { present: 0, absent: 0 }
-      };
-  
-      const weekNumber = getWeekNumberInMonth(startDate);
-      const weekKey = `week${weekNumber}`;
-      console.log('Week key:', weekKey);
-  
-      const currentMonth = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`;
-      const currentSchoolYear = startDate.getMonth() >= 0 // Assuming school year starts in July
-        ? `${startDate.getFullYear()}-${startDate.getFullYear() + 1}`
-        : `${startDate.getFullYear() - 1}-${startDate.getFullYear()}`;
-  
-      console.log('Query parameters:', {
-        month: currentMonth,
-        schoolYear: currentSchoolYear,
-        semester: semester,
-        teacher: teacherId,
-        section: { $in: sectionIds }
-      });
-  
-    // Find attendance records with semester ObjectId
-    const attendanceRecords = await Attendance.find({
-        month: currentMonth,
-        schoolYear: currentSchoolYear,
-        semester: new mongoose.Types.ObjectId(semester), // Convert string to ObjectId
-        teacher: teacherId,
-        section: { $in: sectionIds }
-      }).populate('records.student');
-
-      console.log('All attendance records in DB:', await Attendance.find({}));
-      console.log(`Found ${attendanceRecords.length} attendance records for ${currentMonth}`);
-      console.log('Section IDs:', sectionIds);
-      console.log('Current month:', currentMonth);
-  
-      if (attendanceRecords.length > 0) {
-        attendanceRecords.forEach(record => {
-          record.records.forEach(studentRecord => {
-            const weekData = studentRecord.weeks[weekKey];
-            console.log(`Processing student record for weekKey: ${weekKey}`, weekData);
-  
-            if (weekData) {
-              Object.entries(weekData).forEach(([day, status]) => {
-                const dayKey = convertDayToKey(day);
-                console.log(`Day: ${day}, Status: ${status}, DayKey: ${dayKey}`);
-                if (dayKey && dailyCounts[dayKey]) {
-                  if (status === 'Present') {
-                    dailyCounts[dayKey].present++;
-                  } else if (status === 'Absent') {
-                    dailyCounts[dayKey].absent++;
-                  }
-                }
-              });
-            }
-          });
-        });
-  
-        console.log('Processed attendance data:', dailyCounts);
-      } else {
-        console.log('No attendance records found');
-      }
-  
-      return res.json({
-        success: true,
-        data: {
-          days: dailyCounts,
-          dateRange: { start: startDate, end: endDate },
-          totalStudents
-        }
-      });
-    } catch (error) {
-      console.error('Error getting attendance summary:', error);
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
-        message: 'Failed to get attendance summary',
-        error: error.message
+        message: 'Semester ID is required'
       });
     }
-  };
+
+    // Get teacher's advisory section
+    const teacher = await User.findById(teacherId)
+      .populate('advisorySection.section');
+
+    if (!teacher.advisorySection?.section) {
+      return res.status(400).json({
+        success: false,
+        message: 'No advisory section assigned'
+      });
+    }
+
+    const advisorySectionId = teacher.advisorySection.section._id;
+
+    // Calculate date range based on the selected week
+    const today = new Date();
+    let startDate, endDate;
+
+    // Determine the correct start date based on the week requested
+    switch (week) {
+      case 'current':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay() + 1);
+        break;
+      case 'previous':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay() - 6);
+        break;
+      case 'twoWeeksAgo':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay() - 13);
+        break;
+      case 'threeWeeksAgo':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay() - 20);
+        break;
+      case 'fourWeeksAgo':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay() - 27);
+        break;
+      default:
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay() + 1);
+    }
+
+    endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+
+    // Format month string (YYYY-MM)
+    const month = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+    
+    console.log('Query parameters:', {
+      section: advisorySectionId,
+      month,
+      semester,
+      teacher: teacherId
+    });
+
+    // Find attendance records for the advisory section
+    const attendance = await Attendance.findOne({
+      section: advisorySectionId,
+      month,
+      semester: new mongoose.Types.ObjectId(semester),
+      teacher: teacherId
+    });
+
+    console.log('Found attendance record:', attendance);
+
+    // Initialize daily counts
+    const dailyCounts = {
+      mon: { present: 0, absent: 0 },
+      tue: { present: 0, absent: 0 },
+      wed: { present: 0, absent: 0 },
+      thu: { present: 0, absent: 0 },
+      fri: { present: 0, absent: 0 },
+      sat: { present: 0, absent: 0 }
+    };
+
+if (attendance && attendance.records) {
+      const weekNumber = getWeekNumberInMonth(startDate);
+      const weekKey = `week${weekNumber}`;
+
+      console.log('Processing attendance for week:', weekKey);
+
+      attendance.records.forEach(record => {
+        if (record.weeks && record.weeks[weekKey]) {
+          // Convert Map to object for easier handling
+          const weekData = Object.fromEntries(record.weeks[weekKey]);
+          
+          // Process each day's attendance
+          Object.entries(weekData).forEach(([day, status]) => {
+            // Convert day format (M, T, W, TH, F, S) to three letter key
+            let dayKey;
+            switch(day) {
+              case 'M': dayKey = 'mon'; break;
+              case 'T': dayKey = 'tue'; break;
+              case 'W': dayKey = 'wed'; break;
+              case 'TH': dayKey = 'thu'; break;
+              case 'F': dayKey = 'fri'; break;
+              case 'S': dayKey = 'sat'; break;
+              default: return; // Skip invalid days
+            }
+
+            // Count attendance
+            if (status.toLowerCase() === 'present') {
+              dailyCounts[dayKey].present++;
+            } else if (status.toLowerCase() === 'absent') {
+              dailyCounts[dayKey].absent++;
+            }
+          });
+        }
+      });
+    }
+
+    console.log('Final daily counts:', dailyCounts);
+
+    // Get total students in the advisory section
+    const section = await Section.findById(advisorySectionId)
+      .populate('students');
+    const totalStudents = section?.students?.length || 0;
+
+    return res.json({
+      success: true,
+      data: {
+        days: dailyCounts,
+        dateRange: { start: startDate, end: endDate },
+        totalStudents
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting attendance summary:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get attendance summary',
+      error: error.message
+    });
+  }
+};
   
   // Helper function to get the week number in the month (1-5)
   function getWeekNumberInMonth(date) {
@@ -1780,57 +1828,55 @@ endDate.setDate(startDate.getDate() + 6); // Always end on Sunday
     }
   };
   
-  const getTeacherSemesters = asyncHandler(async (req, res) => {
-    try {
-      const teacherId = req.user._id;
-  
-      // Find teacher's sections to get associated strands and year levels
-      const teacherSections = await Section.find({ teacher: teacherId })
-        .populate('strand')
-        .populate('yearLevel');
-  
-      // Get unique strand and yearLevel IDs from teacher's sections
-      const strandIds = [...new Set(teacherSections.map(section => section.strand?._id))];
-      const yearLevelIds = [...new Set(teacherSections.map(section => section.yearLevel?._id))];
-  
-      // Find semesters with populated data
-      const semesters = await Semester.find({
-        $or: [
-          { 
-            status: 'active',
-            strand: { $in: strandIds },
-            yearLevel: { $in: yearLevelIds }
-          },
-          {
-            subjects: { $in: teacherSections.flatMap(section => section.subjects) }
-          }
-        ]
-      })
-      .populate('strand', 'name')
-      .populate('yearLevel', 'name')
-      .sort({ startDate: -1 });
-  
-      // Format the response
-      const formattedSemesters = semesters.map(semester => ({
-        _id: semester._id,
-        name: `${semester.name} - ${semester.yearLevel?.name || ''} ${semester.strand?.name || ''}`.trim(),
-        status: semester.status,
-        startDate: semester.startDate,
-        endDate: semester.endDate,
-        isActive: semester.status === 'active'
-      }));
-  
-      console.log('Formatted semesters:', formattedSemesters);
-      res.status(200).json(formattedSemesters);
-  
-    } catch (error) {
-      console.error('Error in getTeacherSemesters:', error);
-      res.status(500).json({
-        message: 'Error fetching semesters',
-        error: error.message
+const getTeacherSemesters = asyncHandler(async (req, res) => {
+  try {
+    const teacherId = req.user._id;
+
+    // Get the teacher's assigned subjects with their semesters
+    const teacher = await User.findById(teacherId)
+      .populate({
+        path: 'subjects',
+        populate: {
+          path: 'semester',
+          select: 'name startDate endDate status yearLevel strand'
+        }
       });
+
+    if (!teacher || !teacher.subjects) {
+      return res.json([]);
     }
-  });
+
+    // Extract unique semesters from teacher's subjects
+    const uniqueSemesters = teacher.subjects.reduce((semesters, subject) => {
+      if (subject.semester && !semesters.some(s => s._id.toString() === subject.semester._id.toString())) {
+        semesters.push({
+          _id: subject.semester._id,
+          name: subject.semester.name,
+          status: subject.semester.status,
+          startDate: subject.semester.startDate,
+          endDate: subject.semester.endDate,
+          yearLevel: subject.semester.yearLevel,
+          strand: subject.semester.strand,
+          isActive: subject.semester.status === 'active'
+        });
+      }
+      return semesters;
+    }, []);
+
+    // Sort semesters by date (most recent first)
+    uniqueSemesters.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+    console.log(`Found ${uniqueSemesters.length} semesters for teacher`);
+    res.status(200).json(uniqueSemesters);
+
+  } catch (error) {
+    console.error('Error in getTeacherSemesters:', error);
+    res.status(500).json({
+      message: 'Error fetching semesters',
+      error: error.message
+    });
+  }
+});
 
   const getSectionAverages = asyncHandler(async (req, res) => {
     try {

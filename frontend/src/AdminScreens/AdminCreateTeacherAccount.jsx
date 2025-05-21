@@ -266,65 +266,79 @@ const [editUser, setEditUser] = useState({
         setShowEditModal(false);
     };
 
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
+const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-    // Fix the validation logic
-    if (editUser.sections.length === 0 || editUser.subjects.length === 0 || editUser.semesters.length === 0 || !editUser.semesters
-        || !editUser.sections
-    ) {
+    // Validate required fields and ensure they're arrays
+    if (!Array.isArray(editUser.sections) || !Array.isArray(editUser.subjects) || !Array.isArray(editUser.semesters)) {
+        toast.error('Invalid data format');
+        return;
+    }
+
+    if (editUser.sections.length === 0 || editUser.subjects.length === 0 || editUser.semesters.length === 0) {
         toast.error('Please fill in all required fields');
         return;
     }
-    
-        try {
-            // Format the data to match what the backend expects
-            const userData = {
-                sections: editUser.sections,
-                subjects: editUser.subjects,
-                semesters: editUser.semesters,
-                advisorySection: editUser.advisorySection 
+
+    try {
+        // Format the data - ensure all IDs are strings and remove any undefined values
+        const userData = {
+            sections: editUser.sections
+                .filter(id => id) // Remove any null/undefined values
+                .map(id => id.toString()),
+            subjects: editUser.subjects
+                .filter(id => id)
+                .map(id => id.toString()),
+            semesters: editUser.semesters
+                .filter(id => id)
+                .map(id => id.toString()),
+            advisorySection: editUser.advisorySection 
                 ? { section: editUser.advisorySection.toString() }
                 : null
-            };
-    
-            console.log('Sending update request:', userData);
-    
-            const response = await fetch(`/api/admin/users/${editUser.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify(userData),
-            });
-    
-            const data = await response.json();
-            console.log('Response data:', data);
-    
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to update user');
-            }
-    
-            // Re-fetch the updated list of teachers
-            const token = localStorage.getItem('token');
-            const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const updatedTeachers = await updatedTeachersRes.json();
-    
-            // Dispatch the updated list of teachers to the context
-            dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
-    
-            // Close the modal and reset the form
-            handleEditClose();
-            toast.success('Teacher updated successfully!')
-        } catch (error) {
-            setError(error.message);
-            console.error('Update error:', error);
+        };
+
+        // Log the data being sent
+        console.log('Sending update request:', {
+            userId: editUser.id,
+            data: userData
+        });
+
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/users/${editUser.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(userData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to update user');
         }
-    };
+
+        // Re-fetch the updated list of teachers
+        const updatedTeachersRes = await fetch('/api/admin/users?role=teacher', {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const updatedTeachers = await updatedTeachersRes.json();
+
+        // Update context with new data
+        dispatch({ type: 'SET_DATA', payload: { teacherUsers: updatedTeachers } });
+
+        // Close modal and show success message
+        handleEditClose();
+        toast.success('Teacher updated successfully!');
+
+    } catch (error) {
+        console.error('Update error:', error);
+        toast.error(error.message || 'Failed to update user');
+        setError(error.message);
+    }
+};
 
     const filteredUsers = teacherUsers?.filter((user) =>
         user.username.toLowerCase().includes(searchTerm.toLowerCase())

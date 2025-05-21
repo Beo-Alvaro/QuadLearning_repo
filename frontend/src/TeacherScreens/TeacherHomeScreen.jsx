@@ -153,66 +153,72 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
     }
   }, []);
 
-  // Update the transformAttendanceData function to not use mock data
-  const transformAttendanceData = (apiData) => {
-    console.log('Raw API data:', apiData); // Add this log
+
+const transformAttendanceData = (apiData) => {
+    console.log('Raw API data:', apiData);
     
     if (!apiData || !apiData.days) {
-      console.warn('Unexpected API data format:', apiData);
-      return [];
+        console.warn('Unexpected API data format:', apiData);
+        return [];
     }
     
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     
     const transformed = days.map((day, index) => {
-      const dayKey = dayKeys[index];
-      const dayData = apiData.days[dayKey] || { present: 0, absent: 0 };
-      
-      return {
-        name: day,
-        present: dayData.present || 0,
-        absent: dayData.absent || 0
-      };
+        const dayKey = dayKeys[index];
+        const dayData = apiData.days[dayKey] || { present: 0, absent: 0 };
+        
+        return {
+            name: day,
+            present: dayData.present || 0,
+            absent: dayData.absent || 0
+        };
     });
     
-    console.log('Transformed data:', transformed); // Add this log
+    console.log('Transformed data:', transformed);
     return transformed;
-  };
+};
 
-  const fetchAttendanceData = useCallback(async (weekType = 'current') => {
-    try {
-      if (!selectedSemester) {
-        console.log('No semester selected');
-        return;
-      }
-  
-      setIsLoadingAttendance(true);
-      const config = getAuthConfig();
-      
-      console.log(`Fetching attendance data for ${weekType} week...`);
-      const response = await axios.get(
-        `/api/teacher/attendance/summary?week=${weekType}&semester=${selectedSemester}`,
-        config
-      );
-      
-      if (response.data && response.data.success) {
-        const formattedData = transformAttendanceData(response.data.data);
-        setAttendanceData(formattedData);
-        
-        if (response.data.data.dateRange) {
-          setDateRange(response.data.data.dateRange);
-        }
-      } else {
-        setAttendanceData([]);
-      }
-    } catch (error) {
-      console.error('Error fetching attendance data:', error);
-      setAttendanceData([]);
-    } finally {
-      setIsLoadingAttendance(false);
+const fetchAttendanceData = useCallback(async (weekType = 'current') => {
+  try {
+    if (!selectedSemester) {
+      console.log('No semester selected');
+      return;
     }
-  }, [selectedSemester]);
+
+    setIsLoadingAttendance(true);
+    const config = getAuthConfig();
+    
+    console.log(`Fetching attendance data for ${weekType} week...`);
+    const response = await axios.get(
+      `/api/teacher/attendance/summary?week=${weekType}&semester=${selectedSemester}`,
+      config
+    );
+    
+    if (response.data && response.data.success) {
+      const formattedData = transformAttendanceData(response.data.data);
+      setAttendanceData(formattedData);
+      
+      if (response.data.data.dateRange) {
+        setDateRange(response.data.data.dateRange);
+      }
+    } else {
+      setAttendanceData([]);
+      console.error('No data received from API');
+    }
+  } catch (error) {
+    console.error('Error fetching attendance data:', error);
+    setAttendanceData([]);
+    // Add user-friendly error handling
+    if (error.response?.status === 400 && error.response?.data?.message) {
+      // Display message about no advisory section if that's the error
+      console.log(error.response.data.message);
+    }
+  } finally {
+    setIsLoadingAttendance(false);
+  }
+}, [selectedSemester]);
   
 
   // Handle week selection change
@@ -448,16 +454,19 @@ const COLORS = ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0'];
     ))
   )}
 </Form.Select>
-                                        <Form.Select 
-                                            value={selectedWeek} 
-                                            onChange={handleWeekChange}
-                                            size="sm"
-                                            style={{ width: 'auto', display: 'inline-block' }}
-                                        >
-                                            <option value="current">Current Week</option>
-                                            <option value="previous">Previous Week</option>
-                                            <option value="twoWeeksAgo">Two Weeks Ago</option>
-                                        </Form.Select>
+
+<Form.Select 
+    value={selectedWeek} 
+    onChange={handleWeekChange}
+    size="sm"
+    style={{ width: 'auto', display: 'inline-block' }}
+>
+    <option value="current">Current Week</option>
+    <option value="previous">Previous Week</option>
+    <option value="twoWeeksAgo">Two Weeks Ago</option>
+    <option value="threeWeeksAgo">Three Weeks Ago</option>
+    <option value="fourWeeksAgo">Four Weeks Ago</option>
+</Form.Select>
                                     </div>
                                 </Card.Header>
                                 <Card.Body>

@@ -71,183 +71,210 @@ useEffect(() => {
     };
   };
 
-  // Fetch students when component mounts or sectionId changes
-  useEffect(() => {
-    if (!sectionId) return;
-    
-    const fetchStudents = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        
-        const config = getAuthConfig();
-        
-        // First, get section details
-        const { data: sectionData } = await axios.get(
-          `/api/teacher/sections/${sectionId}`, 
-          config
-        );
-        
-        // Then, get students for this section
-        const { data: studentsData } = await axios.get(
-          `/api/teacher/students?section=${sectionId}`, 
-          config
-        );
-        
-        console.log('Fetched students:', studentsData);
-        console.log('Fetched section data:', sectionData);
-        
-        // Update form data with section info
-        if (sectionData) {
-          // Fetch the current semester from the API or determine it based on the date
-          const currentDate = new Date();
-          const month = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
-          
-          // Simple logic to determine semester (adjust as needed)
-          // For example: First semester: August-December, Second semester: January-July
-          const currentSemester = month >= 8 && month <= 12 ? '1st' : '2nd';
-          
-          setFormData(prev => ({
-            ...prev,
-            section: sectionData.name,
-            gradeLevel: sectionData.yearLevel?.name || '',
-            strand: sectionData.strand?.name || '',
-            adviser: sectionData.adviser || '',
-            semester: currentSemester, // Set the semester
-            schoolYear: `${currentDate.getFullYear()}-${currentDate.getFullYear() + 1}` // Set school year if not already set
-          }));
-        }
-        
-        // Map student data to attendance format
-        const studentAttendanceData = studentsData.map((student, index) => ({
-          no: index + 1,
-          studentId: student._id,
-          name: `${student.lastName}, ${student.firstName} ${student.middleInitial || ''}`.trim(),
-          week1: {},
-          week2: {},
-          week3: {},
-          week4: {},
-          week5: {},
-          absent: 0,
-          tardy: 0,
-          remarks: ''
-        }));
-        
-        setData(studentAttendanceData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching students:', err);
-        
-        if (err.response && err.response.status === 401) {
-          setError('Your session has expired. Please log in again.');
-        } else {
-          setError('Failed to load students. Please try again later.');
-        }
-        
-        setLoading(false);
-      }
-    };
-    
-    fetchStudents();
-  }, [sectionId]);
+// Update the fetchAdvisorySection function
+useEffect(() => {
+  const fetchAdvisorySection = async () => {
+    try {
+      const config = getAuthConfig();
+      const response = await axios.get('/api/teacher/advisorySections', config); // Changed from advisorySection to advisorySections
 
-  // Fetch existing attendance data when section and month are selected
-  useEffect(() => {
-    if (!sectionId || !formData.month) return;
-    
-    const fetchAttendanceData = async () => {
-      try {
-        setLoading(true);
-        
-        const config = getAuthConfig();
-        console.log('Fetching attendance with config:', config);
-        console.log(`Requesting: /api/teacher/attendance?section=${sectionId}&month=${formData.month}`);
-        
-        const { data: attendanceData } = await axios.get(
-          `/api/teacher/attendance?section=${sectionId}&month=${formData.month}`,
-          config
-        );
-        
-        console.log('Attendance data received:', attendanceData);
-        
-        if (attendanceData && attendanceData.records) {
-          // Map attendance records to our data format
-          const mappedData = attendanceData.records.map((record, index) => ({
-            no: index + 1,
-            studentId: record.student._id,
-            name: `${record.student.lastName}, ${record.student.firstName} ${record.student.middleInitial || ''}`.trim(),
-            week1: record.weeks.week1 || {},
-            week2: record.weeks.week2 || {},
-            week3: record.weeks.week3 || {},
-            week4: record.weeks.week4 || {},
-            week5: record.weeks.week5 || {},
-            absent: record.absent,
-            tardy: record.tardy,
-            remarks: record.remarks
-          }));
-          
-          setData(mappedData);
-          
-          // Update form data
-          setFormData(prev => ({
-            ...prev,
-            schoolYear: attendanceData.schoolYear,
-            semester: attendanceData.semester
-          }));
-        } else {
-          console.warn('Received empty or invalid attendance data:', attendanceData);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching attendance data:', err);
-        
-        // More detailed error logging
-        if (err.response) {
-          console.error('Response status:', err.response.status);
-          console.error('Response data:', err.response.data);
-          
-          // Handle different error status codes
-          if (err.response.status === 401) {
-            setError('Your session has expired. Please log in again.');
-          } else if (err.response.status === 404) {
-            console.log('No attendance data found for this month (404 is expected for new records)');
-            // This is normal for new months, don't show an error
-            setLoading(false);
-            return;
-          } else if (err.response.status === 500 && 
-                    err.response.data && 
-                    err.response.data.message && 
-                    err.response.data.message.includes('No attendance data found')) {
-            // This is the specific error we're seeing - treat it as a normal case
-            console.log('No attendance data found for this month (500 with specific message)');
-            // Don't show an error to the user, this is expected for new records
-            setLoading(false);
-            return;
-          } else {
-            setError(`Failed to load attendance data: ${err.response.data.message || 'Server error'}`);
-          }
-        } else if (err.request) {
-          // Request was made but no response received
-          console.error('No response received:', err.request);
-          setError('Failed to load attendance data: No response from server');
-        } else {
-          // Something else caused the error
-          console.error('Error message:', err.message);
-          setError(`Failed to load attendance data: ${err.message}`);
-        }
-        
-        setLoading(false);
+      if (!response.data?.success || !response.data?.advisorySection) {
+        setError('You do not have an advisory section assigned.');
+        return;
       }
-    };
-    
-    fetchAttendanceData();
-  }, [sectionId, formData.month]);
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+      const advisorySection = response.data.advisorySection;
+
+      // Check if this modal is being opened for the correct section
+      if (advisorySection._id !== sectionId) {
+        setError('You can only manage attendance for your advisory section.');
+        return;
+      }
+
+      // Update form data with advisory section info
+      setFormData(prev => ({
+        ...prev,
+        section: advisorySection.name,
+        gradeLevel: advisorySection.yearLevel?.name || '',
+        strand: advisorySection.strand?.name || '',
+        adviser: response.data.teacherName || ''
+      }));
+
+      // After verifying advisory section, fetch students
+      await fetchStudents();
+
+    } catch (error) {
+      console.error('Error fetching advisory section:', error);
+      setError('Failed to verify advisory section.');
+    }
   };
+
+  if (sectionId) {
+    fetchAdvisorySection();
+  }
+}, [sectionId]);
+
+    const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const config = getAuthConfig();
+      
+      // First, get section details
+      const { data: sectionData } = await axios.get(
+        `/api/teacher/sections/${sectionId}`, 
+        config
+      );
+      
+      // Then, get students for this section
+      const { data: studentsData } = await axios.get(
+        `/api/teacher/students?section=${sectionId}`, 
+        config
+      );
+      
+      console.log('Fetched students:', studentsData);
+      console.log('Fetched section data:', sectionData);
+      
+      // Update form data with section info
+      if (sectionData) {
+        const currentDate = new Date();
+        const month = currentDate.getMonth() + 1;
+        const currentSemester = month >= 8 && month <= 12 ? '1st' : '2nd';
+        
+        setFormData(prev => ({
+          ...prev,
+          section: sectionData.name,
+          gradeLevel: sectionData.yearLevel?.name || '',
+          strand: sectionData.strand?.name || '',
+          adviser: sectionData.adviser || '',
+          semester: currentSemester,
+          schoolYear: `${currentDate.getFullYear()}-${currentDate.getFullYear() + 1}`
+        }));
+      }
+      
+      // Map student data to attendance format
+      const studentAttendanceData = studentsData.map((student, index) => ({
+        no: index + 1,
+        studentId: student._id,
+        name: `${student.lastName}, ${student.firstName} ${student.middleInitial || ''}`.trim(),
+        week1: {},
+        week2: {},
+        week3: {},
+        week4: {},
+        week5: {},
+        absent: 0,
+        tardy: 0,
+        remarks: ''
+      }));
+      
+      setData(studentAttendanceData);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      
+      if (err.response && err.response.status === 401) {
+        setError('Your session has expired. Please log in again.');
+      } else {
+        setError('Failed to load students. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+const fetchAttendanceData = async () => {
+  try {
+    setLoading(true);
+    setError('');
+    const config = getAuthConfig();
+    
+    if (!sectionId || !formData.month || !selectedSemester) {
+      return;
+    }
+
+    // First get the base student list
+    const studentsResponse = await axios.get(
+      `/api/teacher/students?section=${sectionId}`,
+      config
+    );
+
+    // Create base data with empty attendance
+    const baseData = studentsResponse.data.map((student, index) => ({
+      no: index + 1,
+      studentId: student._id,
+      name: `${student.lastName}, ${student.firstName} ${student.middleInitial || ''}`.trim(),
+      week1: {},
+      week2: {},
+      week3: {},
+      week4: {},
+      week5: {},
+      absent: 0,
+      tardy: 0,
+      remarks: ''
+    }));
+
+    try {
+      // Get existing attendance data for this month
+      const attendanceResponse = await axios.get(
+        `/api/teacher/attendance?section=${sectionId}&month=${formData.month}&semester=${selectedSemester}`,
+        config
+      );
+
+      if (attendanceResponse.data?.success && attendanceResponse.data.data?.records) {
+        const existingRecords = attendanceResponse.data.data.records;
+        
+        // Merge existing attendance with base data
+        const mergedData = baseData.map(student => {
+          const existingRecord = existingRecords.find(
+            record => record.student._id === student.studentId
+          );
+          
+          if (existingRecord) {
+            return {
+              ...student,
+              week1: existingRecord.weeks.week1 || {},
+              week2: existingRecord.weeks.week2 || {},
+              week3: existingRecord.weeks.week3 || {},
+              week4: existingRecord.weeks.week4 || {},
+              week5: existingRecord.weeks.week5 || {},
+              absent: existingRecord.absent || 0,
+              tardy: existingRecord.tardy || 0,
+              remarks: existingRecord.remarks || ''
+            };
+          }
+          return student;
+        });
+        
+        setData(mergedData);
+      } else {
+        setData(baseData);
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // No existing attendance found for this month
+        setData(baseData);
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching attendance:', error);
+    setError('Failed to load attendance data');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+const handleFormChange = (e) => {
+  const { name, value } = e.target;
+  setFormData(prev => ({ ...prev, [name]: value }));
+  if (name === 'month') {
+    // Reset data before fetching new month's attendance
+    setData([]);
+    fetchAttendanceData();
+  }
+};
 
   // Helper function to update attendance for a student
   const updateAttendance = (studentIndex, status) => {
@@ -413,19 +440,16 @@ useEffect(() => {
     }
   };
 
-  const handleSaveAttendance = async () => {
+const handleSaveAttendance = async () => {
     if (!sectionId || !formData.month || !selectedSemester) {
-      setError('Please select a section, month, and semester');
+      toast.error('Please select a month and semester');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
       const config = getAuthConfig();
-      console.log('Saving attendance with config:', config);
-      
-      // Prepare attendance data
+
       const attendanceData = {
         section: sectionId,
         month: formData.month,
@@ -440,44 +464,33 @@ useEffect(() => {
             week4: student.week4 || {},
             week5: student.week5 || {}
           },
-          absent: student.absent,
-          tardy: student.tardy,
-          remarks: student.remarks
+          absent: student.absent || 0,
+          tardy: student.tardy || 0,
+          remarks: student.remarks || ''
         }))
       };
-      
-      console.log('Sending attendance data:', attendanceData);
-      
-      // Send data to backend with auth headers
+
       const response = await axios.post('/api/teacher/attendance', attendanceData, config);
-      console.log('Save attendance response:', response.data);
-      
-      setLoading(false);
-      toast.success('Attendance data saved successfully!')
-    } catch (err) {
-      console.error('Error saving attendance data:', err);
-      
-      // More detailed error logging
-      if (err.response) {
-        console.error('Response status:', err.response.status);
-        console.error('Response data:', err.response.data);
-        
-        if (err.response.status === 401) {
-          setError('Your session has expired. Please log in again.');
-        } else {
-          setError(`Failed to save attendance data: ${err.response.data.message || 'Server error'}`);
-        }
-      } else if (err.request) {
-        console.error('No response received:', err.request);
-        setError('Failed to save attendance data: No response from server');
-      } else {
-        console.error('Error message:', err.message);
-        setError(`Failed to save attendance data: ${err.message}`);
+
+      if (response.data.success) {
+        toast.success('Attendance saved successfully!');
+        await fetchAttendanceData();
       }
-      
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to save attendance';
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
       setLoading(false);
     }
   };
+
+useEffect(() => {
+  if (sectionId && formData.month && selectedSemester) {
+    fetchAttendanceData();
+  }
+}, [sectionId, formData.month, selectedSemester]);
 
   return (
     <Modal show={isOpen} onHide={onClose} size="xl" dialogClassName="attendance-modal">

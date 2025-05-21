@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const attendanceSchema = mongoose.Schema(
   {
@@ -16,9 +16,9 @@ const attendanceSchema = mongoose.Schema(
       required: true
     },
     semester: {
-      type: mongoose.Schema.Types.ObjectId,  
-      ref: 'Semester',                    
-      required: true                         
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Semester',
+      required: true
     },
     teacher: {
       type: mongoose.Schema.Types.ObjectId,
@@ -34,24 +34,29 @@ const attendanceSchema = mongoose.Schema(
         },
         weeks: {
           week1: {
-            type: Object,
-            default: {}
+            type: Map,
+            of: String,
+            default: new Map()
           },
           week2: {
-            type: Object,
-            default: {}
+            type: Map,
+            of: String,
+            default: new Map()
           },
           week3: {
-            type: Object,
-            default: {}
+            type: Map,
+            of: String,
+            default: new Map()
           },
           week4: {
-            type: Object,
-            default: {}
+            type: Map,
+            of: String,
+            default: new Map()
           },
           week5: {
-            type: Object,
-            default: {}
+            type: Map,
+            of: String,
+            default: new Map()
           }
         },
         absent: {
@@ -74,12 +79,60 @@ const attendanceSchema = mongoose.Schema(
   }
 );
 
-// Create a compound index for faster queries
-attendanceSchema.index(
-  { section: 1, month: 1, semester: 1 }, 
-  { unique: true }
-);
+// Add a pre-save middleware to handle duplicates
+attendanceSchema.pre('save', async function(next) {
+  try {
+    if (this.isNew) {
+      const existingRecord = await this.constructor.findOne({
+        section: this.section,
+        month: this.month,
+        semester: this.semester,
+        schoolYear: this.schoolYear,
+        teacher: this.teacher
+      });
+
+      if (existingRecord) {
+        // Update existing record instead
+        existingRecord.records = this.records;
+        await existingRecord.save();
+        return next(new Error('Updated existing record'));
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Add a static method for upserting attendance records
+attendanceSchema.statics.upsertAttendance = async function(filter, update) {
+  try {
+    return await this.findOneAndUpdate(
+      filter,
+      update,
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true
+      }
+    );
+  } catch (error) {
+    if (error.code === 11000) {
+      // If duplicate key error, try one more time with a simple update
+      return await this.findOneAndUpdate(
+        filter,
+        update,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+    }
+    throw error;
+  }
+};
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 
-export default Attendance; 
+export default Attendance;

@@ -297,20 +297,8 @@ const updateUserAccount = asyncHandler(async (req, res) => {
     }
 
     try {
+        
         let updateData = { username };
-
-        const existingUser = await User.findOne({
-            _id: { $ne: id }, // Exclude current user
-            username: { 
-                $regex: new RegExp(`^${username.trim()}$`, 'i') 
-            }
-        });
-
-        if (existingUser) {
-            res.status(400);
-            throw new Error('This LRN is already registered in the system');
-        }
-
         if (user.role === 'teacher') {
             // Remove teacher from old sections
             if (user.sections?.length > 0) {
@@ -371,6 +359,20 @@ const updateUserAccount = asyncHandler(async (req, res) => {
             };
 
         } else if (role === 'student') {
+
+
+        const existingUser = await User.findOne({
+            _id: { $ne: id }, // Exclude current user
+            username: { 
+                $regex: new RegExp(`^${username.trim()}$`, 'i') 
+            }
+        });
+
+        if (existingUser) {
+            res.status(400);
+            throw new Error('This LRN is already registered in the system');
+        }
+
             // Handle student-specific updates
             if (sections) {
                 // Remove from old sections
